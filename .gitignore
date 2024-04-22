@@ -1,0 +1,15 @@
+.beet_cache
+.vscode
+out
+__pycache__
+.DS_Store
+pack.mcmeta
+dist/
+docs/_build/
+*.zip
+!release/included/*.zip
+!release/included/none/pack.mcmeta
+README.bbcode
+build
+!example_material/pack.mcmeta
+.env

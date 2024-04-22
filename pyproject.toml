@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "model-resolver"
+version = "0.1.0"
+description = ""
+authors = ["edayot <pro.e.dayot@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beet = "^0.104.1"
+click = "^8.1.7"
+tqdm = "^4.66.2"
+rich = "^13.7.1"
+pyopengl = "^3.1.7"
+pyopengl-accelerate = "^3.1.7"
+pillow = "^10.3.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.beet]
+pipeline=[
+    "main"
+]
+require=[
+    "beet.contrib.model_merging"
+]
+
+
+[tool.beet.resource_pack]
+load = "."
+

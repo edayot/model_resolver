@@ -56,18 +56,21 @@ class Render():
     '''
 
 
-    def __init__(self, models : dict[dict], ctx : Context, vanilla : Vanilla):
+    def __init__(self, models : dict[dict], ctx : Context, vanilla : Vanilla, size : int = 1024):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
+        self.size = size
 
         self.model_list = list(self.models.keys())
         self.current_model_index = 0
-        self.reload()
+        self.textures_bindings = {}
+        self.textures = self.load_textures(self.models[self.model_list[self.current_model_index]]['textures'], self.ctx, self.vanilla)
     
     def reload(self):
         self.textures_bindings = {}
         self.textures = self.load_textures(self.models[self.model_list[self.current_model_index]]['textures'], self.ctx, self.vanilla)
+        self.generate_textures_bindings()
 
     def generate_textures_bindings(self):
         for key, value in self.textures.items():
@@ -78,7 +81,6 @@ class Render():
             img_data = value.tobytes("raw", "RGBX", 0, -1)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, value.width, value.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
             self.textures_bindings[key] = tex_id
-            print(tex_id)
 
     def load_textures(self, textures : dict, ctx : Context, vanilla : Vanilla):
         res = {}
@@ -113,13 +115,12 @@ class Render():
         glutInit()
 
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
-        glutInitWindowSize(512, 512)
+        glutInitWindowSize(self.size, self.size)
         glutInitWindowPosition(100, 100)
-        print("Creating window")
         glutCreateWindow(b"Isometric View")
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glEnable(GL_DEPTH_TEST)
-        glClearColor(0.0, 0.0, 0.0, 1.0)
+        glClearColor(0.0, 0.0, 0.0, 0.0)
         glEnable(GL_DEPTH_TEST)
 
         self.generate_textures_bindings()
@@ -132,14 +133,31 @@ class Render():
 
     
     def display(self):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()
-        # glTranslatef(0, 0, -10)
-        glRotatef(30, 1, 0, 0)
-        glRotatef(45, 0, 1, 0) 
+        glClearColor(0.0, 0.0, 0.0, 0.0)
+        img = self.draw()        
 
-        self.draw()
+        glClearColor(1.0, 0.0, 0.0, 0.0)
+        img2 = self.draw()
 
+        width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
+        pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
+        img2 = Image.frombytes("RGBA", (width, height), pixel_data)
+        diff = Image.new("RGBA", img.size)
+        for x in range(img.size[0]):
+            for y in range(img.size[1]):
+                if img.getpixel((x, y)) != img2.getpixel((x, y)):
+                    diff.putpixel((x, y), (0, 0, 0, 0))
+                else:
+                    diff.putpixel((x, y), img.getpixel((x, y)))
+        diff = diff.transpose(Image.FLIP_TOP_BOTTOM)
+        path_save = self.ctx.cache.path / "render" /(self.model_list[self.current_model_index].replace(":", "/") + ".png")
+        os.makedirs(path_save.parent, exist_ok=True)
+        diff.save(path_save)
+        if self.current_model_index == len(self.models) - 1:
+            glutLeaveMainLoop()
+        else:
+            self.current_model_index += 1
+            self.reload()
         glutSwapBuffers()
     
     def reshape(self, width, height):
@@ -149,24 +167,32 @@ class Render():
 
         zoom = 20
 
-        glOrtho(-zoom, zoom, -zoom, zoom, -512, 512)
+        glOrtho(-zoom, zoom, -zoom, zoom, -self.size, self.size)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
     def draw(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        glRotatef(30, 1, 0, 0)
+        glRotatef(45, 0, 1, 0) 
         model = self.models[self.model_list[self.current_model_index]]
         for element in model['elements']:
             self.draw_element(element)
+        width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
+        pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
+        img = Image.frombytes("RGBA", (width, height), pixel_data)
+        return img
         
 
     def draw_element(self, element : dict):
         glEnable(GL_TEXTURE_2D)
-        from_element = element['from']
+        from_element= element['from']
         to_element = element['to']
 
-        from_element, to_element = self.center_element(from_element, to_element)
+        from_element_centered, to_element_centered = self.center_element(from_element, to_element)
 
-        vertices = self.get_vertices(from_element, to_element)
+        vertices = self.get_vertices(from_element_centered, to_element_centered)
 
         texture_used = [
             element['faces'].get('down', None),
@@ -220,6 +246,8 @@ class Render():
 
         if 'uv' in data:
             uv = data['uv']
+            div = 16
+            uv = (uv[0] / div, uv[1] / div, uv[2] / div, uv[3] / div)
         else:
             uv = self.get_uv(face, from_element, to_element)
 
@@ -289,7 +317,6 @@ class Render():
             self.current_model_index += 1
             self.current_model_index = self.current_model_index % len(self.models)
             self.reload()
-            self.generate_textures_bindings()
         glutPostRedisplay()
 
     

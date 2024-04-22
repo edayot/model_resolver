@@ -8,7 +8,7 @@ from real_render import Render
 def beet_default(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
 
-    ctx.assets.models["test:cube"] = vanilla_models["minecraft:block/acacia_fence_inventory"]
+    ctx.assets.models["test:cube"] = vanilla_models["minecraft:block/stone"]
 
     models = {}
     for model in ctx.assets.models:

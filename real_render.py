@@ -165,17 +165,15 @@ class Render():
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
-        zoom = 20
+        zoom = 8
 
-        glOrtho(-zoom, zoom, -zoom, zoom, -self.size, self.size)
+        glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()
-        glRotatef(30, 1, 0, 0)
-        glRotatef(45, 0, 1, 0) 
         model = self.models[self.model_list[self.current_model_index]]
         for element in model['elements']:
             self.draw_element(element)
@@ -193,6 +191,20 @@ class Render():
         from_element_centered, to_element_centered = self.center_element(from_element, to_element)
 
         vertices = self.get_vertices(from_element_centered, to_element_centered)
+
+        # transform the vertices
+        gui = self.models[self.model_list[self.current_model_index]]['display']['gui']
+        scale = gui['scale']
+        translation = gui['translation']
+        rotation = gui['rotation']
+
+        glTranslatef(translation[0]/16, translation[1]/16, translation[2]/16)
+        glRotatef(-rotation[0], 1, 0, 0)
+        glRotatef(rotation[1], 0, 1, 0)
+        glRotatef(rotation[2], 0, 0, 1)
+        glScalef(scale[0], scale[1], scale[2])
+
+
 
         texture_used = [
             element['faces'].get('down', None),

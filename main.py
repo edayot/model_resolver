@@ -1,7 +1,7 @@
 from beet import Context, Model
 from beet.contrib.vanilla import Vanilla
 from rich import print
-from real_render import Render
+from render import Render
 
 
 

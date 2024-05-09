@@ -3,19 +3,17 @@ from beet.contrib.vanilla import Vanilla
 from rich import print
 from render import Render
 from copy import deepcopy
+import json
 
 
 def beet_default(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
 
-    ctx.assets.models["test:cube"] = vanilla_models["minecraft:item/oak_fence"]
+    ctx.assets.models["debug:block/test_fence"] = vanilla_models["minecraft:item/acacia_fence"]
 
     models = {}
     for model in ctx.assets.models:
-        if model != "test:cube":
-            continue
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
-        print(resolved_model.data)
         models[model] = resolved_model.data
     
     Render(models, ctx, ctx.inject(Vanilla)).render()

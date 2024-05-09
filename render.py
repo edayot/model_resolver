@@ -8,6 +8,9 @@ from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
 
+INTERACTIVE = True
+
+
 class Render():
     '''
     
@@ -123,7 +126,8 @@ class Render():
         glutInitWindowSize(self.size, self.size)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
-        glutHideWindow()
+        if not INTERACTIVE:
+            glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glEnable(GL_DEPTH_TEST)
         glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -142,18 +146,21 @@ class Render():
     def display(self):
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
-            img = self.draw()
-            model_name = self.model_list[self.current_model_index].split(":")
-            texture_path = f"{model_name[0]}:render/{model_name[1]}"
-            self.ctx.assets.textures[texture_path] = Texture(img)
+            if not INTERACTIVE:
+                img = self.draw_buffer()
+                model_name = self.model_list[self.current_model_index].split(":")
+                texture_path = f"{model_name[0]}:render/{model_name[1]}"
+                self.ctx.assets.textures[texture_path] = Texture(img)
 
-            self.current_model_index += 1
-            if self.current_model_index >= len(self.model_list):
-                glutLeaveMainLoop()
-                return
-            self.reload()
-            self.translate = [0, 0, 0]
-            self.rotate = [0, 0, 0]
+                self.current_model_index += 1
+                if self.current_model_index >= len(self.model_list):
+                    glutLeaveMainLoop()
+                    return
+                self.reload()
+                self.translate = [0, 0, 0]
+                self.rotate = [0, 0, 0]
+            else:
+                self.draw()
 
             
             glutSwapBuffers()
@@ -170,7 +177,7 @@ class Render():
         glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
         glMatrixMode(GL_MODELVIEW)
 
-    def draw(self):
+    def draw_buffer(self):
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
 
         # Create a framebuffer object (FBO) for off-screen rendering
@@ -216,6 +223,18 @@ class Render():
 
         return img
 
+
+    def draw(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        model = self.models[self.model_list[self.current_model_index]]
+        for element in model['elements']:
+            self.draw_element(element)
+        width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
+        # read the pixel by pixel, with the alpha channel
+        pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
+        img = Image.frombytes("RGBA", (width, height), pixel_data)
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        return img
 
         
 

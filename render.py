@@ -153,43 +153,8 @@ class Render():
 
     
     def display(self):
-        # vertex_shader = open("vertex_shader.glsl").read()
-        # fragment_shader = open("fragment_shader.glsl").read()
-
-        # fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader)
-        # vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader)
-
-        # self.shader = glCreateProgram()
-        # glAttachShader(self.shader, fragment_shader)
-        # glAttachShader(self.shader, vertex_shader)
-        # glLinkProgram(self.shader)
-        # glUseProgram(self.shader)
-        
         glClearColor(0.0, 0.0, 0.0, 0.0)
-        img = self.draw()        
-
-        # glClearColor(1.0, 0.0, 0.0, 0.0)
-        # img2 = self.draw()
-
-        # width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
-        # pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
-        # img2 = Image.frombytes("RGBA", (width, height), pixel_data)
-        # diff = Image.new("RGBA", img.size)
-        # for x in range(img.size[0]):
-        #     for y in range(img.size[1]):
-        #         if img.getpixel((x, y)) != img2.getpixel((x, y)):
-        #             diff.putpixel((x, y), (0, 0, 0, 0))
-        #         else:
-        #             diff.putpixel((x, y), img.getpixel((x, y)))
-        # diff = diff.transpose(Image.FLIP_TOP_BOTTOM)
-        # path_save = self.ctx.cache.path / "render" /(self.model_list[self.current_model_index].replace(":", "/") + ".png")
-        # os.makedirs(path_save.parent, exist_ok=True)
-        # diff.save(path_save)
-        # if self.current_model_index == len(self.models) - 1:
-        #     glutLeaveMainLoop()
-        # else:
-        #     self.current_model_index += 1
-        #     self.reload()
+        img = self.draw()
 
         # glUseProgram(0)
         glutSwapBuffers()
@@ -209,8 +174,10 @@ class Render():
         for element in model['elements']:
             self.draw_element(element)
         width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
+        # read the pixel by pixel, with the alpha channel
         pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
         img = Image.frombytes("RGBA", (width, height), pixel_data)
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
         return img
         
 

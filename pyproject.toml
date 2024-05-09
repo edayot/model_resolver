@@ -23,6 +23,7 @@ build-backend = "poetry.core.masonry.api"
 
 
 [tool.beet]
+output="build"
 pipeline=[
     "main"
 ]

@@ -4,7 +4,7 @@ from OpenGL.GLU import *
 
 from PIL import Image
 
-from beet import Context
+from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
 
@@ -153,11 +153,26 @@ class Render():
 
     
     def display(self):
-        glClearColor(0.0, 0.0, 0.0, 0.0)
-        img = self.draw()
+        try:
+            glClearColor(0.0, 0.0, 0.0, 0.0)
+            img = self.draw()
+            model_name = self.model_list[self.current_model_index].split(":")
+            texture_path = f"{model_name[0]}:render/{model_name[1]}"
+            self.ctx.assets.textures[texture_path] = Texture(img)
 
-        # glUseProgram(0)
-        glutSwapBuffers()
+            self.current_model_index += 1
+            if self.current_model_index >= len(self.model_list):
+                glutLeaveMainLoop()
+                return
+            self.reload()
+            self.translate = [0, 0, 0]
+            self.rotate = [0, 0, 0]
+
+            
+            glutSwapBuffers()
+        except BaseException as e:
+            glutLeaveMainLoop()
+            raise e    
     
     def reshape(self, width, height):
         glViewport(0, 0, width, height)

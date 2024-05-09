@@ -2,8 +2,8 @@
 	"credit": "Made with Blockbench",
 	"texture_size": [64, 64],
 	"textures": {
-		"0": "simpledrawer:block/texture_corner",
-		"particle": "simpledrawer:block/texture_corner"
+		"0": "debug:block/texture_corner",
+		"particle": "debug:block/texture_corner"
 	},
 	"elements": [
 		{

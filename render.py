@@ -95,7 +95,7 @@ class Render():
             glBindTexture(GL_TEXTURE_2D, tex_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            img_data = value.tobytes("raw", "RGBX", 0, 1)
+            img_data = value.tobytes("raw", "RGBA")
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, value.width, value.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
             self.textures_bindings[key] = tex_id
             self.textures_size[key] = value.size
@@ -191,23 +191,20 @@ class Render():
         #     self.current_model_index += 1
         #     self.reload()
 
-        glUseProgram(0)
+        # glUseProgram(0)
         glutSwapBuffers()
     
     def reshape(self, width, height):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
 
         zoom = 8
 
         glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
         glMatrixMode(GL_MODELVIEW)
-        glLoadIdentity()
 
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()
         model = self.models[self.model_list[self.current_model_index]]
         for element in model['elements']:
             self.draw_element(element)
@@ -232,6 +229,8 @@ class Render():
         translation = gui.get('translation', [0, 0, 0])
         rotation = gui.get('rotation', [0, 0, 0])
 
+        # reset the matrix
+        glLoadIdentity()
         glTranslatef(translation[0]/16, translation[1]/16, translation[2]/16)
         glTranslatef(self.translate[0], self.translate[1], self.translate[2])
         glRotatef(-rotation[0], 1, 0, 0)
@@ -279,6 +278,7 @@ class Render():
         )
 
     def center_element(self, from_element : list, to_element : list) -> tuple[list, list]:
+        # return from_element, to_element
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
         
@@ -301,42 +301,42 @@ class Render():
             uv = self.get_uv(face, from_element, to_element)
 
         match face:
-            case 'down':
-                # 0167 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[1])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[0])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
-            case 'up':
-                # 5432 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[2])
+            # case 'down':
+            #     # 0167 V
+            #     glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[1])
+            #     glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[0])
+            #     glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
+            #     glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
+            # case 'up':
+            #     # 5432 V
+            #     glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
+            #     glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
+            #     glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[3])
+            #     glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[2])
             case 'north':
                 # 4567 V
                 glTexCoord2f(uv[1], uv[0]); glVertex3fv(vertices[4])
                 glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[5])
                 glTexCoord2f(uv[3], uv[2]); glVertex3fv(vertices[6])
                 glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[7])
-            case 'south':
-                # 2301 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[2])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[0])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[1])
-            case 'west':
-                # 5216 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
-            case 'east':
-                # 3470 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[0])
+            # case 'south':
+            #     # 2301 V
+            #     glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[2])
+            #     glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[3])
+            #     glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[0])
+            #     glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[1])
+            # case 'west':
+            #     # 5216 V
+            #     glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
+            #     glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
+            #     glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
+            #     glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
+            # case 'east':
+            #     # 3470 V
+            #     glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
+            #     glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
+            #     glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
+            #     glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[0])
         glEnd()
 
     def get_uv(self, face : str, from_element : list, to_element : list):

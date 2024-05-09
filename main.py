@@ -2,17 +2,20 @@ from beet import Context, Model
 from beet.contrib.vanilla import Vanilla
 from rich import print
 from render import Render
-
+from copy import deepcopy
 
 
 def beet_default(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
 
-    ctx.assets.models["test:cube"] = vanilla_models["minecraft:block/stone"]
+    ctx.assets.models["test:cube"] = vanilla_models["minecraft:item/oak_fence"]
 
     models = {}
     for model in ctx.assets.models:
+        if model != "test:cube":
+            continue
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
+        print(resolved_model.data)
         models[model] = resolved_model.data
     
     Render(models, ctx, ctx.inject(Vanilla)).render()
@@ -47,6 +50,7 @@ def resolve_model(model : Model, vanilla_models : dict[str, Model]) -> Model:
     # Do something with the model
     if "parent" in model.data:
         parent_model = vanilla_models[resolve_key(model.data["parent"])]
+        parent_model = deepcopy(parent_model)
         parent_model_resolved = resolve_model(parent_model, vanilla_models)
 
         return merge_model(model, parent_model_resolved)

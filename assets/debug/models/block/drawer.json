@@ -1,11 +1,11 @@
 {
     "parent": "minecraft:block/orientable_with_bottom",
     "textures": {
-      "top": "simpledrawer:block/drawers_wood_side",
-      "bottom": "simpledrawer:block/drawers_wood_side",
-      "side": "simpledrawer:block/drawers_wood_side",
-      "front": "simpledrawer:block/drawers_wood_front",
-      "particle": "simpledrawer:block/drawers_wood_side"
+      "top": "debug:block/drawers_wood_side",
+      "bottom": "debug:block/drawers_wood_side",
+      "side": "debug:block/drawers_wood_side",
+      "front": "debug:block/drawers_wood_front",
+      "particle": "debug:block/drawers_wood_side"
     },
     "display":{
         "fixed": {

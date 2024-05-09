@@ -153,7 +153,6 @@ class Render():
 
     
     def display(self):
-        print("Display")
         # vertex_shader = open("vertex_shader.glsl").read()
         # fragment_shader = open("fragment_shader.glsl").read()
 
@@ -235,7 +234,7 @@ class Render():
         glTranslatef(translation[0]/16, translation[1]/16, translation[2]/16)
         glTranslatef(self.translate[0], self.translate[1], self.translate[2])
         glRotatef(-rotation[0], 1, 0, 0)
-        glRotatef(rotation[1], 0, 1, 0)
+        glRotatef(rotation[1] + 180, 0, 1, 0)
         glRotatef(rotation[2], 0, 0, 1)
         glRotatef(self.rotate[0], 1, 0, 0)
         glRotatef(self.rotate[1], 0, 1, 0)
@@ -256,7 +255,6 @@ class Render():
         texture_used = list(set(texture_used))
         
         for texture in texture_used:
-            print(self.textures_bindings[texture])
             glBindTexture(GL_TEXTURE_2D, self.textures_bindings[texture])
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture
@@ -306,36 +304,35 @@ class Render():
         match face:
             case 'down':
                 # 0167 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[1])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[0])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
+                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[7])
+                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[6])
+                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
+                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[0])
             case 'up':
                 # 5432 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[2])
-            case 'north':
+                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
+                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
+                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[5])
+                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[4])
+            case 'south':
                 # 4567 V
                 glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[4])
                 glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[5])
                 glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[6])
                 glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[7])
-                print(uv)
-            case 'south':
+            case 'north':
                 # 2301 V
                 glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[2])
                 glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[3])
                 glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[0])
                 glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[1])
-            case 'west':
+            case 'east':
                 # 5216 V
                 glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
                 glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
                 glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
                 glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
-            case 'east':
+            case 'west':
                 # 3470 V
                 glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
                 glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])

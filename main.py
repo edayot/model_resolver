@@ -9,7 +9,7 @@ import json
 def beet_default(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
 
-    ctx.assets.models["debug:block/test_fence"] = vanilla_models["minecraft:item/acacia_fence"]
+    ctx.assets.models["debug:block/test_fence_2"] = vanilla_models["minecraft:item/acacia_fence"]
 
     models = {}
     for model in ctx.assets.models:

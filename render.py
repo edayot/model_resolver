@@ -136,13 +136,13 @@ class Render():
         glutInitWindowSize(self.size, self.size)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
-        # glutHideWindow()
+        glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glEnable(GL_DEPTH_TEST)
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glEnable(GL_DEPTH_TEST)
 
-        self.generate_textures_bindings()
+        self.reload()
 
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshape)

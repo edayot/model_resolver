@@ -23,7 +23,7 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
       - name: Setup OpenGl
-        run: sudo apt-get install libgl1-mesa-dev
+        run: sudo apt-get install cmake make g++ libx11-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxrandr-dev libxext-dev libxcursor-dev libxinerama-dev libxi-dev 
       - name: Setup cache for dependencies
         id: cached-poetry-dependencies
         uses: actions/cache@v2

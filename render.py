@@ -8,19 +8,6 @@ from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
 
-def compile_shader(shader_type, source):
-    shader = glCreateShader(shader_type)
-    glShaderSource(shader, source)
-    glCompileShader(shader)
-    
-    # Check compilation errors
-    success = glGetShaderiv(shader, GL_COMPILE_STATUS)
-    if not success:
-        info_log = glGetShaderInfoLog(shader)
-        raise RuntimeError(f"Shader compilation error: {info_log.decode('utf-8')}")
-    
-    return shader
-
 class Render():
     '''
     

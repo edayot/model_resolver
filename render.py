@@ -77,7 +77,11 @@ class Render():
         self.model_list = list(self.models.keys())
         self.current_model_index = 0
         self.textures_bindings = {}
+        self.textures_size = {}
         self.textures = self.load_textures(self.models[self.model_list[self.current_model_index]]['textures'], self.ctx, self.vanilla)
+
+        self.translate = [0, 0, 0]
+        self.rotate = [0, 0, 0]
     
     def reload(self):
         self.textures_bindings = {}
@@ -85,16 +89,18 @@ class Render():
         self.generate_textures_bindings()
 
     def generate_textures_bindings(self):
+        self.textures_bindings = {}
         for key, value in self.textures.items():
             tex_id = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, tex_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            img_data = value.tobytes("raw", "RGBX", 0, -1)
+            img_data = value.tobytes("raw", "RGBX", 0, 1)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, value.width, value.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
             self.textures_bindings[key] = tex_id
+            self.textures_size[key] = value.size
 
-    def load_textures(self, textures : dict, ctx : Context, vanilla : Vanilla):
+    def load_textures(self, textures : dict, ctx : Context, vanilla : Vanilla) -> dict[str, Image.Image]:
         res = {}
         for key in textures.keys():
             value = self.get_real_key(key, textures)
@@ -141,25 +147,23 @@ class Render():
         glutDisplayFunc(self.display)
         glutReshapeFunc(self.reshape)
         glutIdleFunc(self.display)
-        # glutKeyboardFunc(self.keyboard)
-
-
+        glutKeyboardFunc(self.keyboard)
         
         glutMainLoop()  
 
     
     def display(self):
-        vertex_shader = open("vertex_shader.glsl").read()
-        fragment_shader = open("fragment_shader.glsl").read()
+        # vertex_shader = open("vertex_shader.glsl").read()
+        # fragment_shader = open("fragment_shader.glsl").read()
 
-        fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader)
-        vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader)
+        # fragment_shader = compile_shader(GL_FRAGMENT_SHADER, fragment_shader)
+        # vertex_shader = compile_shader(GL_VERTEX_SHADER, vertex_shader)
 
-        self.shader = glCreateProgram()
-        glAttachShader(self.shader, fragment_shader)
-        glAttachShader(self.shader, vertex_shader)
-        glLinkProgram(self.shader)
-        glUseProgram(self.shader)
+        # self.shader = glCreateProgram()
+        # glAttachShader(self.shader, fragment_shader)
+        # glAttachShader(self.shader, vertex_shader)
+        # glLinkProgram(self.shader)
+        # glUseProgram(self.shader)
         
         glClearColor(0.0, 0.0, 0.0, 0.0)
         img = self.draw()        
@@ -224,14 +228,18 @@ class Render():
 
         # transform the vertices
         gui = self.models[self.model_list[self.current_model_index]]['display']['gui']
-        scale = gui['scale']
-        translation = gui['translation']
-        rotation = gui['rotation']
+        scale = gui.get('scale', [1, 1, 1])
+        translation = gui.get('translation', [0, 0, 0])
+        rotation = gui.get('rotation', [0, 0, 0])
 
         glTranslatef(translation[0]/16, translation[1]/16, translation[2]/16)
+        glTranslatef(self.translate[0], self.translate[1], self.translate[2])
         glRotatef(-rotation[0], 1, 0, 0)
         glRotatef(rotation[1], 0, 1, 0)
         glRotatef(rotation[2], 0, 0, 1)
+        glRotatef(self.rotate[0], 1, 0, 0)
+        glRotatef(self.rotate[1], 0, 1, 0)
+        glRotatef(self.rotate[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
 
 
@@ -280,6 +288,11 @@ class Render():
         from_element = (x1 - center[0], y1 - center[1], z1 - center[2])
         to_element = (x2 - center[0], y2 - center[1], z2 - center[2])
         return from_element, to_element
+    
+
+    def transform_uv(self, uv : list, size : int):    
+        uv = [x / 16 for x in uv]
+        return uv
 
 
 
@@ -288,8 +301,8 @@ class Render():
 
         if 'uv' in data:
             uv = data['uv']
-            div = 16
-            uv = (uv[0] / div, uv[1] / div, uv[2] / div, uv[3] / div)
+            uv = [x / 16 for x in uv]
+
         else:
             uv = self.get_uv(face, from_element, to_element)
 
@@ -355,10 +368,34 @@ class Render():
         # increment the current model index on each click
         if key == b'\x1b':
             glutLeaveMainLoop()
-        elif key == b'w':
+        elif key == b'r':
             self.current_model_index += 1
             self.current_model_index = self.current_model_index % len(self.models)
             self.reload()
+            self.translate = [0, 0, 0]
+            self.rotate = [0, 0, 0]
+        elif key == b'z':
+            self.translate[1] += 1
+        elif key == b's':
+            self.translate[1] -= 1
+        elif key == b'q':
+            self.translate[0] -= 1
+        elif key == b'd':
+            self.translate[0] += 1
+        # use ijklm to rotate the model
+        elif key == b'i':
+            self.rotate[0] += 1
+        elif key == b'k':
+            self.rotate[0] -= 1
+        elif key == b'j':
+            self.rotate[1] += 1
+        elif key == b'l':
+            self.rotate[1] -= 1
+        elif key == b'u':
+            self.rotate[2] += 1
+        elif key == b'm':
+            self.rotate[2] -= 1
+
         glutPostRedisplay()
 
     

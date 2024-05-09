@@ -115,7 +115,7 @@ class Render():
             if texture is None:
                 raise FileNotFoundError(f"Texture {path} not found")
         img : Image.Image = texture.image
-        img = img.convert("RGB")
+        img = img.convert("RGBA")
         return img
 
     
@@ -184,16 +184,52 @@ class Render():
         glMatrixMode(GL_MODELVIEW)
 
     def draw(self):
+        glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
+
+        # Create a framebuffer object (FBO) for off-screen rendering
+        fbo = glGenFramebuffers(1)
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo)
+
+        # Create a renderbuffer for depth testing
+        depth_buffer = glGenRenderbuffers(1)
+        glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.size, self.size)
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer)
+
+        # Create a texture to render into
+        render_texture = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, render_texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.size, self.size, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_texture, 0)
+
+        # Check framebuffer status
+        if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+            raise RuntimeError("Framebuffer is not complete")
+
+        # Render the scene
+        glViewport(0, 0, self.size, self.size)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
         model = self.models[self.model_list[self.current_model_index]]
         for element in model['elements']:
             self.draw_element(element)
-        width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
-        # read the pixel by pixel, with the alpha channel
-        pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
-        img = Image.frombytes("RGBA", (width, height), pixel_data)
+
+        # Read the pixel data, including alpha channel
+        pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
+
+        # Create an image from pixel data
+        img = Image.frombytes("RGBA", (self.size, self.size), pixel_data)
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
+
+        # Release resources
+        glDeleteTextures(1, [render_texture])
+        glDeleteRenderbuffers(1, [depth_buffer])
+        glDeleteFramebuffers(1, [fbo])
+
         return img
+
+
         
 
     def draw_element(self, element : dict):

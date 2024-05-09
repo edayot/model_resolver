@@ -36,7 +36,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
         run: |
-          beet build
+          poetry run beet -s data_pack.name=datapack -s resource_pack.name=resourcepack build
       - uses: actions/upload-artifact@v3
         with:
           name: datapack

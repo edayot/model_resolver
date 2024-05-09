@@ -8,7 +8,7 @@ from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
 
-INTERACTIVE = True
+INTERACTIVE = False
 
 
 class Render():

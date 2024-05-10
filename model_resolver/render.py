@@ -8,6 +8,8 @@ from PIL import Image
 from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
+from math import cos, sin, pi
+
 
 INTERACTIVE = False
 
@@ -301,10 +303,11 @@ class Render():
         glEnable(GL_TEXTURE_2D)
         from_element= element['from']
         to_element = element['to']
+        rotation = element.get('rotation', None)
 
         from_element_centered, to_element_centered = self.center_element(from_element, to_element)
 
-        vertices = self.get_vertices(from_element_centered, to_element_centered)
+        vertices = self.get_vertices(from_element_centered, to_element_centered, rotation)
 
         # transform the vertices
         gui = self.models[self.model_list[self.current_model_index]]['display']['gui']
@@ -347,19 +350,45 @@ class Render():
             
         glDisable(GL_TEXTURE_2D)
 
-    def get_vertices(self, from_element : list, to_element : list):
+    def get_vertices(self, from_element : list, to_element : list, rotation : dict | None) -> list:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
-        return (
-            (x1, y1, z1),
-            (x2, y1, z1),
-            (x2, y2, z1),
-            (x1, y2, z1),
-            (x1, y2, z2),
-            (x2, y2, z2),
-            (x2, y1, z2),
-            (x1, y1, z2)
-        )
+        res = [
+            [x1, y1, z1],
+            [x2, y1, z1],
+            [x2, y2, z1],
+            [x1, y2, z1],
+            [x1, y2, z2],
+            [x2, y2, z2],
+            [x2, y1, z2],
+            [x1, y1, z2]
+        ]
+        if rotation is None:
+            return res
+        
+        origin = rotation["origin"]
+        axis = rotation["axis"]
+        angle = rotation["angle"]
+        angle = angle * pi / 180
+
+        for point in res:
+            x, y, z = point
+            x -= origin[0]
+            y -= origin[1]
+            z -= origin[2]
+            if axis == "x":
+                y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
+            elif axis == "y":
+                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(-angle)
+            elif axis == "z":
+                x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
+            x += origin[0]
+            y += origin[1]
+            z += origin[2]
+            point[0], point[1], point[2] = x, y, z
+        return res
+
+
 
     def center_element(self, from_element : list, to_element : list) -> tuple[list, list]:
         # return from_element, to_element
@@ -399,6 +428,8 @@ class Render():
                 vertices_order = [5, 2, 1, 6]
             case 'west':
                 vertices_order = [3, 4, 7, 0]
+            case _:
+                raise ValueError(f"Unknown face {face}")
         
         match rotation:
             case 0:
@@ -409,6 +440,8 @@ class Render():
                 vertices_order = [vertices_order[2], vertices_order[3], vertices_order[0], vertices_order[1]]
             case 270:
                 vertices_order = [vertices_order[3], vertices_order[0], vertices_order[1], vertices_order[2]]
+            case _:
+                raise ValueError(f"Unknown rotation {rotation}")
 
         glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[vertices_order[0]])
         glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[vertices_order[1]])

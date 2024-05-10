@@ -211,6 +211,10 @@ class Render():
             for element in model['elements']:
                 self.draw_element(element)
         elif "parent" in model and model["parent"] == "builtin/generated":
+            glLoadIdentity()
+            glRotatef(self.rotate[0], 1, 0, 0)
+            glRotatef(self.rotate[1], 0, 1, 0)
+            glRotatef(self.rotate[2], 0, 0, 1)
             glEnable(GL_TEXTURE_2D)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -253,8 +257,37 @@ class Render():
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         model = self.models[self.model_list[self.current_model_index]]
-        for element in model['elements']:
-            self.draw_element(element)
+        if "elements" in model:
+            for element in model['elements']:
+                self.draw_element(element)
+        elif "parent" in model and model["parent"] == "builtin/generated":
+            glLoadIdentity()
+            glRotatef(self.rotate[0], 1, 0, 0)
+            glRotatef(self.rotate[1], 0, 1, 0)
+            glRotatef(self.rotate[2], 0, 0, 1)
+            glEnable(GL_TEXTURE_2D)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            # in this case, it's a 2d sprite
+            # textures are always layer0, layer1, layer2, layer3 (if they exist)
+            max = 0
+            for texture_key in model["textures"]:
+                layer = int(texture_key[-1])
+                if layer > max:
+                    max = layer
+            for i in range(max + 1):
+                if f"layer{i}" in model["textures"]:
+                    texture = self.textures_bindings[f"layer{i}"]
+                    glBindTexture(GL_TEXTURE_2D, texture)
+                    glBegin(GL_QUADS)
+                    scale = 8
+                    glTexCoord2f(0, 0); glVertex3f(scale, scale, -i)
+                    glTexCoord2f(1, 0); glVertex3f(-scale, scale, -i)
+                    glTexCoord2f(1, 1); glVertex3f(-scale, -scale, -i)
+                    glTexCoord2f(0, 1); glVertex3f(scale, -scale, -i)
+                    glEnd()
+            glDisable(GL_TEXTURE_2D)
+            glDisable(GL_BLEND)
         width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
         # read the pixel by pixel, with the alpha channel
         pixel_data = glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -347,47 +380,40 @@ class Render():
         if 'uv' in data:
             uv = data['uv']
             uv = [x / 16 for x in uv]
+            rotation = data.get('rotation', 0)
 
         else:
             uv = self.get_uv(face, from_element, to_element)
+            rotation = 0
 
         match face:
             case 'down':
-                # 0167 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[7])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[6])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[0])
+                vertices_order = [7, 6, 1, 0]
             case 'up':
-                # 5432 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[4])
+                vertices_order = [3, 2, 5, 4]
             case 'south':
-                # 4567 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[4])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[6])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[7])
+                vertices_order = [4, 5, 6, 7]
             case 'north':
-                # 2301 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[2])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[0])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[1])
+                vertices_order = [2, 3, 0, 1]
             case 'east':
-                # 5216 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[5])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[2])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[1])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[6])
+                vertices_order = [5, 2, 1, 6]
             case 'west':
-                # 3470 V
-                glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[3])
-                glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[4])
-                glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[7])
-                glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[0])
+                vertices_order = [3, 4, 7, 0]
+        
+        match rotation:
+            case 0:
+                pass
+            case 90:
+                vertices_order = [vertices_order[1], vertices_order[2], vertices_order[3], vertices_order[0]]
+            case 180:
+                vertices_order = [vertices_order[2], vertices_order[3], vertices_order[0], vertices_order[1]]
+            case 270:
+                vertices_order = [vertices_order[3], vertices_order[0], vertices_order[1], vertices_order[2]]
+
+        glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[vertices_order[0]])
+        glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[vertices_order[1]])
+        glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[vertices_order[2]])
+        glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[vertices_order[3]])
         glEnd()
 
     def get_uv(self, face : str, from_element : list, to_element : list):

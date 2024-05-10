@@ -1,0 +1,1 @@
+from model_resolver.main import beet_default

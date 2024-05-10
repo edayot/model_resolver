@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+from model_resolver.my_glutinit import glutInit
 
 from PIL import Image
 

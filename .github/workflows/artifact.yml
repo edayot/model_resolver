@@ -24,6 +24,10 @@ jobs:
           virtualenvs-in-project: true
       - name: Setup OpenGl
         run: sudo apt-get install cmake make g++ libx11-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxrandr-dev libxext-dev libxcursor-dev libxinerama-dev libxi-dev 
+      - name: Prepare
+        run: |
+            sudo apt-get -y install xvfb
+            sudo /usr/bin/Xvfb :0 -screen 0 1280x1024x24 &
       - name: Setup cache for dependencies
         id: cached-poetry-dependencies
         uses: actions/cache@v2

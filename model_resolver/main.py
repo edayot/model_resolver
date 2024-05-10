@@ -1,19 +1,13 @@
 from beet import Context, Model
 from beet.contrib.vanilla import Vanilla
 from rich import print
-from render import Render
+from model_resolver.render import Render
 from copy import deepcopy
 import json
 
 
-ALREADY_RENDERED = False
-
 
 def beet_default(ctx: Context):
-    global ALREADY_RENDERED
-    if ALREADY_RENDERED:
-        raise Exception("Already rendered, this is a known issue with PyOpenGL.")
-    ALREADY_RENDERED = True
     vanilla_models = ctx.inject(Vanilla).assets.models
 
     ctx.assets.models["debug:block/test_fence_2"] = vanilla_models["minecraft:item/acacia_fence"]

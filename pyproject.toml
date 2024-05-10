@@ -25,10 +25,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.beet]
 output="build"
 pipeline=[
-    "main"
-]
-require=[
-    "beet.contrib.model_merging"
+    "model_resolver"
 ]
 
 

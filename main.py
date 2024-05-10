@@ -2,6 +2,7 @@ from beet import Context, Model
 from beet.contrib.vanilla import Vanilla
 from rich import print
 from render import Render
+from renderv2 import render_model
 from copy import deepcopy
 import json
 
@@ -21,12 +22,16 @@ def beet_default(ctx: Context):
 
 
 
-    models = {}
+    # models = {}
+    # for model in ctx.assets.models:
+    #     resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
+    #     models[model] = resolved_model.data
+    
+    # Render(models, ctx, ctx.inject(Vanilla)).render()
+
     for model in ctx.assets.models:
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
-        models[model] = resolved_model.data
-    
-    Render(models, ctx, ctx.inject(Vanilla)).render()
+        render_model(resolved_model.data, ctx, ctx.inject(Vanilla))
         
 
 

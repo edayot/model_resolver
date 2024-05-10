@@ -13,6 +13,9 @@ from math import cos, sin, pi
 
 INTERACTIVE = False
 
+class RenderError(Exception):
+    pass
+
 
 class Render():
     '''
@@ -106,7 +109,7 @@ class Render():
             path_search = f"minecraft:{path}" if ":" not in path else path
             texture = vanilla.assets.textures.get(path_search, None)
             if texture is None:
-                raise FileNotFoundError(f"Texture {path} not found")
+                raise RenderError(f"Texture {path} not found")
         img : Image.Image = texture.image
         img = img.convert("RGBA")
         return img
@@ -202,7 +205,7 @@ class Render():
         # Check framebuffer status
         if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
             glBindFramebuffer(GL_FRAMEBUFFER, 0)
-            raise RuntimeError("Framebuffer is not complete")
+            raise RenderError("Framebuffer is not complete")
 
         # Render the scene
         glViewport(0, 0, self.size, self.size)
@@ -429,7 +432,7 @@ class Render():
             case 'west':
                 vertices_order = [3, 4, 7, 0]
             case _:
-                raise ValueError(f"Unknown face {face}")
+                raise RenderError(f"Unknown face {face}")
         
         match rotation:
             case 0:
@@ -441,7 +444,7 @@ class Render():
             case 270:
                 vertices_order = [vertices_order[3], vertices_order[0], vertices_order[1], vertices_order[2]]
             case _:
-                raise ValueError(f"Unknown rotation {rotation}")
+                raise RenderError(f"Unknown rotation {rotation}")
 
         glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[vertices_order[0]])
         glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[vertices_order[1]])

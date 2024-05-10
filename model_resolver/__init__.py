@@ -1,1 +1,1 @@
-from model_resolver.main import beet_default
+from model_resolver.main import *

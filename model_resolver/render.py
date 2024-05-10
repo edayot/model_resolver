@@ -207,8 +207,33 @@ class Render():
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         model = self.models[self.model_list[self.current_model_index]]
-        for element in model['elements']:
-            self.draw_element(element)
+        if "elements" in model:
+            for element in model['elements']:
+                self.draw_element(element)
+        elif "parent" in model and model["parent"] == "builtin/generated":
+            glEnable(GL_TEXTURE_2D)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            # in this case, it's a 2d sprite
+            # textures are always layer0, layer1, layer2, layer3 (if they exist)
+            max = 0
+            for texture_key in model["textures"]:
+                layer = int(texture_key[-1])
+                if layer > max:
+                    max = layer
+            for i in range(max + 1):
+                if f"layer{i}" in model["textures"]:
+                    texture = self.textures_bindings[f"layer{i}"]
+                    glBindTexture(GL_TEXTURE_2D, texture)
+                    glBegin(GL_QUADS)
+                    scale = 8
+                    glTexCoord2f(0, 0); glVertex3f(scale, scale, -i)
+                    glTexCoord2f(1, 0); glVertex3f(-scale, scale, -i)
+                    glTexCoord2f(1, 1); glVertex3f(-scale, -scale, -i)
+                    glTexCoord2f(0, 1); glVertex3f(scale, -scale, -i)
+                    glEnd()
+            glDisable(GL_TEXTURE_2D)
+            glDisable(GL_BLEND)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)

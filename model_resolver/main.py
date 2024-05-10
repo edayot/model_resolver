@@ -12,6 +12,7 @@ def beet_default(ctx: Context):
 
     ctx.assets.models["debug:block/test_fence_2"] = vanilla_models["minecraft:item/acacia_fence"]
     ctx.assets.models["debug:block/glass"] = vanilla_models["minecraft:item/glass"]
+    ctx.assets.models["debug:block/colored_glass"] = vanilla_models["minecraft:item/orange_stained_glass"]
 
 
 
@@ -51,7 +52,10 @@ def merge_model(child: Model, parent: Model) -> Model:
 def resolve_model(model : Model, vanilla_models : dict[str, Model]) -> Model:
     # Do something with the model
     if "parent" in model.data:
-        parent_model = vanilla_models[resolve_key(model.data["parent"])]
+        resolved_key = resolve_key(model.data["parent"])
+        if resolved_key == "minecraft:builtin/generated":
+            return model
+        parent_model = vanilla_models[resolved_key]
         parent_model = deepcopy(parent_model)
         parent_model_resolved = resolve_model(parent_model, vanilla_models)
 

@@ -70,3 +70,8 @@ jobs:
         with:
           name: datapack
           path: build/datapack/
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: resourcepack
+          path: build/resourcepack/

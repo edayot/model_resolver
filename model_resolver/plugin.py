@@ -7,7 +7,6 @@ from typing import TypedDict
 from PIL import Image
 
 
-
 def beet_default(ctx: Context):
     # resolve dynamic textures
     generated_textures = resove_atlases(ctx)
@@ -25,13 +24,12 @@ def beet_default(ctx: Context):
         if not "textures" in resolved_model.data:
             continue
         models[model] = resolved_model.data
-    
-    
+
     Render(models, ctx, ctx.inject(Vanilla)).render()
 
     clean_generated(ctx, generated_textures, generated_models)
-    
-        
+
+
 def render_vanilla(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
 
@@ -46,7 +44,6 @@ def render_vanilla(ctx: Context):
     return models
 
 
-
 class Atlas(TypedDict):
     type: str
     textures: list[str]
@@ -54,14 +51,15 @@ class Atlas(TypedDict):
     permutations: dict[str, str]
 
 
-def clean_generated(ctx: Context, generated_textures: set[str], generated_models: set[str]):
+def clean_generated(
+    ctx: Context, generated_textures: set[str], generated_models: set[str]
+):
     for texture in generated_textures:
         if texture in ctx.assets.textures:
             del ctx.assets.textures[texture]
     for model in generated_models:
         if model in ctx.assets.models:
             del ctx.assets.models[model]
-
 
 
 def resove_atlases(ctx: Context):
@@ -74,11 +72,17 @@ def resove_atlases(ctx: Context):
     return generated_textures
 
 
-def resolve_atlas(ctx: Context, vanilla: Vanilla, used_ctx: Context | Vanilla, atlas: str, generated_textures: set[str]):
+def resolve_atlas(
+    ctx: Context,
+    vanilla: Vanilla,
+    used_ctx: Context | Vanilla,
+    atlas: str,
+    generated_textures: set[str],
+):
     for source in used_ctx.assets.atlases[atlas].data["sources"]:
         if source["type"] != "paletted_permutations":
             continue
-        source : Atlas
+        source: Atlas
         for texture in source["textures"]:
             for variant, color_palette in source["permutations"].items():
                 new_texture_path = f"{texture}_{variant}"
@@ -89,26 +93,32 @@ def resolve_atlas(ctx: Context, vanilla: Vanilla, used_ctx: Context | Vanilla, a
                     palette = ctx.assets.textures[palette_key].image
                 elif palette_key in vanilla.assets.textures:
                     palette = vanilla.assets.textures[palette_key].image
-                
+
                 color_palette_key = resolve_key(color_palette)
                 if color_palette_key in ctx.assets.textures:
-                    color_palette = ctx.assets.textures[color_palette_key].image # color palette
+                    color_palette = ctx.assets.textures[
+                        color_palette_key
+                    ].image  # color palette
                 elif color_palette_key in vanilla.assets.textures:
-                    color_palette = vanilla.assets.textures[color_palette_key].image # color palette
-                
+                    color_palette = vanilla.assets.textures[
+                        color_palette_key
+                    ].image  # color palette
+
                 grayscale_key = resolve_key(texture)
                 if grayscale_key in ctx.assets.textures:
                     grayscale = ctx.assets.textures[grayscale_key].image
                 elif grayscale_key in vanilla.assets.textures:
                     grayscale = vanilla.assets.textures[grayscale_key].image
-                
+
                 new_texture = apply_palette(grayscale, palette, color_palette)
 
                 ctx.assets.textures[new_texture_path] = Texture(new_texture)
                 generated_textures.add(new_texture_path)
-                    
 
-def apply_palette(texture: Image.Image, palette: Image.Image, color_palette: Image.Image) -> Image.Image:
+
+def apply_palette(
+    texture: Image.Image, palette: Image.Image, color_palette: Image.Image
+) -> Image.Image:
     new_image = Image.new("RGBA", texture.size)
     texture = texture.convert("RGBA")
     palette = palette.convert("RGB")
@@ -132,9 +142,7 @@ def apply_palette(texture: Image.Image, palette: Image.Image, color_palette: Ima
             if not found:
                 new_image.putpixel((x, y), pixel)
     return new_image
-                        
-                
-                
+
 
 def resolve_key(key: str) -> str:
     return f"minecraft:{key}" if ":" not in key else key
@@ -142,7 +150,7 @@ def resolve_key(key: str) -> str:
 
 def merge_model(child: Model, parent: Model) -> Model:
     merged = parent.data.copy()
-    
+
     if "textures" in child.data:
         merged["textures"] = {} if "textures" not in merged else merged["textures"]
         merged["textures"].update(child.data["textures"])
@@ -160,7 +168,8 @@ def merge_model(child: Model, parent: Model) -> Model:
 
     return Model(merged)
 
-def resolve_model(model : Model, vanilla_models : dict[str, Model]) -> Model:
+
+def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
     # Do something with the model
     if "parent" in model.data:
         resolved_key = resolve_key(model.data["parent"])

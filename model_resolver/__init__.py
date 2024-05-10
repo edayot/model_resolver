@@ -1,1 +1,1 @@
-from model_resolver.main import *
+from model_resolver.plugin import *

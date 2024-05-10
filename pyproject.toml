@@ -8,13 +8,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-beet = "^0.104.1"
-click = "^8.1.7"
+beet = ">=0.104.1"
+click = ">=8.1.7"
 tqdm = "^4.66.2"
 rich = "^13.7.1"
 pyopengl = "^3.1.7"
 pyopengl-accelerate = "^3.1.7"
 pillow = "^10.3.0"
+black = "^24.4.2"
 
 
 [build-system]

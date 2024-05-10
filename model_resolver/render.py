@@ -13,13 +13,14 @@ from math import cos, sin, pi
 
 INTERACTIVE = False
 
+
 class RenderError(Exception):
     pass
 
 
-class Render():
-    '''
-    
+class Render:
+    """
+
     model = {"model:model":{
         'gui_light': 'side',
         'display': {
@@ -61,10 +62,11 @@ class Render():
     }}
 
 
-    '''
+    """
 
-
-    def __init__(self, models : dict[dict], ctx : Context, vanilla : Vanilla, size : int = 1024):
+    def __init__(
+        self, models: dict[dict], ctx: Context, vanilla: Vanilla, size: int = 1024
+    ):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
@@ -74,14 +76,22 @@ class Render():
         self.current_model_index = 0
         self.textures_bindings = {}
         self.textures_size = {}
-        self.textures = self.load_textures(self.models[self.model_list[self.current_model_index]]['textures'], self.ctx, self.vanilla)
+        self.textures = self.load_textures(
+            self.models[self.model_list[self.current_model_index]]["textures"],
+            self.ctx,
+            self.vanilla,
+        )
 
         self.translate = [0, 0, 0]
         self.rotate = [0, 0, 0]
-    
+
     def reload(self):
         self.textures_bindings = {}
-        self.textures = self.load_textures(self.models[self.model_list[self.current_model_index]]['textures'], self.ctx, self.vanilla)
+        self.textures = self.load_textures(
+            self.models[self.model_list[self.current_model_index]]["textures"],
+            self.ctx,
+            self.vanilla,
+        )
         self.generate_textures_bindings()
 
     def generate_textures_bindings(self):
@@ -92,38 +102,45 @@ class Render():
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
             img_data = value.tobytes("raw", "RGBA")
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, value.width, value.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                value.width,
+                value.height,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                img_data,
+            )
             self.textures_bindings[key] = tex_id
             self.textures_size[key] = value.size
 
-    def load_textures(self, textures : dict, ctx : Context, vanilla : Vanilla) -> dict[str, Image.Image]:
+    def load_textures(
+        self, textures: dict, ctx: Context, vanilla: Vanilla
+    ) -> dict[str, Image.Image]:
         res = {}
         for key in textures.keys():
             value = self.get_real_key(key, textures)
             res[key] = self.load_texture(value, ctx, vanilla)
         return res
-    
-    def load_texture(self, path : str, ctx : Context, vanilla : Vanilla) -> Image.Image:
+
+    def load_texture(self, path: str, ctx: Context, vanilla: Vanilla) -> Image.Image:
         texture = ctx.assets.textures.get(path, None)
         if texture is None:
             path_search = f"minecraft:{path}" if ":" not in path else path
             texture = vanilla.assets.textures.get(path_search, None)
             if texture is None:
                 raise RenderError(f"Texture {path} not found")
-        img : Image.Image = texture.image
+        img: Image.Image = texture.image
         img = img.convert("RGBA")
         return img
 
-    
-
-
-    def get_real_key(self, key : str, textures : dict):
+    def get_real_key(self, key: str, textures: dict):
         if textures[key][0] == "#":
             return self.get_real_key(textures[key][1:], textures)
         else:
             return textures[key]
-
-
 
     def render(self):
         glutInit()
@@ -145,10 +162,9 @@ class Render():
         glutReshapeFunc(self.reshape)
         glutIdleFunc(self.display)
         glutKeyboardFunc(self.keyboard)
-        
-        glutMainLoop()  
 
-    
+        glutMainLoop()
+
     def display(self):
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -168,12 +184,11 @@ class Render():
             else:
                 self.draw()
 
-            
             glutSwapBuffers()
         except BaseException as e:
             glutLeaveMainLoop()
-            raise e    
-    
+            raise e
+
     def reshape(self, width, height):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
@@ -194,13 +209,27 @@ class Render():
         depth_buffer = glGenRenderbuffers(1)
         glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer)
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.size, self.size)
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer)
+        glFramebufferRenderbuffer(
+            GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer
+        )
 
         # Create a texture to render into
         render_texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, render_texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.size, self.size, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_texture, 0)
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            self.size,
+            self.size,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            None,
+        )
+        glFramebufferTexture2D(
+            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_texture, 0
+        )
 
         # Check framebuffer status
         if glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE:
@@ -213,7 +242,7 @@ class Render():
 
         model = self.models[self.model_list[self.current_model_index]]
         if "elements" in model:
-            for element in model['elements']:
+            for element in model["elements"]:
                 self.draw_element(element)
         elif "parent" in model and model["parent"] == "builtin/generated":
             glLoadIdentity()
@@ -236,10 +265,14 @@ class Render():
                     glBindTexture(GL_TEXTURE_2D, texture)
                     glBegin(GL_QUADS)
                     scale = 8
-                    glTexCoord2f(0, 0); glVertex3f(scale, scale, -i)
-                    glTexCoord2f(1, 0); glVertex3f(-scale, scale, -i)
-                    glTexCoord2f(1, 1); glVertex3f(-scale, -scale, -i)
-                    glTexCoord2f(0, 1); glVertex3f(scale, -scale, -i)
+                    glTexCoord2f(0, 0)
+                    glVertex3f(scale, scale, -i)
+                    glTexCoord2f(1, 0)
+                    glVertex3f(-scale, scale, -i)
+                    glTexCoord2f(1, 1)
+                    glVertex3f(-scale, -scale, -i)
+                    glTexCoord2f(0, 1)
+                    glVertex3f(scale, -scale, -i)
                     glEnd()
             glDisable(GL_TEXTURE_2D)
             glDisable(GL_BLEND)
@@ -258,12 +291,11 @@ class Render():
 
         return img
 
-
     def draw(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         model = self.models[self.model_list[self.current_model_index]]
         if "elements" in model:
-            for element in model['elements']:
+            for element in model["elements"]:
                 self.draw_element(element)
         elif "parent" in model and model["parent"] == "builtin/generated":
             glLoadIdentity()
@@ -286,10 +318,14 @@ class Render():
                     glBindTexture(GL_TEXTURE_2D, texture)
                     glBegin(GL_QUADS)
                     scale = 8
-                    glTexCoord2f(0, 0); glVertex3f(scale, scale, -i)
-                    glTexCoord2f(1, 0); glVertex3f(-scale, scale, -i)
-                    glTexCoord2f(1, 1); glVertex3f(-scale, -scale, -i)
-                    glTexCoord2f(0, 1); glVertex3f(scale, -scale, -i)
+                    glTexCoord2f(0, 0)
+                    glVertex3f(scale, scale, -i)
+                    glTexCoord2f(1, 0)
+                    glVertex3f(-scale, scale, -i)
+                    glTexCoord2f(1, 1)
+                    glVertex3f(-scale, -scale, -i)
+                    glTexCoord2f(0, 1)
+                    glVertex3f(scale, -scale, -i)
                     glEnd()
             glDisable(GL_TEXTURE_2D)
             glDisable(GL_BLEND)
@@ -300,27 +336,29 @@ class Render():
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
         return img
 
-        
-
-    def draw_element(self, element : dict):
+    def draw_element(self, element: dict):
         glEnable(GL_TEXTURE_2D)
-        from_element= element['from']
-        to_element = element['to']
-        rotation = element.get('rotation', None)
+        from_element = element["from"]
+        to_element = element["to"]
+        rotation = element.get("rotation", None)
 
-        from_element_centered, to_element_centered = self.center_element(from_element, to_element)
+        from_element_centered, to_element_centered = self.center_element(
+            from_element, to_element
+        )
 
-        vertices = self.get_vertices(from_element_centered, to_element_centered, rotation)
+        vertices = self.get_vertices(
+            from_element_centered, to_element_centered, rotation
+        )
 
         # transform the vertices
-        gui = self.models[self.model_list[self.current_model_index]]['display']['gui']
-        scale = gui.get('scale', [1, 1, 1])
-        translation = gui.get('translation', [0, 0, 0])
-        rotation = gui.get('rotation', [0, 0, 0])
+        gui = self.models[self.model_list[self.current_model_index]]["display"]["gui"]
+        scale = gui.get("scale", [1, 1, 1])
+        translation = gui.get("translation", [0, 0, 0])
+        rotation = gui.get("rotation", [0, 0, 0])
 
         # reset the matrix
         glLoadIdentity()
-        glTranslatef(translation[0]/16, translation[1]/16, translation[2]/16)
+        glTranslatef(translation[0] / 16, translation[1] / 16, translation[2] / 16)
         glTranslatef(self.translate[0], self.translate[1], self.translate[2])
         glRotatef(-rotation[0], 1, 0, 0)
         glRotatef(rotation[1] + 180, 0, 1, 0)
@@ -330,30 +368,30 @@ class Render():
         glRotatef(self.rotate[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
 
-
-
         texture_used = [
-            element['faces'].get('down', None),
-            element['faces'].get('up', None),
-            element['faces'].get('north', None),
-            element['faces'].get('south', None),
-            element['faces'].get('west', None),
-            element['faces'].get('east', None)
+            element["faces"].get("down", None),
+            element["faces"].get("up", None),
+            element["faces"].get("north", None),
+            element["faces"].get("south", None),
+            element["faces"].get("west", None),
+            element["faces"].get("east", None),
         ]
-        texture_used = [x['texture'][1:] for x in texture_used if x is not None]
+        texture_used = [x["texture"][1:] for x in texture_used if x is not None]
         texture_used = list(set(texture_used))
-        
+
         for texture in texture_used:
             glBindTexture(GL_TEXTURE_2D, self.textures_bindings[texture])
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture
-            for face, data in element['faces'].items():
-                if data['texture'][1:] == texture:
+            for face, data in element["faces"].items():
+                if data["texture"][1:] == texture:
                     self.draw_face(face, data, vertices, from_element, to_element)
-            
+
         glDisable(GL_TEXTURE_2D)
 
-    def get_vertices(self, from_element : list, to_element : list, rotation : dict | None) -> list:
+    def get_vertices(
+        self, from_element: list, to_element: list, rotation: dict | None
+    ) -> list:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
         res = [
@@ -364,11 +402,11 @@ class Render():
             [x1, y2, z2],
             [x2, y2, z2],
             [x2, y1, z2],
-            [x1, y1, z2]
+            [x1, y1, z2],
         ]
         if rotation is None:
             return res
-        
+
         origin = rotation["origin"]
         axis = rotation["axis"]
         angle = rotation["angle"]
@@ -382,7 +420,9 @@ class Render():
             if axis == "x":
                 y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
             elif axis == "y":
-                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(-angle)
+                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
+                    -angle
+                )
             elif axis == "z":
                 x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
             x += origin[0]
@@ -391,68 +431,91 @@ class Render():
             point[0], point[1], point[2] = x, y, z
         return res
 
-
-
-    def center_element(self, from_element : list, to_element : list) -> tuple[list, list]:
+    def center_element(self, from_element: list, to_element: list) -> tuple[list, list]:
         # return from_element, to_element
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
-        
+
         center = (8, 8, 8)
 
         # compute the new from and to
         from_element = (x1 - center[0], y1 - center[1], z1 - center[2])
         to_element = (x2 - center[0], y2 - center[1], z2 - center[2])
         return from_element, to_element
-    
 
-    def draw_face(self, face: str, data: dict, vertices: tuple, from_element: list, to_element: list):
+    def draw_face(
+        self,
+        face: str,
+        data: dict,
+        vertices: tuple,
+        from_element: list,
+        to_element: list,
+    ):
         glBegin(GL_QUADS)
 
-        if 'uv' in data:
-            uv = data['uv']
+        if "uv" in data:
+            uv = data["uv"]
             uv = [x / 16 for x in uv]
-            rotation = data.get('rotation', 0)
+            rotation = data.get("rotation", 0)
 
         else:
             uv = self.get_uv(face, from_element, to_element)
             rotation = 0
 
         match face:
-            case 'down':
+            case "down":
                 vertices_order = [7, 6, 1, 0]
-            case 'up':
+            case "up":
                 vertices_order = [3, 2, 5, 4]
-            case 'south':
+            case "south":
                 vertices_order = [4, 5, 6, 7]
-            case 'north':
+            case "north":
                 vertices_order = [2, 3, 0, 1]
-            case 'east':
+            case "east":
                 vertices_order = [5, 2, 1, 6]
-            case 'west':
+            case "west":
                 vertices_order = [3, 4, 7, 0]
             case _:
                 raise RenderError(f"Unknown face {face}")
-        
+
         match rotation:
             case 0:
                 pass
             case 90:
-                vertices_order = [vertices_order[1], vertices_order[2], vertices_order[3], vertices_order[0]]
+                vertices_order = [
+                    vertices_order[1],
+                    vertices_order[2],
+                    vertices_order[3],
+                    vertices_order[0],
+                ]
             case 180:
-                vertices_order = [vertices_order[2], vertices_order[3], vertices_order[0], vertices_order[1]]
+                vertices_order = [
+                    vertices_order[2],
+                    vertices_order[3],
+                    vertices_order[0],
+                    vertices_order[1],
+                ]
             case 270:
-                vertices_order = [vertices_order[3], vertices_order[0], vertices_order[1], vertices_order[2]]
+                vertices_order = [
+                    vertices_order[3],
+                    vertices_order[0],
+                    vertices_order[1],
+                    vertices_order[2],
+                ]
             case _:
                 raise RenderError(f"Unknown rotation {rotation}")
 
-        glTexCoord2f(uv[0], uv[1]); glVertex3fv(vertices[vertices_order[0]])
-        glTexCoord2f(uv[2], uv[1]); glVertex3fv(vertices[vertices_order[1]])
-        glTexCoord2f(uv[2], uv[3]); glVertex3fv(vertices[vertices_order[2]])
-        glTexCoord2f(uv[0], uv[3]); glVertex3fv(vertices[vertices_order[3]])
+        glTexCoord2f(uv[0], uv[1])
+        glVertex3fv(vertices[vertices_order[0]])
+        glTexCoord2f(uv[2], uv[1])
+        glVertex3fv(vertices[vertices_order[1]])
+        glTexCoord2f(uv[2], uv[3])
+        glVertex3fv(vertices[vertices_order[2]])
+        glTexCoord2f(uv[0], uv[3])
+        glVertex3fv(vertices[vertices_order[3]])
         glEnd()
 
-    def get_uv(self, face : str, from_element : list, to_element : list):
+    def get_uv(self, face: str, from_element: list, to_element: list):
 
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -462,55 +525,50 @@ class Render():
         x1, y1, z1 = x1 / div, y1 / div, z1 / div
         x2, y2, z2 = x2 / div, y2 / div, z2 / div
 
-
         match face:
-            case 'east':
+            case "east":
                 return (z1, y1, z2, y2)
-            case 'west':
+            case "west":
                 return (z1, y1, z2, y2)
-            case 'up':
+            case "up":
                 return (x1, z1, x2, z2)
-            case 'down':
+            case "down":
                 return (x1, z1, x2, z2)
-            case 'south':
+            case "south":
                 return (x1, y1, x2, y2)
-            case 'north':
+            case "north":
                 return (x1, y1, x2, y2)
 
     def keyboard(self, key, x, y):
         # increment the current model index on each click
-        if key == b'\x1b':
+        if key == b"\x1b":
             glutLeaveMainLoop()
-        elif key == b'r':
+        elif key == b"r":
             self.current_model_index += 1
             self.current_model_index = self.current_model_index % len(self.models)
             self.reload()
             self.translate = [0, 0, 0]
             self.rotate = [0, 0, 0]
-        elif key == b'z':
+        elif key == b"z":
             self.translate[1] += 1
-        elif key == b's':
+        elif key == b"s":
             self.translate[1] -= 1
-        elif key == b'q':
+        elif key == b"q":
             self.translate[0] -= 1
-        elif key == b'd':
+        elif key == b"d":
             self.translate[0] += 1
         # use ijklm to rotate the model
-        elif key == b'i':
+        elif key == b"i":
             self.rotate[0] += 1
-        elif key == b'k':
+        elif key == b"k":
             self.rotate[0] -= 1
-        elif key == b'j':
+        elif key == b"j":
             self.rotate[1] += 1
-        elif key == b'l':
+        elif key == b"l":
             self.rotate[1] -= 1
-        elif key == b'u':
+        elif key == b"u":
             self.rotate[2] += 1
-        elif key == b'm':
+        elif key == b"m":
             self.rotate[2] -= 1
 
         glutPostRedisplay()
-
-    
-    
-

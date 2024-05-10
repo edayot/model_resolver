@@ -9,6 +9,7 @@ from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
 from math import cos, sin, pi
+from rich import print
 
 
 INTERACTIVE = False
@@ -376,7 +377,7 @@ class Render:
             element["faces"].get("west", None),
             element["faces"].get("east", None),
         ]
-        texture_used = [x["texture"][1:] for x in texture_used if x is not None]
+        texture_used = [x["texture"].lstrip("#") for x in texture_used if x is not None]
         texture_used = list(set(texture_used))
 
         for texture in texture_used:

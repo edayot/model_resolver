@@ -9,13 +9,6 @@ import json
 
 def beet_default(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
-
-    ctx.assets.models["debug:block/test_fence_2"] = vanilla_models["minecraft:item/acacia_fence"]
-    ctx.assets.models["debug:block/glass"] = vanilla_models["minecraft:item/glass"]
-    ctx.assets.models["debug:block/colored_glass"] = vanilla_models["minecraft:item/orange_stained_glass"]
-
-
-
     models = {}
     for model in ctx.assets.models:
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)

@@ -10,7 +10,14 @@ from PIL import Image
 
 def beet_default(ctx: Context):
     # resolve dynamic textures
-    resove_atlases(ctx)
+    generated_textures = resove_atlases(ctx)
+
+    load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
+    if load_vanilla:
+        generated_models = render_vanilla(ctx)
+    else:
+        generated_models = set()
+
     vanilla_models = ctx.inject(Vanilla).assets.models
     models = {}
     for model in ctx.assets.models:
@@ -19,7 +26,11 @@ def beet_default(ctx: Context):
             continue
         models[model] = resolved_model.data
     
+    
     Render(models, ctx, ctx.inject(Vanilla)).render()
+
+    clean_generated(ctx, generated_textures, generated_models)
+    
         
 def render_vanilla(ctx: Context):
     vanilla_models = ctx.inject(Vanilla).assets.models
@@ -32,6 +43,7 @@ def render_vanilla(ctx: Context):
         if model not in ctx.assets.models:
             ctx.assets.models[model] = vanilla_models[model]
             models.add(model)
+    return models
 
 
 
@@ -42,16 +54,27 @@ class Atlas(TypedDict):
     permutations: dict[str, str]
 
 
+def clean_generated(ctx: Context, generated_textures: set[str], generated_models: set[str]):
+    for texture in generated_textures:
+        if texture in ctx.assets.textures:
+            del ctx.assets.textures[texture]
+    for model in generated_models:
+        if model in ctx.assets.models:
+            del ctx.assets.models[model]
+
+
 
 def resove_atlases(ctx: Context):
+    generated_textures = set()
     vanilla = ctx.inject(Vanilla)
     for atlas in ctx.assets.atlases:
-        resolve_atlas(ctx, vanilla, ctx, atlas)
+        resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
     for atlas in vanilla.assets.atlases:
-        resolve_atlas(ctx, vanilla, vanilla, atlas)
+        resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
+    return generated_textures
 
 
-def resolve_atlas(ctx: Context, vanilla: Vanilla, used_ctx: Context | Vanilla, atlas: str):
+def resolve_atlas(ctx: Context, vanilla: Vanilla, used_ctx: Context | Vanilla, atlas: str, generated_textures: set[str]):
     for source in used_ctx.assets.atlases[atlas].data["sources"]:
         if source["type"] != "paletted_permutations":
             continue
@@ -82,6 +105,7 @@ def resolve_atlas(ctx: Context, vanilla: Vanilla, used_ctx: Context | Vanilla, a
                 new_texture = apply_palette(grayscale, palette, color_palette)
 
                 ctx.assets.textures[new_texture_path] = Texture(new_texture)
+                generated_textures.add(new_texture_path)
                     
 
 def apply_palette(texture: Image.Image, palette: Image.Image, color_palette: Image.Image) -> Image.Image:

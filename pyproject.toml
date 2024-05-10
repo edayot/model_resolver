@@ -25,11 +25,13 @@ build-backend = "poetry.core.masonry.api"
 [tool.beet]
 output="build"
 pipeline=[
-    "model_resolver.render_vanilla",
     "model_resolver"
 ]
 
 
 [tool.beet.resource_pack]
 load = "."
+
+[tool.beet.meta.model_resolver]
+load_vanilla = true
 

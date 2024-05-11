@@ -28,6 +28,7 @@ def beet_default(ctx: Context):
     models = {}
     for model in set(ctx.assets.models.keys()):
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
+        resolved_model = bake_model(resolved_model, ctx, ctx.inject(Vanilla), model)
         if not "textures" in resolved_model.data:
             continue
         if model in cache.json and use_cache:
@@ -225,3 +226,83 @@ def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
         return merge_model(model, parent_model_resolved)
     else:
         return model
+
+
+def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str):
+    if "parent" in model.data:
+        if model.data["parent"] in ["builtin/generated"]:
+            if "textures" in model.data:
+                textures = load_textures(model.data["textures"], ctx, vanilla)
+                max = 0
+                for key in textures.keys():
+                    if not key.startswith("layer"):
+                        continue
+                    index = int(key[5:])
+                    if index > max:
+                        max = index
+                img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                for i in range(max + 1):
+                    texture = textures.get(f"layer{i}")
+                    img.paste(texture, (0, 0), texture)
+                new_texture = f"debug:{model_name.replace(':', '/')}"
+                ctx.assets.textures[new_texture] = Texture(img)
+                return Model(generate_item_model(new_texture))
+    return model
+
+
+            
+
+def generate_item_model(texture: str):
+    res = {
+        "credit": "Made with Blockbench",
+        "textures": {
+            "particle": texture,
+            "layer": texture
+        },
+        "elements": [
+            {
+                "from": [0, 0, 0],
+                "to": [16, 16, 0],
+                "faces": {
+                    "north": {"uv": [0, 0, 16, 16], "texture": "#layer"}
+                }
+            }
+        ],
+        "display": {
+            "thirdperson_righthand": {
+                "rotation": [0, -90, 55],
+                "translation": [0, 4, 0.5],
+                "scale": [0.85, 0.85, 0.85]
+            },
+            "thirdperson_lefthand": {
+                "rotation": [0, 90, -55],
+                "translation": [0, 4, 0.5],
+                "scale": [0.85, 0.85, 0.85]
+            },
+            "firstperson_righthand": {
+                "rotation": [0, -90, 25],
+                "translation": [1.13, 3.2, 1.13],
+                "scale": [0.68, 0.68, 0.68]
+            },
+            "firstperson_lefthand": {
+                "rotation": [0, 90, -25],
+                "translation": [1.13, 3.2, 1.13],
+                "scale": [0.68, 0.68, 0.68]
+            },
+            "ground": {
+                "translation": [0, 2, 0],
+                "scale": [0.5, 0.5, 0.5]
+            },
+            "gui": {
+                "rotation": [180, 0, 180]
+            },
+            "head": {
+                "rotation": [0, 180, 0],
+                "translation": [0, 13, 7]
+            },
+            "fixed": {
+                "rotation": [0, 180, 0]
+            }
+        }
+    }
+    return res

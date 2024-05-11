@@ -267,55 +267,6 @@ class Render:
         if "elements" in model:
             for element in model["elements"]:
                 self.draw_element(element)
-        elif "parent" in model and model["parent"] == "builtin/generated":
-            glLoadIdentity()
-            glRotatef(0, 1, 0, 0)
-            glRotatef(0, 0, 1, 0)
-            glRotatef(0, 0, 0, 1)
-            glEnable(GL_TEXTURE_2D)
-            # in this case, it's a 2d sprite
-            # textures are always layer0, layer1, layer2, layer3 (if they exist)
-            max = 0
-            for texture_key in model["textures"]:
-                layer = int(texture_key[-1])
-                if layer > max:
-                    max = layer
-            # generate a new image with the textures
-            img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-            for i in range(max + 1):
-                if f"layer{i}" in model["textures"]:
-                    texture = self.textures[f"layer{i}"]
-                    img.paste(texture, (0, 0), texture)
-            img_data = img.tobytes("raw", "RGBA")
-            tex_id = glGenTextures(1)
-            glBindTexture(GL_TEXTURE_2D, tex_id)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexImage2D(
-                GL_TEXTURE_2D,
-                0,
-                GL_RGBA,
-                img.width,
-                img.height,
-                0,
-                GL_RGBA,
-                GL_UNSIGNED_BYTE,
-                img_data,
-            )
-            # draw the sprite
-            glBindTexture(GL_TEXTURE_2D, tex_id)
-            glBegin(GL_QUADS)
-            scale = 8
-            glTexCoord2f(0, 0)
-            glVertex3f(scale, scale, 0)
-            glTexCoord2f(1, 0)
-            glVertex3f(-scale, scale, 0)
-            glTexCoord2f(1, 1)
-            glVertex3f(-scale, -scale, 0)
-            glTexCoord2f(0, 1)
-            glVertex3f(scale, -scale, 0)
-            glEnd()
-            glDisable(GL_TEXTURE_2D)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)

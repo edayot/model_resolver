@@ -85,6 +85,7 @@ class Render:
             self.vanilla,
         )
         self.reset_camera()
+        self.frame_count = 0
     
     def reset_camera(self):
         self.translate = [0, 0, 0]
@@ -133,17 +134,14 @@ class Render:
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
-        # side light
+        # Enable lighting
+        
         glLightfv(GL_LIGHT0, GL_POSITION, [-0.7, -1.0, 0.7, 0.0])
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
         glLightfv(GL_LIGHT0, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
-
-        # front light
-        glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-        glLightfv(GL_LIGHT1, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
-
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
+
+
 
         
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
@@ -216,13 +214,15 @@ class Render:
 
 
     def draw_buffer(self):
+        
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
-        glEnable(GL_LIGHTING)
         glEnable(GL_DEPTH_TEST)
         # add ambient light
         glEnable(GL_COLOR_MATERIAL)
         
         glEnable(GL_NORMALIZE)
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
 
         # Create a framebuffer object (FBO) for off-screen rendering
         fbo = glGenFramebuffers(1)
@@ -264,14 +264,6 @@ class Render:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         model = self.models[self.model_list[self.current_model_index]]
-        gui_light = model.get("gui_light", "side")
-        
-        if gui_light == "side":
-            glEnable(GL_LIGHT0)
-        elif gui_light == "front":
-            glEnable(GL_LIGHT1)            
-        else:
-            raise RenderError("Unknown gui_light")
         if "elements" in model:
             for element in model["elements"]:
                 self.draw_element(element)
@@ -281,9 +273,6 @@ class Render:
             glRotatef(0, 0, 1, 0)
             glRotatef(0, 0, 0, 1)
             glEnable(GL_TEXTURE_2D)
-            glEnable(GL_BLEND)
-            glEnable(GL_ALPHA_TEST)
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             # in this case, it's a 2d sprite
             # textures are always layer0, layer1, layer2, layer3 (if they exist)
             max = 0
@@ -291,29 +280,42 @@ class Render:
                 layer = int(texture_key[-1])
                 if layer > max:
                     max = layer
+            # generate a new image with the textures
+            img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
             for i in range(max + 1):
                 if f"layer{i}" in model["textures"]:
-                    texture = self.textures_bindings[f"layer{i}"]
-                    glBindTexture(GL_TEXTURE_2D, texture)
-                    glBegin(GL_QUADS)
-                    scale = 8
-                    glTexCoord2f(0, 0)
-                    glVertex3f(scale, scale, -i)
-                    glTexCoord2f(1, 0)
-                    glVertex3f(-scale, scale, -i)
-                    glTexCoord2f(1, 1)
-                    glVertex3f(-scale, -scale, -i)
-                    glTexCoord2f(0, 1)
-                    glVertex3f(scale, -scale, -i)
-                    glEnd()
+                    texture = self.textures[f"layer{i}"]
+                    img.paste(texture, (0, 0), texture)
+            img_data = img.tobytes("raw", "RGBA")
+            tex_id = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, tex_id)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RGBA,
+                img.width,
+                img.height,
+                0,
+                GL_RGBA,
+                GL_UNSIGNED_BYTE,
+                img_data,
+            )
+            # draw the sprite
+            glBindTexture(GL_TEXTURE_2D, tex_id)
+            glBegin(GL_QUADS)
+            scale = 8
+            glTexCoord2f(0, 0)
+            glVertex3f(scale, scale, 0)
+            glTexCoord2f(1, 0)
+            glVertex3f(-scale, scale, 0)
+            glTexCoord2f(1, 1)
+            glVertex3f(-scale, -scale, 0)
+            glTexCoord2f(0, 1)
+            glVertex3f(scale, -scale, 0)
+            glEnd()
             glDisable(GL_TEXTURE_2D)
-            glDisable(GL_BLEND)
-        else:
-            raise RenderError("Unknown model type")
-        if gui_light == "side":
-            glDisable(GL_LIGHT0)
-        elif gui_light == "front":
-            glDisable(GL_LIGHT1)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -326,10 +328,11 @@ class Render:
         glDeleteTextures(1, [render_texture])
         glDeleteRenderbuffers(1, [depth_buffer])
         glDeleteFramebuffers(1, [fbo])
-        glDisable(GL_LIGHTING)
         glDisable(GL_COLOR_MATERIAL)
         glDisable(GL_NORMALIZE)
         glDisable(GL_DEPTH_TEST)
+        glDisable(GL_LIGHTING)
+        glDisable(GL_LIGHT0)
 
         return img
 

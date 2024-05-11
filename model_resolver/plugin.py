@@ -1,33 +1,73 @@
 from beet import Context, Model, Texture
 from beet.contrib.vanilla import Vanilla
+from beet.core.cache import Cache
 from rich import print
 from model_resolver.render import Render
 from copy import deepcopy
 from typing import TypedDict
 from PIL import Image
+import json
+from model_resolver.utils import load_textures
+import hashlib
 
 
 def beet_default(ctx: Context):
-    # resolve dynamic textures
-    generated_textures = resove_atlases(ctx)
-
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
+    use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
+
     if load_vanilla:
+        generated_textures = resove_atlases(ctx)
         generated_models = render_vanilla(ctx)
     else:
         generated_models = set()
+        generated_textures = set()
+    
+    cache = ctx.cache.get("model_resolver")
 
     vanilla_models = ctx.inject(Vanilla).assets.models
     models = {}
-    for model in ctx.assets.models:
+    for model in set(ctx.assets.models.keys()):
         resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
         if not "textures" in resolved_model.data:
             continue
+        if model in cache.json and use_cache:
+            img = handle_cache(cache, model, resolved_model, ctx, ctx.inject(Vanilla))
+            if img is not None:
+                # load cached image in ctx
+                model_name = model.split(":")
+                texture_path = f"{model_name[0]}:render/{model_name[1]}"
+                ctx.assets.textures[texture_path] = Texture(img)
+                continue
+
         models[model] = resolved_model.data
 
-    Render(models, ctx, ctx.inject(Vanilla)).render()
+    if len(models) > 0:
+        Render(models, ctx, ctx.inject(Vanilla)).render()
 
     clean_generated(ctx, generated_textures, generated_models)
+
+
+
+def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
+    model_hash = hashlib.sha256(str(resolved_model.data).encode()).hexdigest()
+    cached_model_hash = cache.json[model]["model"]
+    if model_hash != cached_model_hash:
+        return None
+    
+    textures = load_textures(resolved_model.data["textures"], ctx, vanilla)
+    textures_hash = {}
+    for key in resolved_model.data["textures"]:
+        textures_hash[key] = hashlib.sha256(textures[key].tobytes()).hexdigest()
+    cached_textures_hash = cache.json[model]["textures"]
+    if textures_hash != cached_textures_hash:
+        return None
+    
+    # load cached image
+    img_path = cache.get_path(f"{model}.png")
+    img = Image.open(img_path)
+    return img
+
+        
 
 
 def render_vanilla(ctx: Context):

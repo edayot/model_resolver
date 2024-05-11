@@ -10,6 +10,8 @@ from beet.contrib.vanilla import Vanilla
 
 from math import cos, sin, pi
 from rich import print
+import hashlib
+from model_resolver.utils import load_textures
 
 
 INTERACTIVE = False
@@ -77,7 +79,7 @@ class Render:
         self.current_model_index = 0
         self.textures_bindings = {}
         self.textures_size = {}
-        self.textures = self.load_textures(
+        self.textures = load_textures(
             self.models[self.model_list[self.current_model_index]]["textures"],
             self.ctx,
             self.vanilla,
@@ -88,7 +90,7 @@ class Render:
 
     def reload(self):
         self.textures_bindings = {}
-        self.textures = self.load_textures(
+        self.textures = load_textures(
             self.models[self.model_list[self.current_model_index]]["textures"],
             self.ctx,
             self.vanilla,
@@ -117,31 +119,6 @@ class Render:
             self.textures_bindings[key] = tex_id
             self.textures_size[key] = value.size
 
-    def load_textures(
-        self, textures: dict, ctx: Context, vanilla: Vanilla
-    ) -> dict[str, Image.Image]:
-        res = {}
-        for key in textures.keys():
-            value = self.get_real_key(key, textures)
-            res[key] = self.load_texture(value, ctx, vanilla)
-        return res
-
-    def load_texture(self, path: str, ctx: Context, vanilla: Vanilla) -> Image.Image:
-        texture = ctx.assets.textures.get(path, None)
-        if texture is None:
-            path_search = f"minecraft:{path}" if ":" not in path else path
-            texture = vanilla.assets.textures.get(path_search, None)
-            if texture is None:
-                raise RenderError(f"Texture {path} not found")
-        img: Image.Image = texture.image
-        img = img.convert("RGBA")
-        return img
-
-    def get_real_key(self, key: str, textures: dict):
-        if textures[key][0] == "#":
-            return self.get_real_key(textures[key][1:], textures)
-        else:
-            return textures[key]
 
     def render(self):
         glutInit()
@@ -165,6 +142,30 @@ class Render:
         glutKeyboardFunc(self.keyboard)
 
         glutMainLoop()
+    
+    def cache_in_ctx(self, img: Image.Image):
+        use_cache = self.ctx.meta.get("model_resolver", {}).get("use_cache", False)
+        if not use_cache:
+            return
+
+
+        current_model = self.model_list[self.current_model_index]
+        model_hash = hashlib.sha256(str(self.models[current_model]).encode()).hexdigest()
+
+        textures_hash = {}
+        for key, value in self.textures.items():
+            textures_hash[key] = hashlib.sha256(value.tobytes()).hexdigest()
+        
+        cache = self.ctx.cache.get("model_resolver")
+
+        cache.json[current_model] = {
+            "model": model_hash,
+            "textures": textures_hash,
+        }
+        save_path = cache.get_path(f"{current_model}.png")
+        with open(save_path, "wb") as f:
+            img.save(f, "PNG")
+
 
     def display(self):
         try:
@@ -175,6 +176,7 @@ class Render:
                 texture_path = f"{model_name[0]}:render/{model_name[1]}"
                 self.ctx.assets.textures[texture_path] = Texture(img)
 
+                self.cache_in_ctx(img)
                 self.current_model_index += 1
                 if self.current_model_index >= len(self.model_list):
                     glutLeaveMainLoop()
@@ -385,7 +387,7 @@ class Render:
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture
             for face, data in element["faces"].items():
-                if data["texture"][1:] == texture:
+                if data["texture"].lstrip("#") == texture:
                     self.draw_face(face, data, vertices, from_element, to_element)
 
         glDisable(GL_TEXTURE_2D)

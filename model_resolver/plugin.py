@@ -11,7 +11,6 @@ import json
 from model_resolver.utils import load_textures
 import numpy as np
 import hashlib
-from tqdm import tqdm
 
 
 def beet_default(ctx: Context):
@@ -19,12 +18,16 @@ def beet_default(ctx: Context):
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
 
     vanilla = ctx.inject(Vanilla)
+    generated_models = set()
+    generated_textures = set()
+
+    for atlas in ctx.assets.atlases:
+        resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
     if load_vanilla:
-        generated_textures = resove_atlases(ctx, vanilla)
-        generated_models = render_vanilla(ctx, vanilla)
-    else:
-        generated_models = set()
-        generated_textures = set()
+        for atlas in vanilla.assets.atlases:
+            resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
+        render_vanilla(ctx, vanilla, generated_models)
+        
     
     cache = ctx.cache.get("model_resolver")
 
@@ -76,10 +79,9 @@ def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
         
 
 
-def render_vanilla(ctx: Context, vanilla: Vanilla):
+def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str]):
     vanilla_models = vanilla.assets.models
 
-    models = set()
     for model in vanilla_models.match("minecraft:item/*"):
         if "parent" in vanilla_models[model].data:
             if vanilla_models[model].data["parent"] == "builtin/entity":
@@ -87,7 +89,6 @@ def render_vanilla(ctx: Context, vanilla: Vanilla):
         if model not in ctx.assets.models:
             ctx.assets.models[model] = vanilla_models[model]
             models.add(model)
-    return models
 
 
 class Atlas(TypedDict):
@@ -106,15 +107,6 @@ def clean_generated(
     for model in generated_models:
         if model in ctx.assets.models:
             del ctx.assets.models[model]
-
-
-def resove_atlases(ctx: Context, vanilla: Vanilla):
-    generated_textures = set()
-    for atlas in ctx.assets.atlases:
-        resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
-    for atlas in vanilla.assets.atlases:
-        resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
-    return generated_textures
 
 
 def resolve_atlas(

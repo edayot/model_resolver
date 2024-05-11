@@ -17,6 +17,7 @@ def load_textures(
         return res
 
 def load_texture(path: str, ctx: Context, vanilla: Vanilla) -> Image.Image:
+    path = f"minecraft:{path}" if ":" not in path else path
     if path in ctx.assets.textures:
         texture = ctx.assets.textures[path]
     elif path in vanilla.assets.textures:

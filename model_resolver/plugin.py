@@ -15,24 +15,24 @@ def beet_default(ctx: Context):
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
 
+    vanilla = ctx.inject(Vanilla)
     if load_vanilla:
-        generated_textures = resove_atlases(ctx)
-        generated_models = render_vanilla(ctx)
+        generated_textures = resove_atlases(ctx, vanilla)
+        generated_models = render_vanilla(ctx, vanilla)
     else:
         generated_models = set()
         generated_textures = set()
     
     cache = ctx.cache.get("model_resolver")
 
-    vanilla_models = ctx.inject(Vanilla).assets.models
     models = {}
     for model in set(ctx.assets.models.keys()):
-        resolved_model = resolve_model(ctx.assets.models[model], vanilla_models)
-        resolved_model = bake_model(resolved_model, ctx, ctx.inject(Vanilla), model)
+        resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models)
+        resolved_model = bake_model(resolved_model, ctx, vanilla, model, generated_textures)
         if not "textures" in resolved_model.data:
             continue
         if model in cache.json and use_cache:
-            img = handle_cache(cache, model, resolved_model, ctx, ctx.inject(Vanilla))
+            img = handle_cache(cache, model, resolved_model, ctx, vanilla)
             if img is not None:
                 # load cached image in ctx
                 model_name = model.split(":")
@@ -43,7 +43,7 @@ def beet_default(ctx: Context):
         models[model] = resolved_model.data
 
     if len(models) > 0:
-        Render(models, ctx, ctx.inject(Vanilla)).render()
+        Render(models, ctx, vanilla).render()
 
     clean_generated(ctx, generated_textures, generated_models)
 
@@ -71,8 +71,8 @@ def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
         
 
 
-def render_vanilla(ctx: Context):
-    vanilla_models = ctx.inject(Vanilla).assets.models
+def render_vanilla(ctx: Context, vanilla: Vanilla):
+    vanilla_models = vanilla.assets.models
 
     models = set()
     for model in vanilla_models.match("minecraft:item/*"):
@@ -103,9 +103,8 @@ def clean_generated(
             del ctx.assets.models[model]
 
 
-def resove_atlases(ctx: Context):
+def resove_atlases(ctx: Context, vanilla: Vanilla):
     generated_textures = set()
-    vanilla = ctx.inject(Vanilla)
     for atlas in ctx.assets.atlases:
         resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
     for atlas in vanilla.assets.atlases:
@@ -228,7 +227,7 @@ def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
         return model
 
 
-def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str):
+def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str, generated_textures: set[str]):
     if "parent" in model.data:
         if model.data["parent"] in ["builtin/generated"]:
             if "textures" in model.data:
@@ -246,6 +245,7 @@ def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str):
                     img.paste(texture, (0, 0), texture)
                 new_texture = f"debug:{model_name.replace(':', '/')}"
                 ctx.assets.textures[new_texture] = Texture(img)
+                generated_textures.add(new_texture)
                 return Model(generate_item_model(new_texture))
     return model
 

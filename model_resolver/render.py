@@ -133,6 +133,21 @@ class Render:
         glEnable(GL_DEPTH_TEST)
         glClearColor(0.0, 0.0, 0.0, 0.0)
         glEnable(GL_DEPTH_TEST)
+        
+        glEnable(GL_LIGHTING)
+        # add ambient light
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.2, 0.2, 0.2, 1.0])
+        glEnable(GL_LIGHT0)
+        glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 1.0, 0.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+        glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+        glEnable(GL_COLOR_MATERIAL)
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+        glEnable(GL_NORMALIZE)
+        glEnable(GL_BLEND)
+        
 
         self.reload()
 
@@ -201,6 +216,9 @@ class Render:
         glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
         glMatrixMode(GL_MODELVIEW)
 
+
+
+
     def draw_buffer(self):
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
 
@@ -253,7 +271,6 @@ class Render:
             glRotatef(self.rotate[1], 0, 1, 0)
             glRotatef(self.rotate[2], 0, 0, 1)
             glEnable(GL_TEXTURE_2D)
-            glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
             # in this case, it's a 2d sprite
             # textures are always layer0, layer1, layer2, layer3 (if they exist)
@@ -278,7 +295,6 @@ class Render:
                     glVertex3f(scale, -scale, -i)
                     glEnd()
             glDisable(GL_TEXTURE_2D)
-            glDisable(GL_BLEND)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -454,7 +470,7 @@ class Render:
         from_element: list,
         to_element: list,
     ):
-        glBegin(GL_QUADS)
+        
 
         if "uv" in data:
             uv = data["uv"]
@@ -507,16 +523,43 @@ class Render:
                 ]
             case _:
                 raise RenderError(f"Unknown rotation {rotation}")
+        
+        rotated_vertices = [vertices[i] for i in vertices_order]
+        texcoords = [
+            (0,1),
+            (2,1),
+            (2,3),
+            (0,3)
+        ]
+        triangulated_vertices = [
+            (rotated_vertices[0], rotated_vertices[1], rotated_vertices[2]),
+            (rotated_vertices[0], rotated_vertices[2], rotated_vertices[3])
+        ]
+        normals = []
+        for v0, v1, v2 in triangulated_vertices:
+            u = [v1[i] - v0[i] for i in range(3)]
+            v = [v2[i] - v0[i] for i in range(3)]
+            normal = [
+                u[1] * v[2] - u[2] * v[1],
+                u[2] * v[0] - u[0] * v[2],
+                u[0] * v[1] - u[1] * v[0]
+            ]
+            normals.append(normal)
 
-        glTexCoord2f(uv[0], uv[1])
-        glVertex3fv(vertices[vertices_order[0]])
-        glTexCoord2f(uv[2], uv[1])
-        glVertex3fv(vertices[vertices_order[1]])
-        glTexCoord2f(uv[2], uv[3])
-        glVertex3fv(vertices[vertices_order[2]])
-        glTexCoord2f(uv[0], uv[3])
-        glVertex3fv(vertices[vertices_order[3]])
+        # glUseProgram(self.program)
+        # print(glGetError())
+        # self.set_uniforms(self.program)
+        
+        glBegin(GL_QUADS)
+        for i, (v0, v1, v2) in enumerate(triangulated_vertices):
+            normal = normals[i]
+            glNormal3fv(normal)
+        
+        for i, (uv0,uv1) in enumerate(texcoords):
+            glTexCoord2f(uv[uv0], uv[uv1])
+            glVertex3fv(rotated_vertices[i])
         glEnd()
+        # glUseProgram(0)
 
     def get_uv(self, face: str, from_element: list, to_element: list):
 

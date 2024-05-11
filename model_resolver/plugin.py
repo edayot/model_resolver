@@ -1,6 +1,7 @@
 from beet import Context, Model, Texture
 from beet.contrib.vanilla import Vanilla
 from beet.core.cache import Cache
+from beet import NamespaceProxyDescriptor
 from rich import print
 from model_resolver.render import Render
 from copy import deepcopy
@@ -8,7 +9,9 @@ from typing import TypedDict
 from PIL import Image
 import json
 from model_resolver.utils import load_textures
+import numpy as np
 import hashlib
+from tqdm import tqdm
 
 
 def beet_default(ctx: Context):
@@ -41,6 +44,8 @@ def beet_default(ctx: Context):
                 continue
 
         models[model] = resolved_model.data
+    
+    models = handle_animations(models, ctx, vanilla, generated_textures)
 
     if len(models) > 0:
         Render(models, ctx, vanilla).render()
@@ -306,3 +311,87 @@ def generate_item_model(texture: str):
         }
     }
     return res
+
+
+def is_animated(texture_path: str, ctx: Context, vanilla: Vanilla):
+    if texture_path in ctx.assets.textures_mcmeta:
+        return True
+    if texture_path in vanilla.assets.textures_mcmeta:
+        return True
+    return False
+
+def get_thing(path, ctx_proxy: NamespaceProxyDescriptor, vanilla_proxy: NamespaceProxyDescriptor):
+    if path in ctx_proxy:
+        return ctx_proxy[path]
+    if path in vanilla_proxy:
+        return vanilla_proxy[path]
+    raise ValueError(f"Texture {path} not found in ctx or vanilla")
+    
+
+
+
+def handle_animations(models: dict[str, dict], ctx: Context, vanilla: Vanilla, generated_textures: set[str]):
+    for model in set(models.keys()):
+        if not "textures" in models[model]:
+            continue
+        textures = models[model]["textures"]
+        if not any([is_animated(textures[key], ctx, vanilla) for key in textures.keys()]):
+            continue
+        frametimes = []
+        animated_cache = {}
+        for key, value in textures.items():
+            if not is_animated(value, ctx, vanilla):
+                continue
+            texture = get_thing(value, ctx.assets.textures, vanilla.assets.textures)
+            texture_mcmeta = get_thing(value, ctx.assets.textures_mcmeta, vanilla.assets.textures_mcmeta)
+            frametime = texture_mcmeta.data["animation"].get("frametime", 1)
+
+            img = texture.image
+            # generate all possible frames for the animation
+            width = img.width
+            height = img.height
+            frames = []
+            for i in range(height // width):
+                cropped = img.crop((0, i * width, width, (i + 1) * width))
+                texture_temp_path = f"debug:{model.replace(':', '/')}/{key}/{i}"
+                ctx.assets.textures[texture_temp_path] = Texture(cropped)
+                generated_textures.add(texture_temp_path)
+                frames.append(texture_temp_path)
+            
+            frametimes.append(frametime * len(frames))
+
+            animated_cache[key] = {
+                "frames": frames,
+                "frametime": frametime
+            }
+        total_number_of_frames = np.lcm.reduce(frametimes)
+        L = []
+        for tick in range(total_number_of_frames):
+            current_textures = {}
+            for key, value in animated_cache.items():
+                frametime = value["frametime"] # the number of ticks a frame is displayed
+                frame_index = (tick // frametime) % len(value["frames"])
+                frame = value["frames"][frame_index]
+                current_textures[key] = frame
+            L.append(current_textures)
+        # group L into chunks where current_textures are the same
+        # for each chunk, create a new model with the textures
+
+        L_grouped = []
+        for i in range(len(L)):
+            if i == 0:
+                L_grouped.append([L[i], 1])
+                continue
+            if L[i] == L[i - 1]:
+                L_grouped[-1][1] += 1
+            else:
+                L_grouped.append([L[i], 1])
+        for i, (current_textures, count) in enumerate(L_grouped):
+            new_model_path = f"{model}/{i}_{count}"
+            new_model = deepcopy(models[model])
+            new_model["textures"].update(current_textures)
+            models[new_model_path] = new_model
+        del models[model]        
+        
+    return models
+        

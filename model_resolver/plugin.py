@@ -17,8 +17,11 @@ def beet_default(ctx: Context):
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
     render_size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
+    minecraft_version = ctx.meta.get("model_resolver", {}).get("minecraft_version", "latest")
 
     vanilla = ctx.inject(Vanilla)
+    if not minecraft_version == "latest":
+        vanilla = vanilla.releases[minecraft_version]
     generated_models = set()
     generated_textures = set()
 
@@ -34,7 +37,12 @@ def beet_default(ctx: Context):
     if not "models" in cache.json:
         cache.json["models"] = {}
         cache.json["render_size"] = render_size
+        cache.json["minecraft_version"] = minecraft_version
         use_cache = False
+    if not cache.json["render_size"] == render_size or not cache.json["minecraft_version"] == minecraft_version:
+        use_cache = False
+        cache.json["render_size"] = render_size
+        cache.json["minecraft_version"] = minecraft_version
 
     models = {}
     for model in set(ctx.assets.models.keys()):

@@ -19,6 +19,7 @@ def main(
     render_size: int = typer.Option(256, help="Size of the rendered image"),
     load_dir: Path = typer.Option(Path.cwd(), help="Directory where the resourcepack is located"),
     output_dir: Path = typer.Option(Path.cwd() / "build", help="Where you want to save the new resourcepack, with new textures corresponding to the model"), 
+    minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models")
 ):
     """
     A simple CLI to render models from a resourcepack, can also load vanilla models.
@@ -36,6 +37,7 @@ def main(
                 "load_vanilla": load_vanilla,
                 "use_cache": use_cache,
                 "render_size": render_size,
+                "minecraft_version": minecraft_version,
             },
         }
 

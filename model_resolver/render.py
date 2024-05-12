@@ -67,12 +67,12 @@ class Render:
     """
 
     def __init__(
-        self, models: dict[dict], ctx: Context, vanilla: Vanilla, size: int = 1024
+        self, models: dict[dict], ctx: Context, vanilla: Vanilla
     ):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
-        self.size = size
+        self.size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
 
         self.model_list = list(self.models.keys())
         self.model_list.sort()
@@ -171,7 +171,7 @@ class Render:
         
         cache = self.ctx.cache.get("model_resolver")
 
-        cache.json[current_model] = {
+        cache.json["models"][current_model] = {
             "model": model_hash,
             "textures": textures_hash,
         }

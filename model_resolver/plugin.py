@@ -16,6 +16,7 @@ import hashlib
 def beet_default(ctx: Context):
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
+    render_size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
 
     vanilla = ctx.inject(Vanilla)
     generated_models = set()
@@ -30,6 +31,10 @@ def beet_default(ctx: Context):
         
     
     cache = ctx.cache.get("model_resolver")
+    if not "models" in cache.json:
+        cache.json["models"] = {}
+        cache.json["render_size"] = render_size
+        use_cache = False
 
     models = {}
     for model in set(ctx.assets.models.keys()):
@@ -37,7 +42,7 @@ def beet_default(ctx: Context):
         resolved_model = bake_model(resolved_model, ctx, vanilla, model, generated_textures)
         if not "textures" in resolved_model.data:
             continue
-        if model in cache.json and use_cache:
+        if model in cache.json["models"] and use_cache:
             img = handle_cache(cache, model, resolved_model, ctx, vanilla)
             if img is not None:
                 # load cached image in ctx
@@ -51,6 +56,7 @@ def beet_default(ctx: Context):
     models = handle_animations(models, ctx, vanilla, generated_textures)
 
     if len(models) > 0:
+        print("render")
         Render(models, ctx, vanilla).render()
 
     clean_generated(ctx, generated_textures, generated_models)
@@ -59,7 +65,7 @@ def beet_default(ctx: Context):
 
 def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
     model_hash = hashlib.sha256(str(resolved_model.data).encode()).hexdigest()
-    cached_model_hash = cache.json[model]["model"]
+    cached_model_hash = cache.json["models"][model]["model"]
     if model_hash != cached_model_hash:
         return None
     
@@ -67,7 +73,7 @@ def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
     textures_hash = {}
     for key in resolved_model.data["textures"]:
         textures_hash[key] = hashlib.sha256(textures[key].tobytes()).hexdigest()
-    cached_textures_hash = cache.json[model]["textures"]
+    cached_textures_hash = cache.json["models"][model]["textures"]
     if textures_hash != cached_textures_hash:
         return None
     

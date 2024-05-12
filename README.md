@@ -61,13 +61,12 @@ This is particularly useful in CI, see [the github action](./.github/workflows/a
 
 ### Common installation
 
-Using poetry, add this to your pyproject.toml file:
+Install the plugin by running:
 
-```toml
-[tool.poetry.dependencies]
-# (other dependencies ...)
-model-resolver = {git = "https://github.com/edayot/model_resolver.git", branch = "master"}
+```bash
+pip install model-resolver
 ```
 
+Pypi: https://pypi.org/project/model-resolver/
 
 

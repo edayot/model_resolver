@@ -580,22 +580,6 @@ reference = "29b79e8"
 resolved_reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
 
 [[package]]
-name = "PyOpenGL-accelerate"
-version = "3.1.7"
-description = "Acceleration code for PyOpenGL"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/mcfletch/pyopengl.git"
-reference = "29b79e8"
-resolved_reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
-subdirectory = "accelerate"
-
-[[package]]
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
@@ -729,4 +713,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "5e00a86b7ab4babcbbb7318e0b5a15bcc77970d1b253e8232a152cc9670ffcc8"
+content-hash = "6b675ed539f156a69a16a17238535f0cb97b89643add1a6e6864ed331df61cf5"

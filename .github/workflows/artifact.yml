@@ -27,7 +27,6 @@ jobs:
         run: | 
           sudo apt-get update -qq -y
           export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get -yq --force-yes install libgl1-mesa-dev libgl1-mesa-glx mesa-common-dev libglapi-mesa libgbm1 libgl1-mesa-dri mesa-utils
       - name: Setup OpenGl
         run: | 
           sudo apt-get -y install \

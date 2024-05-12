@@ -5,6 +5,32 @@ A beet plugin that render all models in the beet project.
 
 ## Usage
 
+
+### Renders project
+
+Without any installlation, all vanilla models are rendered in this [repository](https://github.com/edayot/renders/tree/renders)
+
+### With the CLI
+
+This command will show all available options:
+
+```bash
+model_resolver --help
+```
+
+```bash
+# this will render the current resource pack models
+model_resolver 
+```
+
+```bash
+# this will render the current resource pack models and load vanilla models
+model_resolver --load-vanilla
+```
+
+
+
+### As a beet plugin
 Add the plugin to your pipeline:
 
 ```yaml

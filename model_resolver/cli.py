@@ -27,7 +27,10 @@ def main(
     config = ProjectConfig(
         pipeline=["model_resolver"],
         output=output_dir,
-        resource_pack={"load": load_dir},
+        resource_pack={
+            "load": load_dir,
+            "name": load_dir.name
+        },
         meta={
             "model_resolver": {
                 "load_vanilla": load_vanilla,

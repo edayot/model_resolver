@@ -3,6 +3,19 @@
 A beet plugin that render all models in the beet project.
 
 
+## Usage
+
+Add the plugin to your pipeline:
+
+```yaml
+# beet.yaml
+pipeline:
+    (other plugins ...)
+    - model_resolver
+```
+
+Renders are now available in your ctx !
+
 
 ## Installation
 
@@ -13,4 +26,17 @@ Install https://visualstudio.microsoft.com/fr/visual-cpp-build-tools/ and add C+
 ### Linux
 
 Generally, you don't need to install anything.
+
+
+### Common installation
+
+Using poetry, add this to your pyproject.toml file:
+
+```toml
+[tool.poetry.dependencies]
+# (other dependencies ...)
+model-resolver = {git = "https://github.com/edayot/model_resolver.git", branch = "master"}
+```
+
+
 

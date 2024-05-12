@@ -56,7 +56,6 @@ def beet_default(ctx: Context):
     models = handle_animations(models, ctx, vanilla, generated_textures)
 
     if len(models) > 0:
-        print("render")
         Render(models, ctx, vanilla).render()
 
     clean_generated(ctx, generated_textures, generated_models)

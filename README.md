@@ -10,8 +10,17 @@ Add the plugin to your pipeline:
 ```yaml
 # beet.yaml
 pipeline:
-    (other plugins ...)
-    - model_resolver
+  (...)  # other plugins you may have
+  - model_resolver
+
+# setup an output directory
+output: build
+
+meta:
+  model_resolver:
+    # load vanilla item models
+    load_vanilla: true
+
 ```
 
 Renders are now available in your ctx !

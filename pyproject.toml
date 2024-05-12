@@ -34,6 +34,7 @@ pipeline=[
 load = "."
 
 [tool.beet.meta.model_resolver]
-load_vanilla = true
-use_cache = false
+load_vanilla = false
+use_cache = true
+render_size = 256
 

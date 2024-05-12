@@ -1,0 +1,63 @@
+name: Make a release
+on:
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Overide the automatic version bump (default: automatic)'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.11
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.1
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Setup cache for dependencies
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{  runner.os }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION_BUMP: ${{ github.event.inputs.version_bump }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "action@github.com"
+
+          poetry version $VERSION_BUMP
+          poetry build
+
+          git add pyproject.toml
+          git commit -m "$(poetry version -s)"
+          git tag -a $(poetry version -s) -m "$(poetry version -s)"
+          git push origin $(poetry version -s)
+          git push origin main
+
+
+          poetry publish --username __token__ --password $PYPI_TOKEN
+
+          

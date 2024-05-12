@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - test-windows-compatibility
 
 jobs:
   release:

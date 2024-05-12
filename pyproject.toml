@@ -33,7 +33,7 @@ pipeline=[
 load = "."
 
 [tool.beet.meta.model_resolver]
-load_vanilla = false
-use_cache = true
+load_vanilla = true
+use_cache = false
 render_size = 256
 

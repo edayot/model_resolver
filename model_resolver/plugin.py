@@ -87,7 +87,7 @@ def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
 def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str]):
     vanilla_models = vanilla.assets.models
 
-    for model in vanilla_models.match("minecraft:item/*"):
+    for model in vanilla_models.match("minecraft:*"):
         if "parent" in vanilla_models[model].data:
             if vanilla_models[model].data["parent"] == "builtin/entity":
                 continue

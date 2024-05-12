@@ -303,7 +303,11 @@ class Render:
         )
 
         # transform the vertices
-        gui = self.models[self.model_list[self.current_model_index]]["display"]["gui"]
+        gui = self.models[self.model_list[self.current_model_index]].get("display", {}).get("gui", {
+            "rotation": [30, 225, 0],
+            "translation": [0, 0, 0],
+            "scale": [0.625, 0.625, 0.625],
+        })
         scale = gui.get("scale", [1, 1, 1])
         translation = gui.get("translation", [0, 0, 0])
         rotation = gui.get("rotation", [0, 0, 0])
@@ -332,6 +336,8 @@ class Render:
         texture_used = list(set(texture_used))
 
         for texture in texture_used:
+            if texture not in self.textures_bindings:
+                continue
             glBindTexture(GL_TEXTURE_2D, self.textures_bindings[texture])
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture

@@ -14,8 +14,6 @@ import hashlib
 from model_resolver.utils import load_textures
 
 
-
-
 class RenderError(Exception):
     pass
 
@@ -66,9 +64,7 @@ class Render:
 
     """
 
-    def __init__(
-        self, models: dict[dict], ctx: Context, vanilla: Vanilla
-    ):
+    def __init__(self, models: dict[dict], ctx: Context, vanilla: Vanilla):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
@@ -86,7 +82,7 @@ class Render:
         )
         self.reset_camera()
         self.frame_count = 0
-    
+
     def reset_camera(self):
         self.translate = [0, 0, 0]
         self.rotate = [0, 0, 0]
@@ -122,7 +118,6 @@ class Render:
             self.textures_bindings[key] = tex_id
             self.textures_size[key] = value.size
 
-
     def render(self):
         glutInit()
 
@@ -135,15 +130,12 @@ class Render:
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
-        
+
         glLightfv(GL_LIGHT0, GL_POSITION, [-0.7, -1.0, 0.7, 0.0])
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
         glLightfv(GL_LIGHT0, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
         glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
 
-
-
-        
         glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
@@ -155,20 +147,21 @@ class Render:
         glutIdleFunc(self.display)
 
         glutMainLoop()
-    
+
     def cache_in_ctx(self, img: Image.Image):
         use_cache = self.ctx.meta.get("model_resolver", {}).get("use_cache", False)
         if not use_cache:
             return
 
-
         current_model = self.model_list[self.current_model_index]
-        model_hash = hashlib.sha256(str(self.models[current_model]).encode()).hexdigest()
+        model_hash = hashlib.sha256(
+            str(self.models[current_model]).encode()
+        ).hexdigest()
 
         textures_hash = {}
         for key, value in self.textures.items():
             textures_hash[key] = hashlib.sha256(value.tobytes()).hexdigest()
-        
+
         cache = self.ctx.cache.get("model_resolver")
 
         cache.json["models"][current_model] = {
@@ -178,7 +171,6 @@ class Render:
         save_path = cache.get_path(f"{current_model}.png")
         with open(save_path, "wb") as f:
             img.save(f, "PNG")
-
 
     def display(self):
         try:
@@ -210,16 +202,13 @@ class Render:
         glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
         glMatrixMode(GL_MODELVIEW)
 
-
-
-
     def draw_buffer(self):
-        
+
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
         glEnable(GL_DEPTH_TEST)
         # add ambient light
         glEnable(GL_COLOR_MATERIAL)
-        
+
         glEnable(GL_NORMALIZE)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
@@ -287,7 +276,6 @@ class Render:
 
         return img
 
-
     def draw_element(self, element: dict):
         glEnable(GL_TEXTURE_2D)
         from_element = element["from"]
@@ -303,11 +291,18 @@ class Render:
         )
 
         # transform the vertices
-        gui = self.models[self.model_list[self.current_model_index]].get("display", {}).get("gui", {
-            "rotation": [30, 225, 0],
-            "translation": [0, 0, 0],
-            "scale": [0.625, 0.625, 0.625],
-        })
+        gui = (
+            self.models[self.model_list[self.current_model_index]]
+            .get("display", {})
+            .get(
+                "gui",
+                {
+                    "rotation": [30, 225, 0],
+                    "translation": [0, 0, 0],
+                    "scale": [0.625, 0.625, 0.625],
+                },
+            )
+        )
         scale = gui.get("scale", [1, 1, 1])
         translation = gui.get("translation", [0, 0, 0])
         rotation = gui.get("rotation", [0, 0, 0])
@@ -409,7 +404,6 @@ class Render:
         from_element: list,
         to_element: list,
     ):
-        
 
         if "uv" in data:
             uv = data["uv"]
@@ -462,17 +456,12 @@ class Render:
                 ]
             case _:
                 raise RenderError(f"Unknown rotation {rotation}")
-        
+
         rotated_vertices = [vertices[i] for i in vertices_order]
-        texcoords = [
-            (0,1),
-            (2,1),
-            (2,3),
-            (0,3)
-        ]
+        texcoords = [(0, 1), (2, 1), (2, 3), (0, 3)]
         triangulated_vertices = [
             (rotated_vertices[0], rotated_vertices[1], rotated_vertices[2]),
-            (rotated_vertices[0], rotated_vertices[2], rotated_vertices[3])
+            (rotated_vertices[0], rotated_vertices[2], rotated_vertices[3]),
         ]
         normals = []
         for v0, v1, v2 in triangulated_vertices:
@@ -481,20 +470,20 @@ class Render:
             normal = [
                 u[1] * v[2] - u[2] * v[1],
                 u[2] * v[0] - u[0] * v[2],
-                u[0] * v[1] - u[1] * v[0]
+                u[0] * v[1] - u[1] * v[0],
             ]
             normals.append(normal)
 
         # glUseProgram(self.program)
         # print(glGetError())
         # self.set_uniforms(self.program)
-        
+
         glBegin(GL_QUADS)
         for i, (v0, v1, v2) in enumerate(triangulated_vertices):
             normal = normals[i]
             glNormal3fv(normal)
-        
-        for i, (uv0,uv1) in enumerate(texcoords):
+
+        for i, (uv0, uv1) in enumerate(texcoords):
             glTexCoord2f(uv[uv0], uv[uv1])
             glVertex3fv(rotated_vertices[i])
         glEnd()

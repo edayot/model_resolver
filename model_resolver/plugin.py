@@ -17,7 +17,9 @@ def beet_default(ctx: Context):
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
     render_size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
-    minecraft_version = ctx.meta.get("model_resolver", {}).get("minecraft_version", "latest")
+    minecraft_version = ctx.meta.get("model_resolver", {}).get(
+        "minecraft_version", "latest"
+    )
 
     vanilla = ctx.inject(Vanilla)
     if not minecraft_version == "latest":
@@ -31,15 +33,17 @@ def beet_default(ctx: Context):
         for atlas in vanilla.assets.atlases:
             resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
         render_vanilla(ctx, vanilla, generated_models)
-        
-    
+
     cache = ctx.cache.get("model_resolver")
     if not "models" in cache.json:
         cache.json["models"] = {}
         cache.json["render_size"] = render_size
         cache.json["minecraft_version"] = minecraft_version
         use_cache = False
-    if not cache.json["render_size"] == render_size or not cache.json["minecraft_version"] == minecraft_version:
+    if (
+        not cache.json["render_size"] == render_size
+        or not cache.json["minecraft_version"] == minecraft_version
+    ):
         use_cache = False
         cache.json["render_size"] = render_size
         cache.json["minecraft_version"] = minecraft_version
@@ -47,7 +51,9 @@ def beet_default(ctx: Context):
     models = {}
     for model in set(ctx.assets.models.keys()):
         resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models)
-        resolved_model = bake_model(resolved_model, ctx, vanilla, model, generated_textures)
+        resolved_model = bake_model(
+            resolved_model, ctx, vanilla, model, generated_textures
+        )
         if not "textures" in resolved_model.data:
             continue
         if model in cache.json["models"] and use_cache:
@@ -60,7 +66,7 @@ def beet_default(ctx: Context):
                 continue
 
         models[model] = resolved_model.data
-    
+
     models = handle_animations(models, ctx, vanilla, generated_textures)
 
     if len(models) > 0:
@@ -69,13 +75,12 @@ def beet_default(ctx: Context):
     clean_generated(ctx, generated_textures, generated_models)
 
 
-
-def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
+def handle_cache(cache: Cache, model, resolved_model, ctx, vanilla):
     model_hash = hashlib.sha256(str(resolved_model.data).encode()).hexdigest()
     cached_model_hash = cache.json["models"][model]["model"]
     if model_hash != cached_model_hash:
         return None
-    
+
     textures = load_textures(resolved_model.data["textures"], ctx, vanilla)
     textures_hash = {}
     for key in resolved_model.data["textures"]:
@@ -83,13 +88,11 @@ def handle_cache(cache : Cache, model, resolved_model, ctx, vanilla):
     cached_textures_hash = cache.json["models"][model]["textures"]
     if textures_hash != cached_textures_hash:
         return None
-    
+
     # load cached image
     img_path = cache.get_path(f"{model}.png")
     img = Image.open(img_path)
     return img
-
-        
 
 
 def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str]):
@@ -237,7 +240,13 @@ def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
         return model
 
 
-def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str, generated_textures: set[str]):
+def bake_model(
+    model: Model,
+    ctx: Context,
+    vanilla: Vanilla,
+    model_name: str,
+    generated_textures: set[str],
+):
     if "parent" in model.data:
         if model.data["parent"] in ["builtin/generated"]:
             if "textures" in model.data:
@@ -260,60 +269,43 @@ def bake_model(model: Model, ctx: Context, vanilla: Vanilla, model_name: str, ge
     return model
 
 
-            
-
 def generate_item_model(texture: str):
     res = {
         "credit": "Made with Blockbench",
-        "textures": {
-            "particle": texture,
-            "layer": texture
-        },
+        "textures": {"particle": texture, "layer": texture},
         "elements": [
             {
                 "from": [0, 0, 0],
                 "to": [16, 16, 0],
-                "faces": {
-                    "north": {"uv": [0, 0, 16, 16], "texture": "#layer"}
-                }
+                "faces": {"north": {"uv": [0, 0, 16, 16], "texture": "#layer"}},
             }
         ],
         "display": {
             "thirdperson_righthand": {
                 "rotation": [0, -90, 55],
                 "translation": [0, 4, 0.5],
-                "scale": [0.85, 0.85, 0.85]
+                "scale": [0.85, 0.85, 0.85],
             },
             "thirdperson_lefthand": {
                 "rotation": [0, 90, -55],
                 "translation": [0, 4, 0.5],
-                "scale": [0.85, 0.85, 0.85]
+                "scale": [0.85, 0.85, 0.85],
             },
             "firstperson_righthand": {
                 "rotation": [0, -90, 25],
                 "translation": [1.13, 3.2, 1.13],
-                "scale": [0.68, 0.68, 0.68]
+                "scale": [0.68, 0.68, 0.68],
             },
             "firstperson_lefthand": {
                 "rotation": [0, 90, -25],
                 "translation": [1.13, 3.2, 1.13],
-                "scale": [0.68, 0.68, 0.68]
+                "scale": [0.68, 0.68, 0.68],
             },
-            "ground": {
-                "translation": [0, 2, 0],
-                "scale": [0.5, 0.5, 0.5]
-            },
-            "gui": {
-                "rotation": [180, 0, 180]
-            },
-            "head": {
-                "rotation": [0, 180, 0],
-                "translation": [0, 13, 7]
-            },
-            "fixed": {
-                "rotation": [0, 180, 0]
-            }
-        }
+            "ground": {"translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
+            "gui": {"rotation": [180, 0, 180]},
+            "head": {"rotation": [0, 180, 0], "translation": [0, 13, 7]},
+            "fixed": {"rotation": [0, 180, 0]},
+        },
     }
     return res
 
@@ -325,22 +317,30 @@ def is_animated(texture_path: str, ctx: Context, vanilla: Vanilla):
         return True
     return False
 
-def get_thing(path, ctx_proxy: NamespaceProxyDescriptor, vanilla_proxy: NamespaceProxyDescriptor):
+
+def get_thing(
+    path, ctx_proxy: NamespaceProxyDescriptor, vanilla_proxy: NamespaceProxyDescriptor
+):
     if path in ctx_proxy:
         return ctx_proxy[path]
     if path in vanilla_proxy:
         return vanilla_proxy[path]
     raise ValueError(f"Texture {path} not found in ctx or vanilla")
-    
 
 
-
-def handle_animations(models: dict[str, dict], ctx: Context, vanilla: Vanilla, generated_textures: set[str]):
+def handle_animations(
+    models: dict[str, dict],
+    ctx: Context,
+    vanilla: Vanilla,
+    generated_textures: set[str],
+):
     for model in set(models.keys()):
         if not "textures" in models[model]:
             continue
         textures = models[model]["textures"]
-        if not any([is_animated(textures[key], ctx, vanilla) for key in textures.keys()]):
+        if not any(
+            [is_animated(textures[key], ctx, vanilla) for key in textures.keys()]
+        ):
             continue
         frametimes = []
         animated_cache = {}
@@ -348,7 +348,9 @@ def handle_animations(models: dict[str, dict], ctx: Context, vanilla: Vanilla, g
             if not is_animated(value, ctx, vanilla):
                 continue
             texture = get_thing(value, ctx.assets.textures, vanilla.assets.textures)
-            texture_mcmeta = get_thing(value, ctx.assets.textures_mcmeta, vanilla.assets.textures_mcmeta)
+            texture_mcmeta = get_thing(
+                value, ctx.assets.textures_mcmeta, vanilla.assets.textures_mcmeta
+            )
             frametime = texture_mcmeta.data["animation"].get("frametime", 1)
 
             img = texture.image
@@ -362,19 +364,18 @@ def handle_animations(models: dict[str, dict], ctx: Context, vanilla: Vanilla, g
                 ctx.assets.textures[texture_temp_path] = Texture(cropped)
                 generated_textures.add(texture_temp_path)
                 frames.append(texture_temp_path)
-            
+
             frametimes.append(frametime * len(frames))
 
-            animated_cache[key] = {
-                "frames": frames,
-                "frametime": frametime
-            }
+            animated_cache[key] = {"frames": frames, "frametime": frametime}
         total_number_of_frames = np.lcm.reduce(frametimes)
         L = []
         for tick in range(total_number_of_frames):
             current_textures = {}
             for key, value in animated_cache.items():
-                frametime = value["frametime"] # the number of ticks a frame is displayed
+                frametime = value[
+                    "frametime"
+                ]  # the number of ticks a frame is displayed
                 frame_index = (tick // frametime) % len(value["frames"])
                 frame = value["frames"][frame_index]
                 current_textures[key] = frame
@@ -396,7 +397,6 @@ def handle_animations(models: dict[str, dict], ctx: Context, vanilla: Vanilla, g
             new_model = deepcopy(models[model])
             new_model["textures"].update(current_textures)
             models[new_model_path] = new_model
-        del models[model]        
-        
+        del models[model]
+
     return models
-        

@@ -1,3 +1,4 @@
+# fmt: off
 from OpenGL.GLUT import special
 
 

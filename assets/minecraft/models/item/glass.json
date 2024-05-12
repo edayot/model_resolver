@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/glass",
+  "overrides":[
+      {"predicate":{"custom_model_data":143},"model":"debug:block/all_white"}
+  ]
+}

@@ -130,15 +130,12 @@ class Render:
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
+        MINECRAFT_LIGHT_POWER = 0.6
+        MINECRAFT_AMBIENT_LIGHT = 0.4
 
-        glLightfv(GL_LIGHT0, GL_POSITION, [-0.7, -1.0, 0.7, 0.0])
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-        glLightfv(GL_LIGHT0, GL_SPECULAR, [0.0, 0.0, 0.0, 1.0])
-        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, [0.5, 0.5, 0.5, 1.0])
-
-        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+        glLightfv(GL_LIGHT0, GL_POSITION, [-0.2, -1.0, 0.7, 0.0])
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [MINECRAFT_AMBIENT_LIGHT] * 4)
+        glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [0.0, 0.0, 0.0])
 
         self.reload()
 

@@ -576,7 +576,7 @@ develop = false
 [package.source]
 type = "git"
 url = "https://github.com/mcfletch/pyopengl.git"
-reference = "29b79e8"
+reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
 resolved_reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
 
 [[package]]
@@ -741,4 +741,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ddf6e9551e2522bd5b04b9f33cddc48990906757c6d9f43439762da3bed26878"
+content-hash = "bbf0216f8f854555ebcfe42910d681c7b02d6a35a41b2aa1b16781fdb9d98f34"

@@ -9,12 +9,15 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 beet = ">=0.104.1"
-click = ">=8.1.7"
 tqdm = "^4.66.2"
 rich = "^13.7.1"
 pyopengl = {git = "https://github.com/mcfletch/pyopengl.git", rev = "29b79e8"}
 pillow = "^10.3.0"
 black = "^24.4.2"
+typer = "^0.12.3"
+
+[tool.poetry.scripts]
+model_resolver = "model_resolver.cli:app"
 
 
 [build-system]

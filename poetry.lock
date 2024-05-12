@@ -565,19 +565,15 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
-name = "PyOpenGL"
-version = "3.1.7"
+name = "pyopenglalwaysworking"
+version = "3.1.99"
 description = "Standard OpenGL bindings for Python"
 optional = false
 python-versions = "*"
-files = []
-develop = false
-
-[package.source]
-type = "git"
-url = "https://github.com/mcfletch/pyopengl.git"
-reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
-resolved_reference = "29b79e8966ba2930a5c44829b02dffc1ca600752"
+files = [
+    {file = "PyOpenGLAlwaysWorking-3.1.99-py3-none-any.whl", hash = "sha256:f2850bae2248fc14dfcb573c217d69ea4ac65176f96d88956d92a1edc248f465"},
+    {file = "pyopenglalwaysworking-3.1.99.tar.gz", hash = "sha256:fa1c08ac96e65832a3d2289c8012597b93051536d3976b8fb6f629803cb3a83e"},
+]
 
 [[package]]
 name = "pyyaml"
@@ -741,4 +737,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "bbf0216f8f854555ebcfe42910d681c7b02d6a35a41b2aa1b16781fdb9d98f34"
+content-hash = "72c631e782e0f656a188e8025552b7bf5b8a3a2ba44315e17e614b97a3ed3205"

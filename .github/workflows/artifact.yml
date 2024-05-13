@@ -1,9 +1,6 @@
 name: Artifacts at every commit
 on:
-  # push:
-  #   branches:
-  #     - master
-  #     - test-windows-compatibility
+  workflow_dispatch:
   
 
 jobs:

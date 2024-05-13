@@ -8,7 +8,7 @@ from PIL import Image
 from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 
-from math import cos, sin, pi
+from math import cos, sin, pi, sqrt
 from rich import print
 import hashlib
 from model_resolver.utils import load_textures
@@ -392,6 +392,9 @@ class Render:
         origin = [x - 8 for x in origin]
         axis = rotation["axis"]
         angle = rotation["angle"]
+        # rescale scale the axis vertices in
+        rescale = rotation.get("rescale", False)
+        
         angle = angle * pi / 180
 
         for point in res:
@@ -409,6 +412,17 @@ class Render:
             y += origin[1]
             z += origin[2]
             point[0], point[1], point[2] = x, y, z
+        
+        if rescale:
+            factor = sqrt(2)
+            for point in res:
+                if axis != "x":
+                    point[0] = point[0] * factor
+                if axis != "y":
+                    point[1] = point[1] * factor
+                if axis != "z":
+                    point[2] = point[2] * factor
+
         return res
 
     def center_element(self, from_element: list, to_element: list) -> tuple[list, list]:

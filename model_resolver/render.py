@@ -203,6 +203,15 @@ class Render:
 
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
         glEnable(GL_DEPTH_TEST)
+        glEnable(GL_CULL_FACE)
+        glCullFace(GL_FRONT)
+        # glFrontFace(GL_CCW)
+        # enable transparency
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+        # glBlendFunc(GL_ONE, GL_ZERO)
+    
+
         # add ambient light
         glEnable(GL_COLOR_MATERIAL)
 
@@ -370,9 +379,7 @@ class Render:
             if axis == "x":
                 y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
             elif axis == "y":
-                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
-                    -angle
-                )
+                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(-angle)
             elif axis == "z":
                 x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
             x += origin[0]

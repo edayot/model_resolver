@@ -130,8 +130,8 @@ class Render:
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
-        MINECRAFT_LIGHT_POWER = 0.8
-        MINECRAFT_AMBIENT_LIGHT = 0.2
+        MINECRAFT_LIGHT_POWER = 1.0
+        MINECRAFT_AMBIENT_LIGHT = 0.4
 
         glLightfv(GL_LIGHT0, GL_POSITION, [-0.5, -1.0, 0.35, 0.0])
         glLightfv(GL_LIGHT0, GL_AMBIENT, [MINECRAFT_AMBIENT_LIGHT] * 4)

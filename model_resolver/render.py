@@ -136,6 +136,9 @@ class Render:
         glLightfv(GL_LIGHT0, GL_POSITION, [-0.5, -1.0, 0.35, 0.0])
         glLightfv(GL_LIGHT0, GL_AMBIENT, [MINECRAFT_AMBIENT_LIGHT] * 4)
         glLightfv(GL_LIGHT0, GL_DIFFUSE, [MINECRAFT_LIGHT_POWER] * 4)
+
+        glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
         
         self.reload()
 
@@ -217,7 +220,6 @@ class Render:
 
         glEnable(GL_NORMALIZE)
         glEnable(GL_LIGHTING)
-        glEnable(GL_LIGHT0)
 
         # Create a framebuffer object (FBO) for off-screen rendering
         fbo = glGenFramebuffers(1)
@@ -259,6 +261,15 @@ class Render:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         model = self.models[self.model_list[self.current_model_index]]
+        gui_light = model.get("gui_light", "side")
+        if gui_light == "side":
+            activate_light = GL_LIGHT0
+            deactivate_light = GL_LIGHT1
+        else:
+            activate_light = GL_LIGHT1
+            deactivate_light = GL_LIGHT0
+        glEnable(activate_light)
+        glDisable(deactivate_light)
         if "elements" in model:
             for element in model["elements"]:
                 shade = element.get("shade", True)
@@ -266,10 +277,14 @@ class Render:
                 if not shade:
                     glDisable(GL_LIGHTING)
                     glDisable(GL_LIGHT0)
+                    glDisable(GL_LIGHT1)
                 self.draw_element(element)
                 if not shade:
                     glEnable(GL_LIGHTING)
-                    glEnable(GL_LIGHT0)
+                    glEnable(activate_light)
+        
+        glDisable(GL_LIGHT0)
+        glDisable(GL_LIGHT1)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -286,7 +301,6 @@ class Render:
         glDisable(GL_NORMALIZE)
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
-        glDisable(GL_LIGHT0)
 
         return img
 

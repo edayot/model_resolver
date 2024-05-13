@@ -265,49 +265,18 @@ def bake_model(
                 new_texture = f"debug:{model_name.replace(':', '/')}"
                 ctx.assets.textures[new_texture] = Texture(img)
                 generated_textures.add(new_texture)
-                return Model(generate_item_model(new_texture))
+                model.data["textures"] = {"layer": new_texture, "particle": new_texture}
+                model.data["elements"] = [
+                    {
+                        "from": [0, 0, 0],
+                        "to": [16, 16, 0],
+                        "faces": {"north": {"uv": [0, 0, 16, 16], "texture": "#layer"}},
+                    }
+                ]
+                model.data["display"] = model.data.get("display", {})
+                model.data["display"]["gui"] = {"rotation": [180, 0, 180]}
     return model
 
-
-def generate_item_model(texture: str):
-    res = {
-        "credit": "Made with Blockbench",
-        "textures": {"particle": texture, "layer": texture},
-        "elements": [
-            {
-                "from": [0, 0, 0],
-                "to": [16, 16, 0],
-                "faces": {"north": {"uv": [0, 0, 16, 16], "texture": "#layer"}},
-            }
-        ],
-        "display": {
-            "thirdperson_righthand": {
-                "rotation": [0, -90, 55],
-                "translation": [0, 4, 0.5],
-                "scale": [0.85, 0.85, 0.85],
-            },
-            "thirdperson_lefthand": {
-                "rotation": [0, 90, -55],
-                "translation": [0, 4, 0.5],
-                "scale": [0.85, 0.85, 0.85],
-            },
-            "firstperson_righthand": {
-                "rotation": [0, -90, 25],
-                "translation": [1.13, 3.2, 1.13],
-                "scale": [0.68, 0.68, 0.68],
-            },
-            "firstperson_lefthand": {
-                "rotation": [0, 90, -25],
-                "translation": [1.13, 3.2, 1.13],
-                "scale": [0.68, 0.68, 0.68],
-            },
-            "ground": {"translation": [0, 2, 0], "scale": [0.5, 0.5, 0.5]},
-            "gui": {"rotation": [180, 0, 180]},
-            "head": {"rotation": [0, 180, 0], "translation": [0, 13, 7]},
-            "fixed": {"rotation": [0, 180, 0]},
-        },
-    }
-    return res
 
 
 def is_animated(texture_path: str, ctx: Context, vanilla: Vanilla):

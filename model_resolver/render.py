@@ -261,7 +261,15 @@ class Render:
         model = self.models[self.model_list[self.current_model_index]]
         if "elements" in model:
             for element in model["elements"]:
+                shade = element.get("shade", True)
+                # if shade is False, disable lighting
+                if not shade:
+                    glDisable(GL_LIGHTING)
+                    glDisable(GL_LIGHT0)
                 self.draw_element(element)
+                if not shade:
+                    glEnable(GL_LIGHTING)
+                    glEnable(GL_LIGHT0)
 
         # Read the pixel data, including alpha channel
         pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
@@ -367,6 +375,7 @@ class Render:
             return res
 
         origin = rotation["origin"]
+        origin = [x - 8 for x in origin]
         axis = rotation["axis"]
         angle = rotation["angle"]
         angle = angle * pi / 180

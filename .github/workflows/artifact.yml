@@ -61,7 +61,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         run: |
 
-          COMMAND="poetry run beet -s data_pack.name=datapack -s resource_pack.name=resourcepack build"
+          COMMAND="poetry run beet -l DEBUG -s data_pack.name=datapack -s resource_pack.name=resourcepack build"
           /usr/bin/xvfb-run -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" $COMMAND
           
       - uses: actions/upload-artifact@v3

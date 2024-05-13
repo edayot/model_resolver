@@ -38,6 +38,6 @@ load = "."
 [tool.beet.meta.model_resolver]
 load_vanilla = true
 use_cache = false
-render_size = 1024
+render_size = 256
 minecraft_version = "latest"
 

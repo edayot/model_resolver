@@ -11,6 +11,9 @@ import json
 from model_resolver.utils import load_textures
 import numpy as np
 import hashlib
+import logging
+
+logger = logging.getLogger("model_resolver")
 
 
 def beet_default(ctx: Context):
@@ -48,6 +51,7 @@ def beet_default(ctx: Context):
         cache.json["render_size"] = render_size
         cache.json["minecraft_version"] = minecraft_version
 
+    logger.info(f"Resolving models...")
     models = {}
     for model in set(ctx.assets.models.keys()):
         resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models)
@@ -67,11 +71,14 @@ def beet_default(ctx: Context):
 
         models[model] = resolved_model.data
 
+    logger.info(f"Handling animations...")
     models = handle_animations(models, ctx, vanilla, generated_textures)
 
     if len(models) > 0:
+        logger.info(f"Rendering models...")
         Render(models, ctx, vanilla).render()
 
+    logger.info(f"Cleaning up...")
     clean_generated(ctx, generated_textures, generated_models)
 
 

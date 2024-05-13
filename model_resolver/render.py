@@ -12,6 +12,7 @@ from math import cos, sin, pi, sqrt
 from rich import print
 import hashlib
 from model_resolver.utils import load_textures
+import logging
 
 
 class RenderError(Exception):
@@ -82,6 +83,7 @@ class Render:
         )
         self.reset_camera()
         self.frame_count = 0
+        self.logger = logging.getLogger("model_resolver")
 
     def reset_camera(self):
         self.translate = [0, 0, 0]
@@ -185,6 +187,7 @@ class Render:
             if self.current_model_index >= len(self.model_list):
                 glutLeaveMainLoop()
                 return
+            self.logger.info(f"Rendering {self.model_list[self.current_model_index]}")
             self.reload()
             self.reset_camera()
 

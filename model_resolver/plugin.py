@@ -112,7 +112,7 @@ def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str], vanilla_fil
     vanilla_models = vanilla.assets.models
 
     for model in vanilla_models.match("minecraft:*"):
-        if vanilla_filter is not None:
+        if vanilla_filter is not None and len(vanilla_filter) > 0:
             if not model in vanilla_filter:
                 continue
         if "parent" in vanilla_models[model].data:

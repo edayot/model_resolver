@@ -19,7 +19,7 @@ def main(
     use_cache: bool = typer.Option(False, help="Use cache for model rendering)"),
     load_vanilla: bool = typer.Option(False, help="Load vanilla model"),
     resolve_vanilla_atlas: bool = typer.Option(False, help="Resolve vanilla model textures, True if load_vanilla is True"),
-    vanilla_filter: list[str] = typer.Option([], help="Filter vanilla models to load"),
+    vanilla_filter: list[str] = typer.Option(None, help="Filter vanilla models to load"),
     minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models")
     # fmt: on
 ):

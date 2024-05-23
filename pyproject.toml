@@ -40,4 +40,5 @@ load_vanilla = true
 use_cache = false
 render_size = 256
 minecraft_version = "latest"
+vanilla_filter = ["minecraft:item/stone"]
 

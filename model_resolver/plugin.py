@@ -18,11 +18,15 @@ logger = logging.getLogger("model_resolver")
 
 def beet_default(ctx: Context):
     load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
+    resolve_vanilla_atlas = ctx.meta.get("model_resolver", {}).get("resolve_vanilla_atlas", False)
+    if load_vanilla:
+        resolve_vanilla_atlas = True
     use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
     render_size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
     minecraft_version = ctx.meta.get("model_resolver", {}).get(
         "minecraft_version", "latest"
     )
+    vanilla_filter = ctx.meta.get("model_resolver", {}).get("vanilla_filter", None)
 
     vanilla = ctx.inject(Vanilla)
     if not minecraft_version == "latest":
@@ -32,10 +36,12 @@ def beet_default(ctx: Context):
 
     for atlas in ctx.assets.atlases:
         resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
-    if load_vanilla:
+    if resolve_vanilla_atlas:
         for atlas in vanilla.assets.atlases:
             resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
-        render_vanilla(ctx, vanilla, generated_models)
+    if load_vanilla:
+        render_vanilla(ctx, vanilla, generated_models, vanilla_filter)
+    
 
     cache = ctx.cache.get("model_resolver")
     if not "models" in cache.json:
@@ -102,10 +108,13 @@ def handle_cache(cache: Cache, model, resolved_model, ctx, vanilla):
     return img
 
 
-def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str]):
+def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str], vanilla_filter : list[str] | None):
     vanilla_models = vanilla.assets.models
 
     for model in vanilla_models.match("minecraft:*"):
+        if vanilla_filter is not None:
+            if not model in vanilla_filter:
+                continue
         if "parent" in vanilla_models[model].data:
             if vanilla_models[model].data["parent"] == "builtin/entity":
                 continue

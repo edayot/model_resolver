@@ -63,7 +63,7 @@ def beet_default(ctx: Context):
         if filter is not None and len(filter) > 0:
             if not model in filter:
                 continue
-        resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models)
+        resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models, ctx.assets.models)
         resolved_model = bake_model(
             resolved_model, ctx, vanilla, model, generated_textures
         )
@@ -238,7 +238,7 @@ def merge_model(child: Model, parent: Model) -> Model:
     return Model(merged)
 
 
-def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
+def resolve_model(model: Model, vanilla_models: dict[str, Model], ctx_models: dict[str, Model]) -> Model:
     # Do something with the model
     if "parent" in model.data:
         resolved_key = resolve_key(model.data["parent"])
@@ -247,9 +247,14 @@ def resolve_model(model: Model, vanilla_models: dict[str, Model]) -> Model:
             "minecraft:builtin/entity",
         ]:
             return model
-        parent_model = vanilla_models[resolved_key]
+        if resolved_key in vanilla_models:
+            parent_model = vanilla_models[resolved_key]
+        elif resolved_key in ctx_models:
+            parent_model = ctx_models[resolved_key]
+        else:
+            raise ValueError(f"Parent model {resolved_key} not found")
         parent_model = deepcopy(parent_model)
-        parent_model_resolved = resolve_model(parent_model, vanilla_models)
+        parent_model_resolved = resolve_model(parent_model, vanilla_models, ctx_models)
 
         return merge_model(model, parent_model_resolved)
     else:

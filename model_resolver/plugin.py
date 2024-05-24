@@ -27,6 +27,9 @@ def beet_default(ctx: Context):
         "minecraft_version", "latest"
     )
     filter = ctx.meta.get("model_resolver", {}).get("filter", None)
+    __special_filter__ = ctx.meta.get("model_resolver", {}).get("__special_filter__", None)
+    if __special_filter__ is not None:
+        filter = __special_filter__.keys()
 
     vanilla = ctx.inject(Vanilla)
     if not minecraft_version == "latest":

@@ -85,6 +85,8 @@ class Render:
         self.frame_count = 0
         self.logger = logging.getLogger("model_resolver")
 
+        self.__special_filter__ = ctx.meta.get("model_resolver", {}).get("__special_filter__", None)
+
     def reset_camera(self):
         self.translate = [0, 0, 0]
         self.rotate = [0, 0, 0]
@@ -178,9 +180,16 @@ class Render:
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
             img = self.draw_buffer()
-            model_name = self.model_list[self.current_model_index].split(":")
-            texture_path = f"{model_name[0]}:render/{model_name[1]}"
-            self.ctx.assets.textures[texture_path] = Texture(img)
+            if self.__special_filter__ is None:
+                model_name = self.model_list[self.current_model_index].split(":")
+                texture_path = f"{model_name[0]}:render/{model_name[1]}"
+                self.ctx.assets.textures[texture_path] = Texture(img)
+            else:
+                model_name = self.model_list[self.current_model_index]
+                path_save = self.__special_filter__.get(model_name, None)
+                if path_save is not None:
+                    with open(path_save, "wb") as f:
+                        img.save(f, "PNG")
 
             self.cache_in_ctx(img)
             self.current_model_index += 1

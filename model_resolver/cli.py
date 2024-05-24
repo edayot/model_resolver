@@ -20,13 +20,18 @@ def main(
     use_cache: bool = typer.Option(False, help="Use cache for model rendering)"),
     load_vanilla: bool = typer.Option(False, help="Load vanilla model"),
     resolve_vanilla_atlas: bool = typer.Option(False, help="Resolve vanilla model textures, True if load_vanilla is True"),
-    minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models")
+    minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models"),
+    __special_filter__ = typer.Option(None, hidden=True),  # hidden option
     # fmt: on
 ):
     """
     A simple CLI to render models from a resourcepack, can also load vanilla models.
     """
     t_start = perf_counter()
+    if isinstance(load_dir, str):
+        load_dir = Path(load_dir)
+    if isinstance(output_dir, str):
+        output_dir = Path(output_dir)
     config = ProjectConfig(
         pipeline=["model_resolver"],
         output=output_dir,
@@ -39,6 +44,7 @@ def main(
                 "minecraft_version": minecraft_version,
                 "resolve_vanilla_atlas": resolve_vanilla_atlas,
                 "filter": filter,
+                "__special_filter__": __special_filter__,
             },
         },
     )

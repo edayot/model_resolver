@@ -16,10 +16,10 @@ def main(
     render_size: int = typer.Option(256, help="Size of the rendered image"),
     load_dir: Path = typer.Option(Path.cwd(), help="Directory where the resourcepack is located"),
     output_dir: Path = typer.Option(Path.cwd() / "build", help="Where you want to save the new resourcepack, with new textures corresponding to the model"), 
+    filter: list[str] = typer.Option(None, help="Filter models in directory"),
     use_cache: bool = typer.Option(False, help="Use cache for model rendering)"),
     load_vanilla: bool = typer.Option(False, help="Load vanilla model"),
     resolve_vanilla_atlas: bool = typer.Option(False, help="Resolve vanilla model textures, True if load_vanilla is True"),
-    vanilla_filter: list[str] = typer.Option(None, help="Filter vanilla models to load"),
     minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models")
     # fmt: on
 ):
@@ -38,7 +38,7 @@ def main(
                 "render_size": render_size,
                 "minecraft_version": minecraft_version,
                 "resolve_vanilla_atlas": resolve_vanilla_atlas,
-                "vanilla_filter": vanilla_filter,
+                "filter": filter,
             },
         },
     )

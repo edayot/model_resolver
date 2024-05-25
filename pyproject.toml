@@ -40,5 +40,6 @@ load_vanilla = true
 use_cache = false
 render_size = 256
 minecraft_version = "latest"
-filter = ["minecraft:item/**"]
+filter = ["**"]
+save_namespace = "simpledrawer"
 

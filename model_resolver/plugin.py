@@ -62,10 +62,10 @@ def beet_default(ctx: Context):
 
     logger.info(f"Resolving models...")
     models = {}
-    for model in set(ctx.assets.models.keys()):
-        if filter is not None and len(filter) > 0:
-            if not model in filter:
-                continue
+    model_set = set(ctx.assets.models.keys())
+    if filter is not None and len(filter) > 0:
+        model_set = set(ctx.assets.models.match(*filter))
+    for model in model_set:
         resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models, ctx.assets.models)
         resolved_model = bake_model(
             resolved_model, ctx, vanilla, model, generated_textures

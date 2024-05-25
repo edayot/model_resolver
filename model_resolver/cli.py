@@ -3,6 +3,7 @@ from pathlib import Path
 from beet import run_beet, ProjectConfig
 from time import perf_counter
 from rich import print
+from typing import Annotated
 
 app = typer.Typer(
     rich_markup_mode="markdown",
@@ -13,15 +14,15 @@ app = typer.Typer(
 @app.command()
 def main(
     # fmt: off
-    render_size: int = typer.Option(256, help="Size of the rendered image"),
-    load_dir: Path = typer.Option(Path.cwd(), help="Directory where the resourcepack is located"),
-    output_dir: Path = typer.Option(Path.cwd() / "build", help="Where you want to save the new resourcepack, with new textures corresponding to the model"), 
-    filter: list[str] = typer.Option(None, help="Filter models in directory"),
-    use_cache: bool = typer.Option(False, help="Use cache for model rendering)"),
-    load_vanilla: bool = typer.Option(False, help="Load vanilla model"),
-    resolve_vanilla_atlas: bool = typer.Option(False, help="Resolve vanilla model textures, True if load_vanilla is True"),
-    minecraft_version: str = typer.Option("latest", help="Minecraft version to use for vanilla models"),
-    __special_filter__ = typer.Option(None, hidden=True),  # hidden option
+    render_size: Annotated[int, typer.Option(help="Size of the rendered image")] = 256,
+    load_dir:  Annotated[Path, typer.Option(help="Directory where the resourcepack is located")] = Path.cwd(),
+    output_dir: Annotated[Path, typer.Option(help="Where you want to save the new resourcepack, with new textures corresponding to the model")] = Path.cwd() / "build", 
+    filter: Annotated[list[str], typer.Option(help="Filter models in directory")] = None,
+    use_cache: Annotated[bool, typer.Option(help="Use cache for model rendering)")] = False,
+    load_vanilla: Annotated[bool, typer.Option(help="Load vanilla model")] = False,
+    resolve_vanilla_atlas: Annotated[bool, typer.Option(help="Resolve vanilla model textures, True if load_vanilla is True")] = False,
+    minecraft_version: Annotated[str, typer.Option(help="Minecraft version to use for vanilla models")] = "latest",
+    __special_filter__ = typer.Option(None, hidden=True),
     # fmt: on
 ):
     """

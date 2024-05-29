@@ -23,7 +23,8 @@ def main(
     load_vanilla: Annotated[bool, typer.Option(help="Load vanilla model")] = False,
     resolve_vanilla_atlas: Annotated[bool, typer.Option(help="Resolve vanilla model textures, True if load_vanilla is True")] = False,
     minecraft_version: Annotated[str, typer.Option(help="Minecraft version to use for vanilla models")] = "latest",
-    __special_filter__ = typer.Option(None, hidden=True),
+    __special_filter__ : str = typer.Option("", hidden=True),
+    __light__ : str = typer.Option("", hidden=True),
     # fmt: on
 ):
     """
@@ -34,6 +35,10 @@ def main(
         load_dir = Path(load_dir)
     if isinstance(output_dir, str):
         output_dir = Path(output_dir)
+    if isinstance(__special_filter__, str):
+        __special_filter__ = {}
+    if isinstance(__light__, str):
+        __light__ = {}
     config = ProjectConfig(
         pipeline=["model_resolver"],
         output=output_dir,
@@ -48,6 +53,7 @@ def main(
                 "filter": filter,
                 "__special_filter__": __special_filter__,
                 "save_namespace": save_namespace,
+                "__light__": __light__,
             },
         },
     )

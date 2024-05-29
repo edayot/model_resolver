@@ -28,7 +28,7 @@ def beet_default(ctx: Context):
     )
     filter = ctx.meta.get("model_resolver", {}).get("filter", None)
     __special_filter__ = ctx.meta.get("model_resolver", {}).get("__special_filter__", None)
-    if __special_filter__ is not None:
+    if __special_filter__ is not None and len(__special_filter__) > 0:
         filter = __special_filter__.keys()
 
     vanilla = ctx.inject(Vanilla)

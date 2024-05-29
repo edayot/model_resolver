@@ -181,7 +181,7 @@ class Render:
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
             img = self.draw_buffer()
-            if self.__special_filter__ is None:
+            if self.__special_filter__ is None or len(self.__special_filter__) == 0:
                 if self.save_namespace is None:
                     model_name = self.model_list[self.current_model_index].split(":")
                     texture_path = f"{model_name[0]}:render/{model_name[1]}"

@@ -23,8 +23,8 @@ def main(
     load_vanilla: Annotated[bool, typer.Option(help="Load vanilla model")] = False,
     resolve_vanilla_atlas: Annotated[bool, typer.Option(help="Resolve vanilla model textures, True if load_vanilla is True")] = False,
     minecraft_version: Annotated[str, typer.Option(help="Minecraft version to use for vanilla models")] = "latest",
-    __special_filter__ : str = typer.Option("", hidden=True),
-    __light__ : str = typer.Option("", hidden=True),
+    __special_filter__ : Annotated[str, typer.Option(hidden=True)] = "",
+    __light__ : Annotated[str, typer.Option(hidden=True)] = "",
     # fmt: on
 ):
     """

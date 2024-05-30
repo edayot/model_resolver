@@ -229,8 +229,8 @@ def merge_model(child: Model, parent: Model) -> Model:
     if "elements" in child.data:
         merged["elements"] = child.data["elements"]
     if "display" in child.data:
+        merged["display"] = merged.get("display", {})
         for key in child.data["display"].keys():
-            merged["display"] = merged.get("display", {})
             merged["display"][key] = child.data["display"][key]
     if "ambientocclusion" in child.data:
         merged["ambientocclusion"] = child.data["ambientocclusion"]

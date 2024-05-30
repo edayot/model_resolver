@@ -224,12 +224,13 @@ def merge_model(child: Model, parent: Model) -> Model:
     merged = parent.data.copy()
 
     if "textures" in child.data:
-        merged["textures"] = {} if "textures" not in merged else merged["textures"]
+        merged["textures"] = merged.get("textures", {})
         merged["textures"].update(child.data["textures"])
     if "elements" in child.data:
         merged["elements"] = child.data["elements"]
     if "display" in child.data:
         for key in child.data["display"].keys():
+            merged["display"] = merged.get("display", {})
             merged["display"][key] = child.data["display"][key]
     if "ambientocclusion" in child.data:
         merged["ambientocclusion"] = child.data["ambientocclusion"]

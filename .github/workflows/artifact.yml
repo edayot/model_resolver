@@ -1,6 +1,9 @@
 name: Artifacts at every commit
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
   
 
 jobs:

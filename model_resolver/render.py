@@ -303,7 +303,8 @@ class Render:
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
 
         # Release resources
-        glDeleteTextures(1, [render_texture])
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glDeleteTextures([render_texture])
         glDeleteRenderbuffers(1, [depth_buffer])
         glDeleteFramebuffers(1, [fbo])
         glDisable(GL_COLOR_MATERIAL)

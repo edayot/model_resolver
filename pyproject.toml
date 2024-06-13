@@ -14,7 +14,7 @@ rich = "^13.7.1"
 pillow = "^10.3.0"
 black = "^24.4.2"
 typer = "^0.12.3"
-pyopenglalwaysworking = "^3.1.99"
+pyopengl = "3.1.0"
 
 [tool.poetry.scripts]
 model_resolver = "model_resolver.cli:app"

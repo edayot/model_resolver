@@ -565,14 +565,14 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
-name = "pyopenglalwaysworking"
-version = "3.1.99"
+name = "pyopengl"
+version = "3.1.0"
 description = "Standard OpenGL bindings for Python"
 optional = false
 python-versions = "*"
 files = [
-    {file = "PyOpenGLAlwaysWorking-3.1.99-py3-none-any.whl", hash = "sha256:f2850bae2248fc14dfcb573c217d69ea4ac65176f96d88956d92a1edc248f465"},
-    {file = "pyopenglalwaysworking-3.1.99.tar.gz", hash = "sha256:fa1c08ac96e65832a3d2289c8012597b93051536d3976b8fb6f629803cb3a83e"},
+    {file = "PyOpenGL-3.1.0.tar.gz", hash = "sha256:9b47c5c3a094fa518ca88aeed35ae75834d53e4285512c61879f67a48c94ddaf"},
+    {file = "PyOpenGL-3.1.0.zip", hash = "sha256:efa4e39a49b906ccbe66758812ca81ced13a6f26931ab2ba2dba2750c016c0d0"},
 ]
 
 [[package]]
@@ -737,4 +737,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "72c631e782e0f656a188e8025552b7bf5b8a3a2ba44315e17e614b97a3ed3205"
+content-hash = "d5bb67984a38c62c0bbde6b8d026d3258578ba67019ee02bc1012cb08869e50e"

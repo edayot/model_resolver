@@ -2,13 +2,11 @@ from beet import Context, Model, Texture
 from beet.contrib.vanilla import Vanilla
 from beet.core.cache import Cache
 from beet import NamespaceProxyDescriptor
-from rich import print
 from model_resolver.render import Render
 from copy import deepcopy
 from typing import TypedDict
 from PIL import Image
-import json
-from model_resolver.utils import load_textures
+from model_resolver.utils import load_textures, ModelResolverOptions
 import numpy as np
 import hashlib
 import logging
@@ -17,48 +15,42 @@ logger = logging.getLogger("model_resolver")
 
 
 def beet_default(ctx: Context):
-    load_vanilla = ctx.meta.get("model_resolver", {}).get("load_vanilla", False)
-    resolve_vanilla_atlas = ctx.meta.get("model_resolver", {}).get("resolve_vanilla_atlas", False)
-    if load_vanilla:
-        resolve_vanilla_atlas = True
-    use_cache = ctx.meta.get("model_resolver", {}).get("use_cache", False)
-    render_size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
-    minecraft_version = ctx.meta.get("model_resolver", {}).get(
-        "minecraft_version", "latest"
-    )
-    filter = ctx.meta.get("model_resolver", {}).get("filter", None)
-    __special_filter__ = ctx.meta.get("model_resolver", {}).get("__special_filter__", None)
+    opts = ctx.validate("model_resolver", ModelResolverOptions)
+
+    filter = opts.filter
+    __special_filter__ = opts.__special_filter__
     if __special_filter__ is not None and len(__special_filter__) > 0:
         filter = __special_filter__.keys()
 
     vanilla = ctx.inject(Vanilla)
-    if not minecraft_version == "latest":
-        vanilla = vanilla.releases[minecraft_version]
+    if not opts.minecraft_version == "latest":
+        vanilla = vanilla.releases[opts.minecraft_version]
     generated_models = set()
     generated_textures = set()
 
     for atlas in ctx.assets.atlases:
         resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
-    if resolve_vanilla_atlas:
+    if opts.resolve_vanilla_atlas or opts.load_vanilla:
         for atlas in vanilla.assets.atlases:
             resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
-    if load_vanilla:
+    if opts.load_vanilla:
         render_vanilla(ctx, vanilla, generated_models)
     
 
+    use_cache = opts.use_cache
     cache = ctx.cache.get("model_resolver")
     if not "models" in cache.json:
         cache.json["models"] = {}
-        cache.json["render_size"] = render_size
-        cache.json["minecraft_version"] = minecraft_version
+        cache.json["render_size"] = opts.render_size
+        cache.json["minecraft_version"] = opts.minecraft_version
         use_cache = False
     if (
-        not cache.json["render_size"] == render_size
-        or not cache.json["minecraft_version"] == minecraft_version
+        not cache.json["render_size"] == opts.render_size
+        or not cache.json["minecraft_version"] == opts.minecraft_version
     ):
         use_cache = False
-        cache.json["render_size"] = render_size
-        cache.json["minecraft_version"] = minecraft_version
+        cache.json["render_size"] = opts.render_size
+        cache.json["minecraft_version"] = opts.minecraft_version
 
     logger.info(f"Resolving models...")
     models = {}
@@ -88,7 +80,7 @@ def beet_default(ctx: Context):
 
     if len(models) > 0:
         logger.info(f"Rendering models...")
-        Render(models, ctx, vanilla).render()
+        Render(models, ctx, vanilla, opts).render()
 
     logger.info(f"Cleaning up...")
     clean_generated(ctx, generated_textures, generated_models)

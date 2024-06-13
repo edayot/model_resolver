@@ -11,9 +11,8 @@ from beet.contrib.vanilla import Vanilla
 from math import cos, sin, pi, sqrt
 from rich import print
 import hashlib
-from model_resolver.utils import load_textures
+from model_resolver.utils import load_textures, ModelResolverOptions
 import logging
-
 
 class RenderError(Exception):
     pass
@@ -65,11 +64,11 @@ class Render:
 
     """
 
-    def __init__(self, models: dict[dict], ctx: Context, vanilla: Vanilla):
+    def __init__(self, models: dict[dict], ctx: Context, vanilla: Vanilla, opts: ModelResolverOptions):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
-        self.size = ctx.meta.get("model_resolver", {}).get("render_size", 1024)
+        self.opts = opts
 
         self.model_list = list(self.models.keys())
         self.model_list.sort()
@@ -84,9 +83,6 @@ class Render:
         self.reset_camera()
         self.frame_count = 0
         self.logger = logging.getLogger("model_resolver")
-
-        self.__special_filter__ = ctx.meta.get("model_resolver", {}).get("__special_filter__", None)
-        self.save_namespace = ctx.meta.get("model_resolver", {}).get("save_namespace", None)
 
     def reset_camera(self):
         self.translate = [0, 0, 0]
@@ -127,7 +123,7 @@ class Render:
         glutInit()
 
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
-        glutInitWindowSize(self.size, self.size)
+        glutInitWindowSize(self.opts.render_size, self.opts.render_size)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
         glutHideWindow()
@@ -135,12 +131,9 @@ class Render:
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
-        MINECRAFT_LIGHT_POWER = self.ctx.meta.get("model_resolver", {}).get("__light__", {}).get("minecraft_light_power", 0.6727302277118515)
-        MINECRAFT_AMBIENT_LIGHT = self.ctx.meta.get("model_resolver", {}).get("__light__", {}).get("minecraft_ambient_light", 0.197261163686041)
-
-        glLightfv(GL_LIGHT0, GL_POSITION, self.ctx.meta.get("model_resolver", {}).get("__light__", {}).get("minecraft_light_position", [-0.42341569107908505, -0.6577205642540358, 0.4158725999762756, 0.0]))
-        glLightfv(GL_LIGHT0, GL_AMBIENT, [MINECRAFT_AMBIENT_LIGHT] * 4)
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [MINECRAFT_LIGHT_POWER] * 4)
+        glLightfv(GL_LIGHT0, GL_POSITION, self.opts.__light__.minecraft_light_position)
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [self.opts.__light__.minecraft_ambient_light] * 4)
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [self.opts.__light__.minecraft_light_power] * 4)
 
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
@@ -154,8 +147,7 @@ class Render:
         glutMainLoop()
 
     def cache_in_ctx(self, img: Image.Image):
-        use_cache = self.ctx.meta.get("model_resolver", {}).get("use_cache", False)
-        if not use_cache:
+        if not self.opts.use_cache:
             return
 
         current_model = self.model_list[self.current_model_index]
@@ -181,17 +173,17 @@ class Render:
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
             img = self.draw_buffer()
-            if self.__special_filter__ is None or len(self.__special_filter__) == 0:
-                if self.save_namespace is None:
+            if self.opts.__special_filter__ is None or len(self.opts.__special_filter__) == 0:
+                if self.opts.save_namespace is None:
                     model_name = self.model_list[self.current_model_index].split(":")
                     texture_path = f"{model_name[0]}:render/{model_name[1]}"
                 else:
                     model_name = self.model_list[self.current_model_index]
-                    texture_path = f"{self.save_namespace}:render/{model_name.replace(':', '/')}"
+                    texture_path = f"{self.opts.save_namespace}:render/{model_name.replace(':', '/')}"
                 self.ctx.assets.textures[texture_path] = Texture(img)
             else:
                 model_name = self.model_list[self.current_model_index]
-                path_save = self.__special_filter__.get(model_name, None)
+                path_save = self.opts.__special_filter__.get(model_name, None)
                 if path_save is not None:
                     with open(path_save, "wb") as f:
                         img.save(f, "PNG")
@@ -216,7 +208,7 @@ class Render:
 
         zoom = 8
 
-        glOrtho(zoom, -zoom, -zoom, zoom, self.size, -self.size)
+        glOrtho(zoom, -zoom, -zoom, zoom, self.opts.render_size, -self.opts.render_size)
         glMatrixMode(GL_MODELVIEW)
 
     def draw_buffer(self):
@@ -245,7 +237,7 @@ class Render:
         # Create a renderbuffer for depth testing
         depth_buffer = glGenRenderbuffers(1)
         glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.size, self.size)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.opts.render_size, self.opts.render_size)
         glFramebufferRenderbuffer(
             GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer
         )
@@ -257,8 +249,8 @@ class Render:
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            self.size,
-            self.size,
+            self.opts.render_size,
+            self.opts.render_size,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
@@ -274,7 +266,7 @@ class Render:
             raise RenderError("Framebuffer is not complete")
 
         # Render the scene
-        glViewport(0, 0, self.size, self.size)
+        glViewport(0, 0, self.opts.render_size, self.opts.render_size)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
         model = self.models[self.model_list[self.current_model_index]]
@@ -304,10 +296,10 @@ class Render:
         glDisable(GL_LIGHT1)
 
         # Read the pixel data, including alpha channel
-        pixel_data = glReadPixels(0, 0, self.size, self.size, GL_RGBA, GL_UNSIGNED_BYTE)
+        pixel_data = glReadPixels(0, 0, self.opts.render_size, self.opts.render_size, GL_RGBA, GL_UNSIGNED_BYTE)
 
         # Create an image from pixel data
-        img = Image.frombytes("RGBA", (self.size, self.size), pixel_data)
+        img = Image.frombytes("RGBA", (self.opts.render_size, self.opts.render_size), pixel_data)
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
 
         # Release resources

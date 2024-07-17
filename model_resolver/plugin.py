@@ -18,7 +18,7 @@ def beet_default(ctx: Context):
     opts = ctx.validate("model_resolver", ModelResolverOptions)
 
     filter = opts.filter
-    __special_filter__ = opts.__special_filter__
+    __special_filter__ = opts.special_filter
     if __special_filter__ is not None and len(__special_filter__) > 0:
         filter = __special_filter__.keys()
 

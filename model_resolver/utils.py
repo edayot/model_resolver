@@ -58,6 +58,6 @@ class ModelResolverOptions(BaseModel):
     render_size: int = 256
     minecraft_version: str = "latest"
     filter: Optional[list[str]] = []
-    __special_filter__: dict = {}
-    __light__: LightOptions = LightOptions()
+    special_filter: dict = {}
+    light: LightOptions = LightOptions()
     save_namespace: Optional[str] = None

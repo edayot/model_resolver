@@ -131,9 +131,9 @@ class Render:
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
-        glLightfv(GL_LIGHT0, GL_POSITION, self.opts.__light__.minecraft_light_position)
-        glLightfv(GL_LIGHT0, GL_AMBIENT, [self.opts.__light__.minecraft_ambient_light] * 4)
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [self.opts.__light__.minecraft_light_power] * 4)
+        glLightfv(GL_LIGHT0, GL_POSITION, self.opts.light.minecraft_light_position)
+        glLightfv(GL_LIGHT0, GL_AMBIENT, [self.opts.light.minecraft_ambient_light] * 4)
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [self.opts.light.minecraft_light_power] * 4)
 
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
@@ -173,7 +173,7 @@ class Render:
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)
             img = self.draw_buffer()
-            if self.opts.__special_filter__ is None or len(self.opts.__special_filter__) == 0:
+            if self.opts.special_filter is None or len(self.opts.special_filter) == 0:
                 if self.opts.save_namespace is None:
                     model_name = self.model_list[self.current_model_index].split(":")
                     texture_path = f"{model_name[0]}:render/{model_name[1]}"
@@ -183,7 +183,7 @@ class Render:
                 self.ctx.assets.textures[texture_path] = Texture(img)
             else:
                 model_name = self.model_list[self.current_model_index]
-                path_save = self.opts.__special_filter__.get(model_name, None)
+                path_save = self.opts.special_filter.get(model_name, None)
                 if path_save is not None:
                     with open(path_save, "wb") as f:
                         img.save(f, "PNG")

@@ -51,9 +51,9 @@ def main(
                 "minecraft_version": minecraft_version,
                 "resolve_vanilla_atlas": resolve_vanilla_atlas,
                 "filter": filter,
-                "__special_filter__": __special_filter__,
+                "special_filter": __special_filter__,
                 "save_namespace": save_namespace,
-                "__light__": __light__,
+                "light": __light__,
             },
         },
     )

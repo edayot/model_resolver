@@ -1,10 +1,10 @@
 from beet import Context, Model, Texture
-from beet.contrib.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla, Release
 from beet.core.cache import Cache
-from beet import NamespaceProxyDescriptor
+from beet import NamespaceProxy
 from model_resolver.render import Render
 from copy import deepcopy
-from typing import TypedDict
+from typing import TypedDict, Mapping
 from PIL import Image
 from model_resolver.utils import load_textures, ModelResolverOptions
 import numpy as np
@@ -25,6 +25,8 @@ def beet_default(ctx: Context):
     vanilla = ctx.inject(Vanilla)
     if not opts.minecraft_version == "latest":
         vanilla = vanilla.releases[opts.minecraft_version]
+    else:
+        vanilla = vanilla.releases[vanilla.minecraft_version]
     generated_models = set()
     generated_textures = set()
 
@@ -38,7 +40,7 @@ def beet_default(ctx: Context):
     
 
     use_cache = opts.use_cache
-    cache = ctx.cache.get("model_resolver")
+    cache = ctx.cache["model_resolver"]
     if not "models" in cache.json:
         cache.json["models"] = {}
         cache.json["render_size"] = opts.render_size
@@ -106,7 +108,7 @@ def handle_cache(cache: Cache, model, resolved_model, ctx, vanilla):
     return img
 
 
-def render_vanilla(ctx: Context, vanilla: Vanilla, models: set[str]):
+def render_vanilla(ctx: Context, vanilla: Release, models: set[str]):
     vanilla_models = vanilla.assets.models
 
     for model in vanilla_models.match("minecraft:*"):
@@ -138,8 +140,8 @@ def clean_generated(
 
 def resolve_atlas(
     ctx: Context,
-    vanilla: Vanilla,
-    used_ctx: Context | Vanilla,
+    vanilla: Release,
+    used_ctx: Context | Release,
     atlas: str,
     generated_textures: set[str],
 ):
@@ -148,7 +150,7 @@ def resolve_atlas(
             continue
         source: Atlas
         for texture in source["textures"]:
-            for variant, color_palette in source["permutations"].items():
+            for variant, color_palette_path in source["permutations"].items():
                 new_texture_path = f"{texture}_{variant}"
                 new_texture_path = resolve_key(new_texture_path)
 
@@ -158,13 +160,13 @@ def resolve_atlas(
                 elif palette_key in vanilla.assets.textures:
                     palette = vanilla.assets.textures[palette_key].image
 
-                color_palette_key = resolve_key(color_palette)
+                color_palette_key = resolve_key(color_palette_path)
                 if color_palette_key in ctx.assets.textures:
-                    color_palette = ctx.assets.textures[
+                    color_palette : Image.Image = ctx.assets.textures[
                         color_palette_key
                     ].image  # color palette
                 elif color_palette_key in vanilla.assets.textures:
-                    color_palette = vanilla.assets.textures[
+                    color_palette : Image.Image = vanilla.assets.textures[
                         color_palette_key
                     ].image  # color palette
 
@@ -190,6 +192,8 @@ def apply_palette(
     for x in range(texture.width):
         for y in range(texture.height):
             pixel = texture.getpixel((x, y))
+            if not isinstance(pixel, tuple):
+                raise ValueError("Texture is not RGBA")
             color = pixel[:3]
             alpha = pixel[3]
             # if the color is in palette_key, replace it with the color from color_palette
@@ -198,6 +202,8 @@ def apply_palette(
                 for j in range(palette.height):
                     if palette.getpixel((i, j)) == color:
                         new_color = color_palette.getpixel((i, j))
+                        if not isinstance(new_color, tuple):
+                            raise ValueError("Color palette is not RGB")
                         new_image.putpixel((x, y), new_color + (alpha,))
                         found = True
                         break
@@ -234,7 +240,7 @@ def merge_model(child: Model, parent: Model) -> Model:
     return Model(merged)
 
 
-def resolve_model(model: Model, vanilla_models: dict[str, Model], ctx_models: dict[str, Model]) -> Model:
+def resolve_model(model: Model, vanilla_models: Mapping[str, Model], ctx_models: Mapping[str, Model]) -> Model:
     # Do something with the model
     if "parent" in model.data:
         resolved_key = resolve_key(model.data["parent"])
@@ -260,7 +266,7 @@ def resolve_model(model: Model, vanilla_models: dict[str, Model], ctx_models: di
 def bake_model(
     model: Model,
     ctx: Context,
-    vanilla: Vanilla,
+    vanilla: Release,
     model_name: str,
     generated_textures: set[str],
 ):
@@ -278,6 +284,8 @@ def bake_model(
                 img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
                 for i in range(max + 1):
                     texture = textures.get(f"layer{i}")
+                    if texture is None:
+                        continue
                     img.paste(texture, (0, 0), texture)
                 new_texture = f"debug:{model_name.replace(':', '/')}"
                 ctx.assets.textures[new_texture] = Texture(img)
@@ -296,7 +304,7 @@ def bake_model(
 
 
 
-def is_animated(texture_path: str, ctx: Context, vanilla: Vanilla):
+def is_animated(texture_path: str, ctx: Context, vanilla: Release):
     if texture_path in ctx.assets.textures_mcmeta:
         return True
     if texture_path in vanilla.assets.textures_mcmeta:
@@ -305,7 +313,7 @@ def is_animated(texture_path: str, ctx: Context, vanilla: Vanilla):
 
 
 def get_thing(
-    path, ctx_proxy: NamespaceProxyDescriptor, vanilla_proxy: NamespaceProxyDescriptor
+    path, ctx_proxy: NamespaceProxy, vanilla_proxy: NamespaceProxy
 ):
     if path in ctx_proxy:
         return ctx_proxy[path]
@@ -317,7 +325,7 @@ def get_thing(
 def handle_animations(
     models: dict[str, dict],
     ctx: Context,
-    vanilla: Vanilla,
+    vanilla: Release,
     generated_textures: set[str],
 ):
     for model in set(models.keys()):

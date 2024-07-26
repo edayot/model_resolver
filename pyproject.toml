@@ -43,3 +43,9 @@ minecraft_version = "latest"
 filter = ["**"]
 save_namespace = "simpledrawer"
 
+
+
+
+
+[tool.pyright]
+typeCheckingMode = "basic"

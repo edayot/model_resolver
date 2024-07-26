@@ -1,15 +1,16 @@
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
+from OpenGL.GL import * # type: ignore
+from OpenGL.GLUT import * # type: ignore
+from OpenGL.GLU import * # type: ignore
 from model_resolver.my_glutinit import glutInit
 
 from PIL import Image
 
 from beet import Context, Texture
-from beet.contrib.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla, Release
 
 from math import cos, sin, pi, sqrt
 from rich import print
+from typing import Any
 import hashlib
 from model_resolver.utils import load_textures, ModelResolverOptions
 import logging
@@ -64,7 +65,7 @@ class Render:
 
     """
 
-    def __init__(self, models: dict[dict], ctx: Context, vanilla: Vanilla, opts: ModelResolverOptions):
+    def __init__(self, models: dict[str, dict[str, Any]], ctx: Context, vanilla: Release, opts: ModelResolverOptions):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
@@ -122,7 +123,7 @@ class Render:
     def render(self):
         glutInit()
 
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH) # type: ignore
         glutInitWindowSize(self.opts.render_size, self.opts.render_size)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
@@ -159,7 +160,7 @@ class Render:
         for key, value in self.textures.items():
             textures_hash[key] = hashlib.sha256(value.tobytes()).hexdigest()
 
-        cache = self.ctx.cache.get("model_resolver")
+        cache = self.ctx.cache["model_resolver"]
 
         cache.json["models"][current_model] = {
             "model": model_hash,
@@ -267,7 +268,7 @@ class Render:
 
         # Render the scene
         glViewport(0, 0, self.opts.render_size, self.opts.render_size)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) # type: ignore
 
         model = self.models[self.model_list[self.current_model_index]]
         gui_light = model.get("gui_light", "side")
@@ -300,7 +301,7 @@ class Render:
 
         # Create an image from pixel data
         img = Image.frombytes("RGBA", (self.opts.render_size, self.opts.render_size), pixel_data)
-        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
         # Release resources
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -381,11 +382,11 @@ class Render:
         glDisable(GL_TEXTURE_2D)
 
     def get_vertices(
-        self, from_element: list, to_element: list, rotation: dict | None
-    ) -> list:
+        self, from_element: tuple[float,float,float], to_element: tuple[float,float,float], rotation: dict | None
+    ) -> tuple:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
-        res = [
+        res = (
             [x1, y1, z1],
             [x2, y1, z1],
             [x2, y2, z1],
@@ -394,7 +395,7 @@ class Render:
             [x2, y2, z2],
             [x2, y1, z2],
             [x1, y1, z2],
-        ]
+        )
         if rotation is None:
             return res
 
@@ -435,7 +436,7 @@ class Render:
 
         return res
 
-    def center_element(self, from_element: list, to_element: list) -> tuple[list, list]:
+    def center_element(self, from_element: tuple[float,float,float], to_element: tuple[float,float,float]) -> tuple[tuple[float,float,float], tuple[float,float,float]]:
         # return from_element, to_element
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -452,8 +453,8 @@ class Render:
         face: str,
         data: dict,
         vertices: tuple,
-        from_element: list,
-        to_element: list,
+        from_element: tuple[float,float,float],
+        to_element: tuple[float,float,float],
     ):
 
         if "uv" in data:
@@ -540,7 +541,7 @@ class Render:
         glEnd()
         # glUseProgram(0)
 
-    def get_uv(self, face: str, from_element: list, to_element: list):
+    def get_uv(self, face: str, from_element: tuple[float,float,float], to_element: tuple[float,float,float]) -> tuple[float,float,float,float]:
 
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -563,6 +564,8 @@ class Render:
                 return (x1, y1, x2, y2)
             case "north":
                 return (x1, y1, x2, y2)
+            case _:
+                raise RenderError(f"Unknown face {face}")
 
     def keyboard(self, key, x, y):
         # increment the current model index on each click

@@ -1,12 +1,12 @@
 from PIL import Image
 from beet import Context
-from beet.contrib.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla, Release
 from pydantic import BaseModel
 from typing import Optional
 
 
 def load_textures(
-    textures: dict, ctx: Context, vanilla: Vanilla
+    textures: dict, ctx: Context, vanilla: Release
 ) -> dict[str, Image.Image]:
     res = {}
     for key in textures.keys():
@@ -18,7 +18,7 @@ def load_textures(
     return res
 
 
-def load_texture(path: str, ctx: Context, vanilla: Vanilla) -> Image.Image:
+def load_texture(path: str, ctx: Context, vanilla: Release) -> Image.Image:
     path = f"minecraft:{path}" if ":" not in path else path
     if path in ctx.assets.textures:
         texture = ctx.assets.textures[path]

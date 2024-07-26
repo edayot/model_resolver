@@ -47,7 +47,13 @@ class LightOptions(BaseModel):
 
     minecraft_light_power: float = 0.6727302277118515
     minecraft_ambient_light: float = 0.197261163686041
-    minecraft_light_position: list[float] = [-0.42341569107908505, -0.6577205642540358, 0.4158725999762756, 0.0]
+    minecraft_light_position: list[float] = [
+        -0.42341569107908505,
+        -0.6577205642540358,
+        0.4158725999762756,
+        0.0,
+    ]
+
 
 class ModelResolverOptions(BaseModel):
     """Model resolver options."""

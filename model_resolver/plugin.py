@@ -37,7 +37,6 @@ def beet_default(ctx: Context):
             resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
     if opts.load_vanilla:
         render_vanilla(ctx, vanilla, generated_models)
-    
 
     use_cache = opts.use_cache
     cache = ctx.cache["model_resolver"]
@@ -60,7 +59,9 @@ def beet_default(ctx: Context):
     if filter is not None and len(filter) > 0:
         model_set = set(ctx.assets.models.match(*filter))
     for model in model_set:
-        resolved_model = resolve_model(ctx.assets.models[model], vanilla.assets.models, ctx.assets.models)
+        resolved_model = resolve_model(
+            ctx.assets.models[model], vanilla.assets.models, ctx.assets.models
+        )
         resolved_model = bake_model(
             resolved_model, ctx, vanilla, model, generated_textures
         )
@@ -162,11 +163,11 @@ def resolve_atlas(
 
                 color_palette_key = resolve_key(color_palette_path)
                 if color_palette_key in ctx.assets.textures:
-                    color_palette : Image.Image = ctx.assets.textures[
+                    color_palette: Image.Image = ctx.assets.textures[
                         color_palette_key
                     ].image  # color palette
                 elif color_palette_key in vanilla.assets.textures:
-                    color_palette : Image.Image = vanilla.assets.textures[
+                    color_palette: Image.Image = vanilla.assets.textures[
                         color_palette_key
                     ].image  # color palette
 
@@ -240,7 +241,9 @@ def merge_model(child: Model, parent: Model) -> Model:
     return Model(merged)
 
 
-def resolve_model(model: Model, vanilla_models: Mapping[str, Model], ctx_models: Mapping[str, Model]) -> Model:
+def resolve_model(
+    model: Model, vanilla_models: Mapping[str, Model], ctx_models: Mapping[str, Model]
+) -> Model:
     # Do something with the model
     if "parent" in model.data:
         resolved_key = resolve_key(model.data["parent"])
@@ -303,7 +306,6 @@ def bake_model(
     return model
 
 
-
 def is_animated(texture_path: str, ctx: Context, vanilla: Release):
     if texture_path in ctx.assets.textures_mcmeta:
         return True
@@ -312,9 +314,7 @@ def is_animated(texture_path: str, ctx: Context, vanilla: Release):
     return False
 
 
-def get_thing(
-    path, ctx_proxy: NamespaceProxy, vanilla_proxy: NamespaceProxy
-):
+def get_thing(path, ctx_proxy: NamespaceProxy, vanilla_proxy: NamespaceProxy):
     if path in ctx_proxy:
         return ctx_proxy[path]
     if path in vanilla_proxy:

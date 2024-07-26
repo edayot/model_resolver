@@ -1,6 +1,6 @@
-from OpenGL.GL import * # type: ignore
-from OpenGL.GLUT import * # type: ignore
-from OpenGL.GLU import * # type: ignore
+from OpenGL.GL import *  # type: ignore
+from OpenGL.GLUT import *  # type: ignore
+from OpenGL.GLU import *  # type: ignore
 from model_resolver.my_glutinit import glutInit
 
 from PIL import Image
@@ -14,6 +14,7 @@ from typing import Any
 import hashlib
 from model_resolver.utils import load_textures, ModelResolverOptions
 import logging
+
 
 class RenderError(Exception):
     pass
@@ -65,7 +66,13 @@ class Render:
 
     """
 
-    def __init__(self, models: dict[str, dict[str, Any]], ctx: Context, vanilla: Release, opts: ModelResolverOptions):
+    def __init__(
+        self,
+        models: dict[str, dict[str, Any]],
+        ctx: Context,
+        vanilla: Release,
+        opts: ModelResolverOptions,
+    ):
         self.models = models
         self.ctx = ctx
         self.vanilla = vanilla
@@ -123,7 +130,7 @@ class Render:
     def render(self):
         glutInit()
 
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH) # type: ignore
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
         glutInitWindowSize(self.opts.render_size, self.opts.render_size)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
@@ -138,7 +145,7 @@ class Render:
 
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
-        
+
         self.reload()
 
         glutDisplayFunc(self.display)
@@ -223,7 +230,6 @@ class Render:
         glEnable(GL_BLEND)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
         # glBlendFunc(GL_ONE, GL_ZERO)
-    
 
         # add ambient light
         glEnable(GL_COLOR_MATERIAL)
@@ -238,7 +244,12 @@ class Render:
         # Create a renderbuffer for depth testing
         depth_buffer = glGenRenderbuffers(1)
         glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer)
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, self.opts.render_size, self.opts.render_size)
+        glRenderbufferStorage(
+            GL_RENDERBUFFER,
+            GL_DEPTH_COMPONENT,
+            self.opts.render_size,
+            self.opts.render_size,
+        )
         glFramebufferRenderbuffer(
             GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer
         )
@@ -268,7 +279,7 @@ class Render:
 
         # Render the scene
         glViewport(0, 0, self.opts.render_size, self.opts.render_size)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT) # type: ignore
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore
 
         model = self.models[self.model_list[self.current_model_index]]
         gui_light = model.get("gui_light", "side")
@@ -292,15 +303,24 @@ class Render:
                 if not shade:
                     glEnable(GL_LIGHTING)
                     glEnable(activate_light)
-        
+
         glDisable(GL_LIGHT0)
         glDisable(GL_LIGHT1)
 
         # Read the pixel data, including alpha channel
-        pixel_data = glReadPixels(0, 0, self.opts.render_size, self.opts.render_size, GL_RGBA, GL_UNSIGNED_BYTE)
+        pixel_data = glReadPixels(
+            0,
+            0,
+            self.opts.render_size,
+            self.opts.render_size,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+        )
 
         # Create an image from pixel data
-        img = Image.frombytes("RGBA", (self.opts.render_size, self.opts.render_size), pixel_data)
+        img = Image.frombytes(
+            "RGBA", (self.opts.render_size, self.opts.render_size), pixel_data
+        )
         img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
         # Release resources
@@ -382,7 +402,10 @@ class Render:
         glDisable(GL_TEXTURE_2D)
 
     def get_vertices(
-        self, from_element: tuple[float,float,float], to_element: tuple[float,float,float], rotation: dict | None
+        self,
+        from_element: tuple[float, float, float],
+        to_element: tuple[float, float, float],
+        rotation: dict | None,
     ) -> tuple:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -405,7 +428,7 @@ class Render:
         angle = rotation["angle"]
         # rescale scale the axis vertices in
         rescale = rotation.get("rescale", False)
-        
+
         angle = angle * pi / 180
 
         for point in res:
@@ -416,14 +439,16 @@ class Render:
             if axis == "x":
                 y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
             elif axis == "y":
-                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(-angle)
+                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
+                    -angle
+                )
             elif axis == "z":
                 x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
             x += origin[0]
             y += origin[1]
             z += origin[2]
             point[0], point[1], point[2] = x, y, z
-        
+
         if rescale:
             factor = sqrt(2)
             for point in res:
@@ -436,7 +461,11 @@ class Render:
 
         return res
 
-    def center_element(self, from_element: tuple[float,float,float], to_element: tuple[float,float,float]) -> tuple[tuple[float,float,float], tuple[float,float,float]]:
+    def center_element(
+        self,
+        from_element: tuple[float, float, float],
+        to_element: tuple[float, float, float],
+    ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
         # return from_element, to_element
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -453,8 +482,8 @@ class Render:
         face: str,
         data: dict,
         vertices: tuple,
-        from_element: tuple[float,float,float],
-        to_element: tuple[float,float,float],
+        from_element: tuple[float, float, float],
+        to_element: tuple[float, float, float],
     ):
 
         if "uv" in data:
@@ -541,7 +570,12 @@ class Render:
         glEnd()
         # glUseProgram(0)
 
-    def get_uv(self, face: str, from_element: tuple[float,float,float], to_element: tuple[float,float,float]) -> tuple[float,float,float,float]:
+    def get_uv(
+        self,
+        face: str,
+        from_element: tuple[float, float, float],
+        to_element: tuple[float, float, float],
+    ) -> tuple[float, float, float, float]:
 
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element

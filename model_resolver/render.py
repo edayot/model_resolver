@@ -84,13 +84,21 @@ class Render:
         self.textures_bindings = {}
         self.textures_size = {}
         self.textures = load_textures(
-            self.models[self.model_list[self.current_model_index]]["textures"],
+            self.current_model["textures"],
             self.ctx,
             self.vanilla,
         )
         self.reset_camera()
         self.frame_count = 0
         self.logger = logging.getLogger("model_resolver")
+
+    @property
+    def current_model_name(self):
+        return self.model_list[self.current_model_index]
+
+    @property
+    def current_model(self):
+        return self.models[self.current_model_name]
 
     def reset_camera(self):
         self.translate = [0, 0, 0]
@@ -99,7 +107,7 @@ class Render:
     def reload(self):
         self.textures_bindings = {}
         self.textures = load_textures(
-            self.models[self.model_list[self.current_model_index]]["textures"],
+            self.current_model["textures"],
             self.ctx,
             self.vanilla,
         )
@@ -158,9 +166,8 @@ class Render:
         if not self.opts.use_cache:
             return
 
-        current_model = self.model_list[self.current_model_index]
         model_hash = hashlib.sha256(
-            str(self.models[current_model]).encode()
+            str(self.current_model).encode()
         ).hexdigest()
 
         textures_hash = {}
@@ -169,11 +176,11 @@ class Render:
 
         cache = self.ctx.cache["model_resolver"]
 
-        cache.json["models"][current_model] = {
+        cache.json["models"][self.current_model_name] = {
             "model": model_hash,
             "textures": textures_hash,
         }
-        save_path = cache.get_path(f"{current_model}.png")
+        save_path = cache.get_path(f"{self.current_model_name}.png")
         with open(save_path, "wb") as f:
             img.save(f, "PNG")
 
@@ -183,14 +190,14 @@ class Render:
             img = self.draw_buffer()
             if self.opts.special_filter is None or len(self.opts.special_filter) == 0:
                 if self.opts.save_namespace is None:
-                    model_name = self.model_list[self.current_model_index].split(":")
+                    model_name = self.current_model_name.split(":")
                     texture_path = f"{model_name[0]}:render/{model_name[1]}"
                 else:
-                    model_name = self.model_list[self.current_model_index]
+                    model_name = self.current_model_name
                     texture_path = f"{self.opts.save_namespace}:render/{model_name.replace(':', '/')}"
                 self.ctx.assets.textures[texture_path] = Texture(img)
             else:
-                model_name = self.model_list[self.current_model_index]
+                model_name = self.current_model_name
                 path_save = self.opts.special_filter.get(model_name, None)
                 if path_save is not None:
                     with open(path_save, "wb") as f:
@@ -201,7 +208,7 @@ class Render:
             if self.current_model_index >= len(self.model_list):
                 glutLeaveMainLoop()
                 return
-            self.logger.info(f"Rendering {self.model_list[self.current_model_index]}")
+            self.logger.info(f"Rendering {self.current_model_name}")
             self.reload()
             self.reset_camera()
 
@@ -281,7 +288,7 @@ class Render:
         glViewport(0, 0, self.opts.render_size, self.opts.render_size)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore
 
-        model = self.models[self.model_list[self.current_model_index]]
+        model = self.current_model
         gui_light = model.get("gui_light", "side")
         if gui_light == "side":
             activate_light = GL_LIGHT0
@@ -351,7 +358,7 @@ class Render:
 
         # transform the vertices
         gui = (
-            self.models[self.model_list[self.current_model_index]]
+            self.current_model
             .get("display", {})
             .get(
                 "gui",
@@ -489,11 +496,9 @@ class Render:
         if "uv" in data:
             uv = data["uv"]
             uv = [x / 16 for x in uv]
-            rotation = data.get("rotation", 0)
-
         else:
             uv = self.get_uv(face, from_element, to_element)
-            rotation = 0
+            
 
         match face:
             case "down":
@@ -511,6 +516,7 @@ class Render:
             case _:
                 raise RenderError(f"Unknown face {face}")
 
+        rotation = data.get("rotation", 0)
         match rotation:
             case 0:
                 pass

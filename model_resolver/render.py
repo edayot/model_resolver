@@ -9,7 +9,6 @@ from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla, Release
 
 from math import cos, sin, pi, sqrt
-from rich import print
 from typing import Any
 import hashlib
 from model_resolver.utils import load_textures, ModelResolverOptions
@@ -498,7 +497,9 @@ class Render:
             uv = [x / 16 for x in uv]
         else:
             uv = self.get_uv(face, from_element, to_element)
-            
+            uv = [x / 16 for x in uv]
+        # print([x*16 for x in uv], face)
+
 
         match face:
             case "down":
@@ -586,24 +587,19 @@ class Render:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
 
-        div = 16
-
-        x1, y1, z1 = x1 / div, y1 / div, z1 / div
-        x2, y2, z2 = x2 / div, y2 / div, z2 / div
-
         match face:
-            case "east":
-                return (z1, y1, z2, y2)
-            case "west":
-                return (z1, y1, z2, y2)
-            case "up":
-                return (x1, z1, x2, z2)
-            case "down":
-                return (x1, z1, x2, z2)
-            case "south":
-                return (x1, y1, x2, y2)
-            case "north":
-                return (x1, y1, x2, y2)
+            case "east" | "west":
+                x_offset = (- (z2 + z1)) % 16
+                y_offset = (y2 - y1) % 16
+                return (z1+x_offset, y1+y_offset, z2+x_offset, y2+y_offset)
+            case "up" | "down":
+                x_offset = 0
+                y_offset = 0
+                return (x1+x_offset, z1+y_offset, x2+x_offset, z2+y_offset)
+            case "south" | "north":
+                x_offset = (- (x2 + x1)) % 16
+                y_offset = (y2 - y1) % 16
+                return (x1+x_offset, y1+y_offset, x2+x_offset, y2+y_offset)
             case _:
                 raise RenderError(f"Unknown face {face}")
 

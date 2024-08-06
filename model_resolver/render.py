@@ -235,6 +235,10 @@ class Render:
         # enable transparency
         glEnable(GL_BLEND)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+
+        glEnable(GL_ALPHA_TEST)
+        glAlphaFunc(GL_GREATER, 0)
+
         # glBlendFunc(GL_ONE, GL_ZERO)
 
         # add ambient light

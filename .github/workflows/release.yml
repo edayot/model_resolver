@@ -39,12 +39,13 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
-      - name: Release
+      - name: Tests and release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION_BUMP: ${{ github.event.inputs.version_bump }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
+          poetry run pytest -v
           git config --global user.name "github-actions"
           git config --global user.email "action@github.com"
 

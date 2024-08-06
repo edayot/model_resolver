@@ -63,7 +63,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         run: |
 
-          COMMAND="poetry run pytest -v"
+          COMMAND="poetry run pytest -vv"
           /usr/bin/xvfb-run -s "-screen 0 2560x1440x8 +extension GLX +extension RENDER" $COMMAND
           # Only commit and push if new files were added
           

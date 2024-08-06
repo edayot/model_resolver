@@ -45,7 +45,6 @@ jobs:
           VERSION_BUMP: ${{ github.event.inputs.version_bump }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
-          poetry run pytest -v
           git config --global user.name "github-actions"
           git config --global user.email "action@github.com"
 

@@ -1,0 +1,42 @@
+{
+  "parent": "builtin/generated",
+  "gui_light": "front",
+  "textures": {
+    "layer": "debug:debug/block/diamond_axe",
+    "particle": "debug:debug/block/diamond_axe"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#layer"
+        }
+      }
+    }
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        180,
+        0,
+        180
+      ]
+    }
+  }
+}

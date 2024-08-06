@@ -28,27 +28,3 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 
-[tool.beet]
-output="build"
-pipeline=[
-    "model_resolver"
-]
-
-
-[tool.beet.resource_pack]
-load = "."
-
-[tool.beet.meta.model_resolver]
-load_vanilla = false
-use_cache = false
-render_size = 256
-minecraft_version = "latest"
-filter = ["**"]
-save_namespace = "simpledrawer"
-
-
-
-
-
-[tool.pyright]
-typeCheckingMode = "basic"

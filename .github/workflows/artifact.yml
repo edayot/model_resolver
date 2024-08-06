@@ -1,4 +1,4 @@
-name: Artifacts at every commit
+name: Tests
 on:
   workflow_dispatch:
   push:
@@ -64,15 +64,5 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         run: |
 
-          COMMAND="poetry run beet -l INFO -s data_pack.name=datapack -s resource_pack.name=resourcepack build"
+          COMMAND="poetry run pytest"
           /usr/bin/xvfb-run -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" $COMMAND
-          
-      - uses: actions/upload-artifact@v3
-        with:
-          name: datapack
-          path: build/datapack/
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: resourcepack
-          path: build/resourcepack/

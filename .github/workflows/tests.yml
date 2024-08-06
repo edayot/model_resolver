@@ -64,6 +64,6 @@ jobs:
         run: |
 
           COMMAND="poetry run pytest -v"
-          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
+          /usr/bin/xvfb-run -s "-screen 0 2560x1440x8 +extension GLX +extension RENDER" $COMMAND
           # Only commit and push if new files were added
           

@@ -228,7 +228,7 @@ class Render:
     def draw_buffer(self):
 
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
-        # glEnable(GL_DEPTH_TEST)
+        glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
         glCullFace(GL_FRONT)
         # glFrontFace(GL_CCW)

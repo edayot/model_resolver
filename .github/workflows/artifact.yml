@@ -66,3 +66,6 @@ jobs:
 
           COMMAND="poetry run pytest"
           /usr/bin/xvfb-run -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" $COMMAND
+          git add .
+          git commit -m "Update test results"
+          git push

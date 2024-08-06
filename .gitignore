@@ -3,7 +3,7 @@
 out
 __pycache__
 .DS_Store
-pack.mcmeta
+./pack.mcmeta
 dist/
 docs/_build/
 *.zip

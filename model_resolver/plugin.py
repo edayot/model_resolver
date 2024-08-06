@@ -10,6 +10,7 @@ from model_resolver.utils import load_textures, ModelResolverOptions
 import numpy as np
 import hashlib
 import logging
+from rich import print
 
 logger = logging.getLogger("model_resolver")
 
@@ -307,6 +308,7 @@ def bake_model(
 
 
 def is_animated(texture_path: str, ctx: Context, vanilla: Release):
+    texture_path = resolve_key(texture_path)
     if texture_path in ctx.assets.textures_mcmeta:
         return True
     if texture_path in vanilla.assets.textures_mcmeta:
@@ -315,6 +317,7 @@ def is_animated(texture_path: str, ctx: Context, vanilla: Release):
 
 
 def get_thing(path, ctx_proxy: NamespaceProxy, vanilla_proxy: NamespaceProxy):
+    path = resolve_key(path)
     if path in ctx_proxy:
         return ctx_proxy[path]
     if path in vanilla_proxy:

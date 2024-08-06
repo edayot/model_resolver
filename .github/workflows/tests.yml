@@ -63,14 +63,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         run: |
 
-          COMMAND="poetry run pytest -v --insta update-new"
-          /usr/bin/xvfb-run -s "-screen 0 1920x1080x24 +extension GLX +extension RENDER" $COMMAND
+          COMMAND="poetry run pytest -v"
+          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
           # Only commit and push if new files were added
-          if [ -n "$(git status --porcelain)" ]; then
-            git config --global user.name "github-actions"
-            git config --global user.email "action@github.com"
-            git add "tests/snapshots/*"
-            git commit -m "Update snapshots for $GIT_HASH"
-            git push origin master
-          fi
           

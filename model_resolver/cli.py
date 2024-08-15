@@ -3,7 +3,7 @@ from pathlib import Path
 from beet import run_beet, ProjectConfig
 from time import perf_counter
 from rich import print
-from typing import Annotated
+from typing import Annotated, Optional
 
 app = typer.Typer(
     rich_markup_mode="markdown",
@@ -25,6 +25,7 @@ def main(
     minecraft_version: Annotated[str, typer.Option(help="Minecraft version to use for vanilla models")] = "latest",
     __special_filter__ : Annotated[str, typer.Option(hidden=True)] = "",
     __light__ : Annotated[str, typer.Option(hidden=True)] = "",
+    resource_pack_name: Annotated[Optional[str], typer.Option(help="Name of the resourcepack")] = None,
     # fmt: on
 ):
     """
@@ -42,7 +43,7 @@ def main(
     config = ProjectConfig(
         pipeline=["model_resolver"],
         output=output_dir,
-        resource_pack={"load": load_dir, "name": load_dir.name},
+        resource_pack={"load": load_dir, "name": resource_pack_name or load_dir.name},
         meta={
             "model_resolver": {
                 "load_vanilla": load_vanilla,

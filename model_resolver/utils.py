@@ -1,7 +1,7 @@
 from PIL import Image
 from beet import Context
 from beet.contrib.vanilla import Vanilla, Release
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -64,6 +64,6 @@ class ModelResolverOptions(BaseModel):
     render_size: int = 256
     minecraft_version: str = "latest"
     filter: Optional[list[str]] = []
-    special_filter: dict = {}
+    special_filter: dict[str, str] = Field(default_factory=dict)
     light: LightOptions = LightOptions()
     save_namespace: Optional[str] = None

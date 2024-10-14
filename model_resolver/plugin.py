@@ -2,7 +2,6 @@ from beet import Context, Model, Texture
 from beet.contrib.vanilla import Vanilla, Release
 from beet.core.cache import Cache
 from beet import NamespaceProxy
-from model_resolver.render import Render
 from copy import deepcopy
 from typing import TypedDict, Mapping
 from PIL import Image
@@ -11,11 +10,13 @@ import numpy as np
 import hashlib
 import logging
 from rich import print
+from model_resolver.scenes import Scene, ItemRenderTask
 
 logger = logging.getLogger("model_resolver")
 
 
 def beet_default(ctx: Context):
+    logger.info(f"Loading model resolver...")
     opts = ctx.validate("model_resolver", ModelResolverOptions)
 
     filter = opts.filter
@@ -84,7 +85,13 @@ def beet_default(ctx: Context):
 
     if len(models) > 0:
         logger.info(f"Rendering models...")
-        Render(models, ctx, vanilla, opts).render()
+        tasks = []
+        for model_name, model_data in models.items():
+            tasks.append(ItemRenderTask(model=model_data, model_name=model_name))
+        scene = Scene(ctx=ctx, opts=opts, tasks=tasks)
+        scene.render()
+
+        
 
     logger.info(f"Cleaning up...")
     clean_generated(ctx, generated_textures, generated_models)

@@ -4,24 +4,31 @@ from OpenGL.GLU import *  # type: ignore
 from model_resolver.my_glutinit import glutInit
 
 from PIL import Image
-from beet import Context, Texture
+from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
-from typing import Any
+from nbtlib.contrib.minecraft.structure import StructureFileData
+from typing import Any, cast, Generator
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel
 
 from math import cos, sin, pi, sqrt
 
 from pydantic import BaseModel, Field, ConfigDict
 from dataclasses import dataclass
+import random
 
 
 
 class Task(BaseModel):
+    zoom: int = 8
     def run(self, ctx: Context, opts: ModelResolverOptions):
         pass
 
     def save_image(self, ctx: Context, opts: ModelResolverOptions, img: Image.Image):
         pass
+
+    def get_needed_models(self, ctx: Context, opts: ModelResolverOptions) -> Generator[str, None, None]:
+        return
+        yield "minecraft:block/stone"
 
 
 class RenderError(Exception):
@@ -34,6 +41,7 @@ class Scene:
     opts: ModelResolverOptions
     tasks: list[Task] = Field(default_factory=list)
     tasks_index: int = 0
+    current_zoom: int = 8
 
     @property
     def current_task(self):
@@ -75,6 +83,15 @@ class Scene:
 
     
     def display(self):
+        if self.current_task.zoom != self.current_zoom:
+            self.current_zoom = self.current_task.zoom
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(self.current_zoom, -self.current_zoom, -self.current_zoom, self.current_zoom, self.opts.render_size, -self.opts.render_size)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            return
+
         try:
             glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
             glEnable(GL_DEPTH_TEST)
@@ -184,6 +201,10 @@ class ItemRenderTask(Task):
     model_name: str
 
     textures_binding: dict[str, int] = Field(default_factory=dict)
+    offset: tuple[float, float, float] = (0, 0, 0)
+    center_offset: tuple[float, float, float] = (0, 0, 0)
+    do_rotate_camera: bool = True
+    zoom: int = 8
 
     model_config  = ConfigDict(protected_namespaces=())
 
@@ -262,6 +283,8 @@ class ItemRenderTask(Task):
                     img.save(f, "PNG")
 
     def rotate_camera(self):
+        if not self.do_rotate_camera:
+            return
         # transform the vertices
         scale = self.model.display.gui.scale or [1, 1, 1]
         translation = self.model.display.gui.translation or [0, 0, 0]
@@ -345,10 +368,15 @@ class ItemRenderTask(Task):
         x2, y2, z2 = to_element
 
         center = (8, 8, 8)
+        center = (center[0] + self.center_offset[0], center[1] + self.center_offset[1], center[2] + self.center_offset[2])
 
         # compute the new from and to
         from_element = (x1 - center[0], y1 - center[1], z1 - center[2])
         to_element = (x2 - center[0], y2 - center[1], z2 - center[2])
+
+        from_element = (from_element[0] + self.offset[0], from_element[1] + self.offset[1], from_element[2] + self.offset[2])
+        to_element = (to_element[0] + self.offset[0], to_element[1] + self.offset[1], to_element[2] + self.offset[2])
+
         return from_element, to_element
 
     def get_vertices(
@@ -523,3 +551,81 @@ class ItemRenderTask(Task):
                 return (x1+x_offset, y1+y_offset, x2+x_offset, y2+y_offset)
             case _:
                 raise RenderError(f"Unknown face {face}")
+            
+
+class StructureRenderTask(Task):
+    structure: Structure
+    structure_name: str
+    models: dict[str, MinecraftModel]
+
+    zoom: int = 64
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+    def run(self, ctx: Context, opts: ModelResolverOptions):
+        print(f"Rendering structure {self.structure_name}")
+        vanilla = ctx.inject(Vanilla)
+        blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
+        palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])
+        if "palettes" in self.structure.data:
+            palette = cast(list[list[StructureFileData.BlockState]], self.structure.data["palettes"]).pop()
+        min_x, min_y, min_z = [min(x) for x in zip(*[block["pos"] for block in blocks])]
+        max_x, max_y, max_z = [max(x) for x in zip(*[block["pos"] for block in blocks])]
+        center = ((max_x + min_x) / 2*16, (max_y + min_y) / 2*16, (max_z + min_z) / 2*16)
+        for block in blocks:
+            block_state = palette[block["state"]]
+            pos = block["pos"]
+            nbt = block.get("nbt", None)
+            
+            if block_state["Name"] in ctx.assets.blockstates:
+                blockstate_json = ctx.assets.blockstates[block_state["Name"]]
+            elif block_state["Name"] in vanilla.assets.blockstates:
+                blockstate_json = vanilla.assets.blockstates[block_state["Name"]]
+            else:
+                raise KeyError(f"Blockstate {block_state['Name']} not found")
+            # find the model path in this blockstate
+            if "variants" in blockstate_json.data:
+                if "" in blockstate_json.data["variants"]:
+                    variant = blockstate_json.data["variants"][""]
+                else:
+                    # TODO: find the good variant
+                    variant = blockstate_json.data["variants"].popitem()[1]
+                    ...
+            elif "multipart" in blockstate_json.data:
+                raise NotImplementedError("multipart blockstates are not supported yet")
+            else:
+                raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")
+            # find the good model
+            if isinstance(variant, list):
+                # choose randomly a variant by the weight property
+                variant = random.choices(variant, weights=[x.get("weight", 1) for x in variant])[0]
+            model = variant["model"]
+            if model == "minecraft:block/air":
+                continue
+            ItemRenderTask(
+                model=self.models[model],
+                model_name=model,
+                offset=(pos[0]*16, pos[1]*16, pos[2]*16),
+                center_offset=center,
+                do_rotate_camera=True,
+            ).run(ctx, opts)
+                
+            
+
+    def save_image(self, ctx: Context, opts: ModelResolverOptions, img: Image.Image):
+        if opts.special_filter is None or len(opts.special_filter) == 0:
+            if opts.save_namespace is None:
+                model_name = self.structure_name.split(":")
+                texture_path = f"{model_name[0]}:render/{model_name[1]}"
+            else:
+                model_name = self.structure_name
+                texture_path = f"{opts.save_namespace}:render/{model_name.replace(':', '/')}"
+            ctx.assets.textures[texture_path] = Texture(img)
+        else:
+            model_name = self.structure_name
+            path_save = opts.special_filter.get(model_name, None)
+            if path_save is not None:
+                with open(path_save, "wb") as f:
+                    img.save(f, "PNG")

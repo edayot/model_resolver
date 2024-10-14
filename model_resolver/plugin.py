@@ -10,7 +10,7 @@ import numpy as np
 import hashlib
 import logging
 from rich import print
-from model_resolver.scenes import Scene, ItemRenderTask
+from model_resolver.scenes import Scene, ItemRenderTask, StructureRenderTask
 
 logger = logging.getLogger("model_resolver")
 
@@ -86,9 +86,13 @@ def beet_default(ctx: Context):
     if len(models) > 0:
         logger.info(f"Rendering models...")
         tasks = []
+        models_ojb = {}
         for model_name, model_data in models.items():
             model_obj = MinecraftModel.model_validate(model_data)
+            models_ojb[model_name] = model_obj
             tasks.append(ItemRenderTask(model=model_obj, model_name=model_name))
+        for structure in ctx.data.structures:
+            tasks.append(StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure, models=models_ojb))
         scene = Scene(ctx=ctx, opts=opts, tasks=tasks)
         scene.render()
 

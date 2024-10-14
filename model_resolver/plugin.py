@@ -5,7 +5,7 @@ from beet import NamespaceProxy
 from copy import deepcopy
 from typing import TypedDict, Mapping
 from PIL import Image
-from model_resolver.utils import load_textures, ModelResolverOptions
+from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel
 import numpy as np
 import hashlib
 import logging
@@ -87,7 +87,8 @@ def beet_default(ctx: Context):
         logger.info(f"Rendering models...")
         tasks = []
         for model_name, model_data in models.items():
-            tasks.append(ItemRenderTask(model=model_data, model_name=model_name))
+            model_obj = MinecraftModel.model_validate(model_data)
+            tasks.append(ItemRenderTask(model=model_obj, model_name=model_name))
         scene = Scene(ctx=ctx, opts=opts, tasks=tasks)
         scene.render()
 

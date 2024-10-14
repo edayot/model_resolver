@@ -7,11 +7,11 @@ from PIL import Image
 from beet import Context, Texture
 from beet.contrib.vanilla import Vanilla
 from typing import Any
-from model_resolver.utils import load_textures, ModelResolverOptions
+from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel
 
 from math import cos, sin, pi, sqrt
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from dataclasses import dataclass
 
 
@@ -180,10 +180,12 @@ class Scene:
 
 
 class ItemRenderTask(Task):
-    model: dict[str, Any]
+    model: MinecraftModel
     model_name: str
 
     textures_binding: dict[str, int] = Field(default_factory=dict)
+
+    model_config  = ConfigDict(protected_namespaces=())
 
     def __repr__(self):
         return f"ItemRenderTask(model_name={self.model_name})"
@@ -204,8 +206,8 @@ class ItemRenderTask(Task):
     def load_textures(self, ctx: Context, opts: ModelResolverOptions) -> dict[str, Image.Image]:
         res = {}
         vanilla = ctx.inject(Vanilla)
-        for key in self.model["textures"].keys():
-            value = self.get_real_key(key, self.model["textures"])
+        for key in self.model.textures.keys():
+            value = self.get_real_key(key, self.model.textures)
             if value == "__not_found__":
                 res[key] = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
             else:
@@ -261,21 +263,9 @@ class ItemRenderTask(Task):
 
     def rotate_camera(self):
         # transform the vertices
-        gui = (
-            self.model
-            .get("display", {})
-            .get(
-                "gui",
-                {
-                    "rotation": [30, 225, 0],
-                    "translation": [0, 0, 0],
-                    "scale": [0.625, 0.625, 0.625],
-                },
-            )
-        )
-        scale = gui.get("scale", [1, 1, 1])
-        translation = gui.get("translation", [0, 0, 0])
-        rotation = gui.get("rotation", [0, 0, 0])
+        scale = self.model.display.gui.scale or [1, 1, 1]
+        translation = self.model.display.gui.translation or [0, 0, 0]
+        rotation = self.model.display.gui.rotation or [0, 0, 0]
 
         # reset the matrix
         glLoadIdentity()
@@ -288,8 +278,7 @@ class ItemRenderTask(Task):
     def run(self, ctx: Context, opts: ModelResolverOptions):
         self.rotate_camera()
         textures_bindings = self.generate_textures_bindings(ctx, opts)
-        gui_light = self.model.get("gui_light", "side")
-        if gui_light == "side":
+        if self.model.gui_light == "side":
             activate_light = GL_LIGHT0
             deactivate_light = GL_LIGHT1
         else:
@@ -298,45 +287,40 @@ class ItemRenderTask(Task):
         glEnable(activate_light)
         glDisable(deactivate_light)
 
-        if "elements" in self.model:
-            for element in self.model["elements"]:
-                shade = element.get("shade", True)
-                # if shade is False, disable lighting
-                if not shade:
-                    glDisable(GL_LIGHTING)
-                    glDisable(GL_LIGHT0)
-                    glDisable(GL_LIGHT1)
-                self.draw_element(element, textures_bindings)
-                if not shade:
-                    glEnable(GL_LIGHTING)
-                    glEnable(activate_light)
+        for element in self.model.elements:
+            # if shade is False, disable lighting
+            if not element.shade:
+                glDisable(GL_LIGHTING)
+                glDisable(GL_LIGHT0)
+                glDisable(GL_LIGHT1)
+            self.draw_element(element, textures_bindings)
+            if not element.shade:
+                glEnable(GL_LIGHTING)
+                glEnable(activate_light)
 
         glDisable(GL_LIGHT0)
         glDisable(GL_LIGHT1)
 
-    def draw_element(self, element: dict[str, Any], textures_bindings: dict[str, int]):
+    def draw_element(self, element: ElementModel, textures_bindings: dict[str, int]):
         glEnable(GL_TEXTURE_2D)
-        from_element = element["from"]
-        to_element = element["to"]
-        rotation = element.get("rotation", None)
 
         from_element_centered, to_element_centered = self.center_element(
-            from_element, to_element
+            element.from_, element.to
         )
 
         vertices = self.get_vertices(
-            from_element_centered, to_element_centered, rotation
+            from_element_centered, to_element_centered, element.rotation
         )
 
         texture_used = [
-            element["faces"].get("down", None),
-            element["faces"].get("up", None),
-            element["faces"].get("north", None),
-            element["faces"].get("south", None),
-            element["faces"].get("west", None),
-            element["faces"].get("east", None),
+            element.faces.get("down", None),
+            element.faces.get("up", None),
+            element.faces.get("north", None),
+            element.faces.get("south", None),
+            element.faces.get("west", None),
+            element.faces.get("east", None),
         ]
-        texture_used = [x["texture"].lstrip("#") for x in texture_used if x is not None]
+        texture_used = [x.texture.lstrip("#") for x in texture_used if x is not None]
         texture_used = list(set(texture_used))
 
         for texture in texture_used:
@@ -345,9 +329,9 @@ class ItemRenderTask(Task):
             glBindTexture(GL_TEXTURE_2D, textures_bindings[texture])
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture
-            for face, data in element["faces"].items():
-                if data["texture"].lstrip("#") == texture:
-                    self.draw_face(face, data, vertices, from_element, to_element)
+            for face, data in element.faces.items():
+                if data.texture.lstrip("#") == texture:
+                    self.draw_face(face, data, vertices, element.from_, element.to)
 
         glDisable(GL_TEXTURE_2D)
 
@@ -371,7 +355,7 @@ class ItemRenderTask(Task):
         self,
         from_element: tuple[float, float, float],
         to_element: tuple[float, float, float],
-        rotation: dict | None,
+        rotation: RotationModel | None,
     ) -> tuple:
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
@@ -388,41 +372,36 @@ class ItemRenderTask(Task):
         if rotation is None:
             return res
 
-        origin = rotation["origin"]
-        origin = [x - 8 for x in origin]
-        axis = rotation["axis"]
-        angle = rotation["angle"]
+        origin = [x - 8 for x in rotation.origin]
         # rescale scale the axis vertices in
-        rescale = rotation.get("rescale", False)
-
-        angle = angle * pi / 180
+        rotation.angle = rotation.angle * pi / 180
 
         for point in res:
             x, y, z = point
             x -= origin[0]
             y -= origin[1]
             z -= origin[2]
-            if axis == "x":
-                y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
-            elif axis == "y":
-                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
-                    -angle
+            if rotation.axis == "x":
+                y, z = y * cos(rotation.angle) - z * sin(rotation.angle), y * sin(rotation.angle) + z * cos(rotation.angle)
+            elif rotation.axis == "y":
+                x, z = x * cos(-rotation.angle) - z * sin(-rotation.angle), x * sin(-rotation.angle) + z * cos(
+                    -rotation.angle
                 )
-            elif axis == "z":
-                x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
+            elif rotation.axis == "z":
+                x, y = x * cos(rotation.angle) - y * sin(rotation.angle), x * sin(rotation.angle) + y * cos(rotation.angle)
             x += origin[0]
             y += origin[1]
             z += origin[2]
             point[0], point[1], point[2] = x, y, z
 
-        if rescale:
+        if rotation.rescale:
             factor = sqrt(2)
             for point in res:
-                if axis != "x":
+                if rotation.axis != "x":
                     point[0] = point[0] * factor
-                if axis != "y":
+                if rotation.axis != "y":
                     point[1] = point[1] * factor
-                if axis != "z":
+                if rotation.axis != "z":
                     point[2] = point[2] * factor
 
         return res
@@ -430,15 +409,14 @@ class ItemRenderTask(Task):
     def draw_face(
         self,
         face: str,
-        data: dict,
+        data: FaceModel,
         vertices: tuple,
         from_element: tuple[float, float, float],
         to_element: tuple[float, float, float],
     ):
 
-        if "uv" in data:
-            uv = data["uv"]
-            uv = [x / 16 for x in uv]
+        if data.uv:
+            uv = [x / 16 for x in data.uv]
         else:
             uv = self.get_uv(face, from_element, to_element)
             uv = [x / 16 for x in uv]
@@ -461,8 +439,7 @@ class ItemRenderTask(Task):
             case _:
                 raise RenderError(f"Unknown face {face}")
 
-        rotation = data.get("rotation", 0)
-        match rotation:
+        match data.rotation:
             case 0:
                 pass
             case 90:
@@ -487,7 +464,7 @@ class ItemRenderTask(Task):
                     vertices_order[2],
                 ]
             case _:
-                raise RenderError(f"Unknown rotation {rotation}")
+                raise RenderError(f"Unknown rotation {data.rotation}")
 
         rotated_vertices = [vertices[i] for i in vertices_order]
         texcoords = [(0, 1), (2, 1), (2, 3), (0, 3)]

@@ -4,6 +4,9 @@ from beet.contrib.vanilla import Vanilla, Release
 from pydantic import BaseModel, Field
 from typing import Optional
 
+from pydantic import BaseModel, Field
+from typing import Annotated, Literal, Optional
+from beet import Context
 
 def load_textures(
     textures: dict, ctx: Context, vanilla: Release
@@ -67,3 +70,67 @@ class ModelResolverOptions(BaseModel):
     special_filter: dict[str, str] = Field(default_factory=dict)
     light: LightOptions = LightOptions()
     save_namespace: Optional[str] = None
+
+
+
+faces_keys = Literal["north", "south", "east", "west", "up", "down"]
+
+class DisplayOptionModel(BaseModel):
+    rotation: tuple[float, float, float] = Field(default_factory=lambda: (0, 0, 0))
+    translation: tuple[float, float, float] = Field(default_factory=lambda: (0, 0, 0))
+    scale: tuple[float, float, float] = Field(default_factory=lambda: (1, 1, 1))
+
+
+def _gen(): return DisplayOptionModel()
+
+class DisplayModel(BaseModel):
+    thirdperson_righthand: DisplayOptionModel = Field(default_factory=_gen)
+    thirdperson_lefthand: DisplayOptionModel = Field(default_factory=_gen)
+    firstperson_righthand: DisplayOptionModel = Field(default_factory=_gen)
+    firstperson_lefthand: DisplayOptionModel = Field(default_factory=_gen)
+    gui: DisplayOptionModel = Field(default_factory=lambda: DisplayOptionModel(
+        rotation=(30, 225, 0),
+        translation=(0, 0, 0),
+        scale=(0.625, 0.625, 0.625)
+    ))
+    head: DisplayOptionModel = Field(default_factory=_gen)
+    ground: DisplayOptionModel = Field(default_factory=_gen)
+    fixed: DisplayOptionModel = Field(default_factory=_gen)
+
+
+class RotationModel(BaseModel):
+    origin: tuple[float, float, float]
+    axis: Literal["x", "y", "z"]
+    angle: float
+    rescale: bool = False
+
+class FaceModel(BaseModel):
+    uv: Optional[tuple[float, float, float, float]] = None
+    texture: Annotated[str, "The texture variable for the face"]
+    cullface: Optional[faces_keys] = None
+    rotation: Literal[0, 90, 180, 270] = 0
+    tintindex: int = -1
+
+
+class ElementModel(BaseModel):
+    from_: tuple[float, float, float] = Field(alias="from")
+    to: tuple[float, float, float]
+    rotation: Optional[RotationModel] = None
+    shade: bool = True
+    light_emission: int = 0
+    faces: dict[faces_keys, FaceModel]
+
+
+
+class MinecraftModel(BaseModel):
+    ambientocclusion: Annotated[bool, "Whether the model should use ambient occlusion"] = True
+    display: Annotated[DisplayModel, "The display settings for the model in various situations in the game"] = Field(default_factory=lambda: DisplayModel())
+    textures: Annotated[dict[str, str], "Resource locations for the textures used in the model, can also be a texture variable"] = Field(default_factory=dict)
+    elements: Annotated[list[ElementModel], "The elements that make up the model"] = Field(default_factory=list)
+    gui_light: Annotated[Literal["front", "side"], "Control the light position"] = "side"
+
+
+
+if __name__ == "__main__":
+    obj = {'from': [0, 0, 0], 'to': [16, 2, 16], 'faces': {'up': {'texture': '#inside'}, 'down': {'texture': '#bottom', 'cullface': 'down'}}}
+    model = ElementModel.model_validate(obj)

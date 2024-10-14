@@ -590,10 +590,24 @@ class StructureRenderTask(Task):
                 if "" in blockstate_json.data["variants"]:
                     variant = blockstate_json.data["variants"][""]
                 else:
-                    # TODO: find the good variant
-                    variant = blockstate_json.data["variants"].popitem()[1]
+                    parsed_dict = {}
+                    for key in blockstate_json.data["variants"].keys():
+                        parsed_key = {}
+                        key_split = key.split(",")
+                        for key_split_part in key_split:
+                            state, value = key_split_part.split("=")
+                            parsed_key[state] = value
+                        parsed_dict[key] = parsed_key
+                    variant = None
+                    for key, parsed_key in parsed_dict.items():
+                        if all([parsed_key.get(x, object()) == block_state["Properties"].get(x, object()) for x in parsed_key.keys()]):
+                            variant = blockstate_json.data["variants"][key]
+                            break
+                    if variant is None:
+                        raise KeyError(f"Blockstate {block_state['Name']} has no variant for {block_state['Properties']}")
                     ...
             elif "multipart" in blockstate_json.data:
+                continue
                 raise NotImplementedError("multipart blockstates are not supported yet")
             else:
                 raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")

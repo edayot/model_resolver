@@ -8,7 +8,7 @@ from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
 from nbtlib.contrib.minecraft.structure import StructureFileData
 from typing import Any, cast, Generator, Type, Union, TypedDict
-from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel
+from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel, DisplayOptionModel
 
 from math import cos, sin, pi, sqrt
 
@@ -583,8 +583,30 @@ WhenCondition = HardWhenCondition | SimpleWhenCondition
 class StructureRenderTask(Task):
     structure: Structure
     structure_name: str
+    display_option: DisplayOptionModel = Field(default_factory=lambda: DisplayOptionModel(
+        rotation=(30, 225, 0),
+        translation=(0, 0, 0),
+        scale=(0.625, 0.625, 0.625)
+    ))
 
     zoom: int = 64
+
+    def rotate_camera(self):
+        # transform the vertices
+        scale = self.display_option.scale or [1, 1, 1]
+        translation = self.display_option.translation or [0, 0, 0]
+        rotation = self.display_option.rotation or [0, 0, 0]
+
+        
+
+        # reset the matrix
+        glLoadIdentity()
+        glTranslatef(translation[0] / 16, translation[1] / 16, translation[2] / 16)
+        glRotatef(-rotation[0], 1, 0, 0)
+        glRotatef(rotation[1] + 180, 0, 1, 0)
+        glRotatef(rotation[2], 0, 0, 1)
+        glScalef(scale[0], scale[1], scale[2])
+
 
     class Config:
         arbitrary_types_allowed = True
@@ -601,8 +623,6 @@ class StructureRenderTask(Task):
         for palette in self.get_palettes():
             for block in blocks:
                 block_state = palette[block["state"]]
-                pos = block["pos"]
-                nbt = block.get("nbt", None)
 
                 if block_state["Name"] in ctx.assets.blockstates:
                     blockstate_json = ctx.assets.blockstates[block_state["Name"]]
@@ -637,7 +657,7 @@ class StructureRenderTask(Task):
 
     def render_variant(self, 
         variant: dict[str, Any] | list[dict[str, Any]],
-        block_state: dict[str, Any], pos: tuple[int, int, int],
+        pos: tuple[int, int, int],
         center: tuple[int, int, int],
         ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]
         ):
@@ -652,12 +672,13 @@ class StructureRenderTask(Task):
             model_name=model,
             offset=(pos[0]*16, pos[1]*16, pos[2]*16),
             center_offset=center,
-            do_rotate_camera=True,
+            do_rotate_camera=False,
         ).run(ctx, opts, models)
             
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         print(f"Rendering structure {self.structure_name}")
+        self.rotate_camera()
         vanilla = ctx.inject(Vanilla)
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
         if "palette" in self.structure.data:
@@ -698,15 +719,15 @@ class StructureRenderTask(Task):
                             break
                     if variant is None:
                         raise KeyError(f"Blockstate {block_state['Name']} has no variant for {block_state['Properties']}")
-                self.render_variant(variant, block_state, pos, center, ctx, opts, models)
+                self.render_variant(variant, pos, center, ctx, opts, models)
             elif "multipart" in blockstate_json.data:
                 for part in blockstate_json.data["multipart"]:
                     if not "when" in part:
-                        self.render_variant(part["apply"], block_state, pos, center, ctx, opts, models)
+                        self.render_variant(part["apply"], pos, center, ctx, opts, models)
                     else:
                         when = part["when"]
                         if self.verify_when(when, block_state["Properties"]):
-                            self.render_variant(part["apply"], block_state, pos, center, ctx, opts, models)
+                            self.render_variant(part["apply"], pos, center, ctx, opts, models)
             else:
                 raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")
             

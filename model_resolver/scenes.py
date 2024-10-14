@@ -7,7 +7,7 @@ from PIL import Image
 from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
 from nbtlib.contrib.minecraft.structure import StructureFileData
-from typing import Any, cast, Generator, Type, Union
+from typing import Any, cast, Generator, Type, Union, TypedDict
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel
 
 from math import cos, sin, pi, sqrt
@@ -569,6 +569,17 @@ def traverse_all(data: NestedDictList, key: str = "model"):
                 continue
             yield from traverse_all(x, key)
 
+
+SimpleWhenCondition = dict[str, str]
+
+HardWhenCondition = TypedDict("HardWhenCondition", {
+    "OR": list[SimpleWhenCondition],
+    "AND": list[SimpleWhenCondition],
+}, total=False)
+
+WhenCondition = HardWhenCondition | SimpleWhenCondition
+
+
 class StructureRenderTask(Task):
     structure: Structure
     structure_name: str
@@ -578,32 +589,79 @@ class StructureRenderTask(Task):
     class Config:
         arbitrary_types_allowed = True
 
+    def get_palettes(self):
+        if "palette" in self.structure.data:
+            yield self.structure.data["palette"]
+        if "palettes" in self.structure.data:
+            yield from self.structure.data["palettes"]
+
     def get_needed_models(self, ctx: Context, opts: ModelResolverOptions):
         vanilla = ctx.inject(Vanilla)
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
-        palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])
-        if "palettes" in self.structure.data:
-            palette = cast(list[list[StructureFileData.BlockState]], self.structure.data["palettes"]).pop()
-        for block in blocks:
-            block_state = palette[block["state"]]
-            pos = block["pos"]
-            nbt = block.get("nbt", None)
+        for palette in self.get_palettes():
+            for block in blocks:
+                block_state = palette[block["state"]]
+                pos = block["pos"]
+                nbt = block.get("nbt", None)
 
-            if block_state["Name"] in ctx.assets.blockstates:
-                blockstate_json = ctx.assets.blockstates[block_state["Name"]]
-            elif block_state["Name"] in vanilla.assets.blockstates:
-                blockstate_json = vanilla.assets.blockstates[block_state["Name"]]
-            else:
-                raise KeyError(f"Blockstate {block_state['Name']} not found")
-            
-            yield from traverse_all(blockstate_json.data)
+                if block_state["Name"] in ctx.assets.blockstates:
+                    blockstate_json = ctx.assets.blockstates[block_state["Name"]]
+                elif block_state["Name"] in vanilla.assets.blockstates:
+                    blockstate_json = vanilla.assets.blockstates[block_state["Name"]]
+                else:
+                    raise KeyError(f"Blockstate {block_state['Name']} not found")
+                
+                yield from traverse_all(blockstate_json.data)
+
+    def verify_when(self, when: WhenCondition, block_state: dict[str, Any]) -> bool:
+        if "OR" in when:
+            conditions = when["OR"]
+            assert isinstance(conditions, list)
+            return any([self.verify_when(x, block_state) for x in conditions])
+        if "AND" in when:
+            conditions = when["AND"]
+            assert isinstance(conditions, list)
+            return all([self.verify_when(x, block_state) for x in conditions])
+    
+        for state, values in when.items():
+            is_good = False
+            assert isinstance(values, str)
+            for value in values.split("|"):
+                if block_state.get(state, object()) == value:
+                    is_good = True
+                    break
+            if not is_good:
+                return False
+        return True
+        
+
+    def render_variant(self, 
+        variant: dict[str, Any] | list[dict[str, Any]],
+        block_state: dict[str, Any], pos: tuple[int, int, int],
+        center: tuple[int, int, int],
+        ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]
+        ):
+        if isinstance(variant, list):
+            # choose randomly a variant by the weight property
+            variant = random.choices(variant, weights=[x.get("weight", 1) for x in variant])[0]
+        model = variant["model"]
+        if model == "minecraft:block/air":
+            return
+        ItemRenderTask(
+            model=models[model],
+            model_name=model,
+            offset=(pos[0]*16, pos[1]*16, pos[2]*16),
+            center_offset=center,
+            do_rotate_camera=True,
+        ).run(ctx, opts, models)
             
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         print(f"Rendering structure {self.structure_name}")
         vanilla = ctx.inject(Vanilla)
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
-        palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])
+        if "palette" in self.structure.data:
+            palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])
         if "palettes" in self.structure.data:
             palette = cast(list[list[StructureFileData.BlockState]], self.structure.data["palettes"]).pop()
         min_x, min_y, min_z = [min(x) for x in zip(*[block["pos"] for block in blocks])]
@@ -640,26 +698,18 @@ class StructureRenderTask(Task):
                             break
                     if variant is None:
                         raise KeyError(f"Blockstate {block_state['Name']} has no variant for {block_state['Properties']}")
-                    ...
+                self.render_variant(variant, block_state, pos, center, ctx, opts, models)
             elif "multipart" in blockstate_json.data:
-                continue
-                raise NotImplementedError("multipart blockstates are not supported yet")
+                for part in blockstate_json.data["multipart"]:
+                    if not "when" in part:
+                        self.render_variant(part["apply"], block_state, pos, center, ctx, opts, models)
+                    else:
+                        when = part["when"]
+                        if self.verify_when(when, block_state["Properties"]):
+                            self.render_variant(part["apply"], block_state, pos, center, ctx, opts, models)
             else:
                 raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")
-            # find the good model
-            if isinstance(variant, list):
-                # choose randomly a variant by the weight property
-                variant = random.choices(variant, weights=[x.get("weight", 1) for x in variant])[0]
-            model = variant["model"]
-            if model == "minecraft:block/air":
-                continue
-            ItemRenderTask(
-                model=models[model],
-                model_name=model,
-                offset=(pos[0]*16, pos[1]*16, pos[2]*16),
-                center_offset=center,
-                do_rotate_camera=True,
-            ).run(ctx, opts, models)
+            
                 
             
 

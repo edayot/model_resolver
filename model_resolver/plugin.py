@@ -3,7 +3,7 @@ from beet.contrib.vanilla import Vanilla, Release
 from beet.core.cache import Cache
 from beet import NamespaceProxy
 from copy import deepcopy
-from typing import TypedDict, Mapping
+from typing import TypedDict, Mapping, Annotated, Any
 from PIL import Image
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel
 import numpy as np
@@ -29,8 +29,29 @@ def beet_default(ctx: Context):
         vanilla = vanilla.releases[opts.minecraft_version]
     else:
         vanilla = vanilla.releases[vanilla.minecraft_version]
+
+    
+    model_set : Annotated[set[str], "The models that the user wanted to render"]= set(ctx.assets.models.keys())
+    if filter is not None and len(filter) > 0:
+        model_set = set(ctx.assets.models.match(*filter))
+
+    models_ojb : Annotated[dict[str, MinecraftModel], "The resolved models in python object form"]= {}
+    tasks = []
     generated_models = set()
     generated_textures = set()
+    not_rendered_models = set()
+
+    for structure in ctx.data.structures:
+        structure_task = StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure)
+        for model in structure_task.get_needed_models(ctx=ctx, opts=opts):
+            if model in model_set:
+                continue
+            else:
+                generated_models.add(model)
+                model_set.add(model)
+                not_rendered_models.add(resolve_key(model))
+                ctx.assets.models[model] = vanilla.assets.models[model]
+        tasks.append(structure_task)
 
     for atlas in ctx.assets.atlases:
         resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)
@@ -56,10 +77,8 @@ def beet_default(ctx: Context):
         cache.json["minecraft_version"] = opts.minecraft_version
 
     logger.info(f"Resolving models...")
-    models = {}
-    model_set = set(ctx.assets.models.keys())
-    if filter is not None and len(filter) > 0:
-        model_set = set(ctx.assets.models.match(*filter))
+
+    models : Annotated[dict[str, dict[str, Any]], "The resolved models"]= {}
     for model in model_set:
         resolved_model = resolve_model(
             ctx.assets.models[model], vanilla.assets.models, ctx.assets.models
@@ -83,17 +102,14 @@ def beet_default(ctx: Context):
     logger.info(f"Handling animations...")
     models = handle_animations(models, ctx, vanilla, generated_textures)
 
-    if len(models) > 0:
+    if len(models) > 0 or len(tasks) > 0:
         logger.info(f"Rendering models...")
-        tasks = []
-        models_ojb = {}
         for model_name, model_data in models.items():
             model_obj = MinecraftModel.model_validate(model_data)
             models_ojb[model_name] = model_obj
-            tasks.append(ItemRenderTask(model=model_obj, model_name=model_name))
-        for structure in ctx.data.structures:
-            tasks.append(StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure, models=models_ojb))
-        scene = Scene(ctx=ctx, opts=opts, tasks=tasks)
+            if resolve_key(model_name) not in not_rendered_models:
+                tasks.append(ItemRenderTask(model=model_obj, model_name=model_name))
+        scene = Scene(ctx=ctx, opts=opts, tasks=tasks, models=models_ojb)
         scene.render()
 
         

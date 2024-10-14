@@ -7,7 +7,7 @@ from PIL import Image
 from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
 from nbtlib.contrib.minecraft.structure import StructureFileData
-from typing import Any, cast, Generator
+from typing import Any, cast, Generator, Type, Union
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel
 
 from math import cos, sin, pi, sqrt
@@ -20,7 +20,7 @@ import random
 
 class Task(BaseModel):
     zoom: int = 8
-    def run(self, ctx: Context, opts: ModelResolverOptions):
+    def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         pass
 
     def save_image(self, ctx: Context, opts: ModelResolverOptions, img: Image.Image):
@@ -39,6 +39,7 @@ class RenderError(Exception):
 class Scene:
     ctx: Context
     opts: ModelResolverOptions
+    models: dict[str, MinecraftModel]
     tasks: list[Task] = Field(default_factory=list)
     tasks_index: int = 0
     current_zoom: int = 8
@@ -151,7 +152,7 @@ class Scene:
             glViewport(0, 0, self.opts.render_size, self.opts.render_size)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore
 
-            self.current_task.run(self.ctx, self.opts)
+            self.current_task.run(self.ctx, self.opts, self.models)
 
             # Create an image from pixel data
             pixel_data: Any = glReadPixels(
@@ -298,7 +299,7 @@ class ItemRenderTask(Task):
         glRotatef(rotation[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
 
-    def run(self, ctx: Context, opts: ModelResolverOptions):
+    def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         self.rotate_camera()
         textures_bindings = self.generate_textures_bindings(ctx, opts)
         if self.model.gui_light == "side":
@@ -553,18 +554,52 @@ class ItemRenderTask(Task):
                 raise RenderError(f"Unknown face {face}")
             
 
+NestedDictList = Union[dict[str, Any], list[Any]]
+def traverse_all(data: NestedDictList, key: str = "model"):
+    if isinstance(data, dict):
+        if key in data.keys() and isinstance(data[key], str):
+            yield data[key]
+        for x in data.values():
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x)
+    if isinstance(data, list):
+        for x in data:
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x, key)
+
 class StructureRenderTask(Task):
     structure: Structure
     structure_name: str
-    models: dict[str, MinecraftModel]
 
     zoom: int = 64
 
     class Config:
         arbitrary_types_allowed = True
 
+    def get_needed_models(self, ctx: Context, opts: ModelResolverOptions):
+        vanilla = ctx.inject(Vanilla)
+        blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
+        palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])
+        if "palettes" in self.structure.data:
+            palette = cast(list[list[StructureFileData.BlockState]], self.structure.data["palettes"]).pop()
+        for block in blocks:
+            block_state = palette[block["state"]]
+            pos = block["pos"]
+            nbt = block.get("nbt", None)
 
-    def run(self, ctx: Context, opts: ModelResolverOptions):
+            if block_state["Name"] in ctx.assets.blockstates:
+                blockstate_json = ctx.assets.blockstates[block_state["Name"]]
+            elif block_state["Name"] in vanilla.assets.blockstates:
+                blockstate_json = vanilla.assets.blockstates[block_state["Name"]]
+            else:
+                raise KeyError(f"Blockstate {block_state['Name']} not found")
+            
+            yield from traverse_all(blockstate_json.data)
+            
+
+    def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         print(f"Rendering structure {self.structure_name}")
         vanilla = ctx.inject(Vanilla)
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
@@ -619,12 +654,12 @@ class StructureRenderTask(Task):
             if model == "minecraft:block/air":
                 continue
             ItemRenderTask(
-                model=self.models[model],
+                model=models[model],
                 model_name=model,
                 offset=(pos[0]*16, pos[1]*16, pos[2]*16),
                 center_offset=center,
                 do_rotate_camera=True,
-            ).run(ctx, opts)
+            ).run(ctx, opts, models)
                 
             
 

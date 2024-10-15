@@ -15,6 +15,7 @@ from math import cos, sin, pi, sqrt
 from pydantic import BaseModel, Field, ConfigDict
 from dataclasses import dataclass
 import random
+from rich import print
 
 
 
@@ -58,7 +59,7 @@ class Scene:
         glutInitWindowSize(self.opts.render_size, self.opts.render_size) 
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
-        # glutHideWindow()
+        glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -306,7 +307,6 @@ class ItemRenderTask(Task):
         glScalef(scale[0], scale[1], scale[2])
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
-        # print(self.model_name, self.offset)
         self.rotate_camera()
         textures_bindings = self.generate_textures_bindings(ctx, opts)
         if self.model.gui_light == "side":
@@ -413,6 +413,8 @@ class ItemRenderTask(Task):
     
     def rotate_vertices(self, vertices: tuple[list[float], ...], rotation: RotationModel):
         origin = [x - 8 for x in rotation.origin]
+        origin = [x - self.center_offset[i] for i, x in enumerate(origin)]
+        origin = [x + self.offset[i] for i, x in enumerate(origin)]
         angle = rotation.angle * pi / 180
         for point in vertices:
             x, y, z = point
@@ -458,7 +460,6 @@ class ItemRenderTask(Task):
         else:
             uv = self.get_uv(face, from_element, to_element)
             uv = [x / 16 for x in uv]
-        # print([x*16 for x in uv], face)
 
 
         match face:
@@ -589,6 +590,24 @@ HardWhenCondition = TypedDict("HardWhenCondition", {
 WhenCondition = HardWhenCondition | SimpleWhenCondition
 
 
+def verify_when(when: WhenCondition, block_state: dict[str, Any]) -> bool:
+    if "OR" in when:
+        conditions = when["OR"]
+        assert isinstance(conditions, list)
+        return any([verify_when(x, block_state) for x in conditions])
+    if "AND" in when:
+        conditions = when["AND"]
+        assert isinstance(conditions, list)
+        return all([verify_when(x, block_state) for x in conditions])
+
+    for key, value in when.items():
+        if not key in block_state:
+            return False
+        if str(block_state[key]) != str(value):
+            return False
+    return True
+
+
 class StructureRenderTask(Task):
     structure: Structure
     structure_name: str
@@ -598,7 +617,7 @@ class StructureRenderTask(Task):
         scale=(0.625, 0.625, 0.625)
     ))
 
-    zoom: int = 16
+    zoom: int = 32
 
     def rotate_camera(self):
         # transform the vertices
@@ -642,27 +661,6 @@ class StructureRenderTask(Task):
                 
                 yield from traverse_all(blockstate_json.data)
 
-    def verify_when(self, when: WhenCondition, block_state: dict[str, Any]) -> bool:
-        if "OR" in when:
-            conditions = when["OR"]
-            assert isinstance(conditions, list)
-            return any([self.verify_when(x, block_state) for x in conditions])
-        if "AND" in when:
-            conditions = when["AND"]
-            assert isinstance(conditions, list)
-            return all([self.verify_when(x, block_state) for x in conditions])
-    
-        for state, values in when.items():
-            is_good = False
-            assert isinstance(values, str)
-            for value in values.split("|"):
-                if block_state.get(state, object()) == value:
-                    is_good = True
-                    break
-            if not is_good:
-                return False
-        return True
-        
 
     def render_variant(self, 
         variant: dict[str, Any] | list[dict[str, Any]],
@@ -676,17 +674,27 @@ class StructureRenderTask(Task):
         model = variant["model"]
         if model == "minecraft:block/air":
             return
+        better_pos = [int(pos[i]) for i in range(3)]
+
+        rots = [
+            RotationModel(
+            origin=(8, 8, 8),
+            axis="y",
+            angle=-variant.get("y", 0),
+            rescale=False
+        ),
+        ]
         ItemRenderTask(
             model=models[model],
             model_name=model,
             offset=(pos[0]*16, pos[1]*16, pos[2]*16),
             center_offset=center,
             do_rotate_camera=False,
+            additional_rotations=rots,
         ).run(ctx, opts, models)
             
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
-        print(f"Rendering structure {self.structure_name}")
         self.rotate_camera()
         vanilla = ctx.inject(Vanilla)
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
@@ -735,7 +743,7 @@ class StructureRenderTask(Task):
                         self.render_variant(part["apply"], pos, center, ctx, opts, models)
                     else:
                         when = part["when"]
-                        if self.verify_when(when, block_state["Properties"]):
+                        if verify_when(when, block_state["Properties"]):
                             self.render_variant(part["apply"], pos, center, ctx, opts, models)
             else:
                 raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")

@@ -44,6 +44,9 @@ class Scene:
     tasks_index: int = 0
     current_zoom: int = 8
 
+    def __repr__(self):
+        return f"Scene(tasks_index={self.tasks_index}, current_zoom={self.current_zoom})"
+
     @property
     def current_task(self):
         return self.tasks[self.tasks_index]
@@ -55,7 +58,7 @@ class Scene:
         glutInitWindowSize(self.opts.render_size, self.opts.render_size) 
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
-        glutHideWindow()
+        # glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -84,6 +87,8 @@ class Scene:
 
     
     def display(self):
+        if self.tasks_index >= len(self.tasks):
+            return glutLeaveMainLoop()
         if self.current_task.zoom != self.current_zoom:
             self.current_zoom = self.current_task.zoom
             glMatrixMode(GL_PROJECTION)
@@ -206,6 +211,7 @@ class ItemRenderTask(Task):
     center_offset: tuple[float, float, float] = (0, 0, 0)
     do_rotate_camera: bool = True
     zoom: int = 8
+    additional_rotations: list[RotationModel] = Field(default_factory=list)
 
     model_config  = ConfigDict(protected_namespaces=())
 
@@ -300,6 +306,7 @@ class ItemRenderTask(Task):
         glScalef(scale[0], scale[1], scale[2])
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
+        # print(self.model_name, self.offset)
         self.rotate_camera()
         textures_bindings = self.generate_textures_bindings(ctx, opts)
         if self.model.gui_light == "side":
@@ -335,6 +342,8 @@ class ItemRenderTask(Task):
         vertices = self.get_vertices(
             from_element_centered, to_element_centered, element.rotation
         )
+        for rotation in self.additional_rotations:
+            vertices = self.rotate_vertices(vertices, rotation)
 
         texture_used = [
             element.faces.get("down", None),
@@ -400,24 +409,24 @@ class ItemRenderTask(Task):
         )
         if rotation is None:
             return res
-
+        return self.rotate_vertices(res, rotation)
+    
+    def rotate_vertices(self, vertices: tuple[list[float], ...], rotation: RotationModel):
         origin = [x - 8 for x in rotation.origin]
-        # rescale scale the axis vertices in
-        rotation.angle = rotation.angle * pi / 180
-
-        for point in res:
+        angle = rotation.angle * pi / 180
+        for point in vertices:
             x, y, z = point
             x -= origin[0]
             y -= origin[1]
             z -= origin[2]
             if rotation.axis == "x":
-                y, z = y * cos(rotation.angle) - z * sin(rotation.angle), y * sin(rotation.angle) + z * cos(rotation.angle)
+                y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
             elif rotation.axis == "y":
-                x, z = x * cos(-rotation.angle) - z * sin(-rotation.angle), x * sin(-rotation.angle) + z * cos(
-                    -rotation.angle
+                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
+                    -angle
                 )
             elif rotation.axis == "z":
-                x, y = x * cos(rotation.angle) - y * sin(rotation.angle), x * sin(rotation.angle) + y * cos(rotation.angle)
+                x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
             x += origin[0]
             y += origin[1]
             z += origin[2]
@@ -425,15 +434,15 @@ class ItemRenderTask(Task):
 
         if rotation.rescale:
             factor = sqrt(2)
-            for point in res:
+            for point in vertices:
                 if rotation.axis != "x":
                     point[0] = point[0] * factor
                 if rotation.axis != "y":
                     point[1] = point[1] * factor
                 if rotation.axis != "z":
                     point[2] = point[2] * factor
+        return vertices
 
-        return res
     
     def draw_face(
         self,
@@ -589,7 +598,7 @@ class StructureRenderTask(Task):
         scale=(0.625, 0.625, 0.625)
     ))
 
-    zoom: int = 64
+    zoom: int = 16
 
     def rotate_camera(self):
         # transform the vertices

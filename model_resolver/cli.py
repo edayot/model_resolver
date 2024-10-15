@@ -39,11 +39,13 @@ def main(
     if isinstance(__special_filter__, str):
         __special_filter__ = {}
     if isinstance(__light__, str):
-        __light__ = {}
+        light = {}
+    else:
+        light = __light__
     config = ProjectConfig(
         pipeline=["model_resolver"],
         output=output_dir,
-        resource_pack={"load": load_dir, "name": resource_pack_name or load_dir.name},
+        resource_pack={"load": load_dir, "name": resource_pack_name or load_dir.name}, # type: ignore
         meta={
             "model_resolver": {
                 "load_vanilla": load_vanilla,
@@ -54,7 +56,7 @@ def main(
                 "filter": filter,
                 "special_filter": __special_filter__,
                 "save_namespace": save_namespace,
-                "light": __light__,
+                "light": light,
             },
         },
     )

@@ -603,7 +603,8 @@ def verify_when(when: WhenCondition, block_state: dict[str, Any]) -> bool:
     for key, value in when.items():
         if not key in block_state:
             return False
-        if str(block_state[key]) != str(value):
+        values = str(value).split("|")
+        if not any([str(block_state[key]) == x for x in values]):
             return False
     return True
 
@@ -617,7 +618,7 @@ class StructureRenderTask(Task):
         scale=(0.625, 0.625, 0.625)
     ))
 
-    zoom: int = 32
+    zoom: int = 128
 
     def rotate_camera(self):
         # transform the vertices
@@ -677,6 +678,12 @@ class StructureRenderTask(Task):
         better_pos = [int(pos[i]) for i in range(3)]
 
         rots = [
+            RotationModel(
+            origin=(8, 8, 8),
+            axis="x",
+            angle=variant.get("x", 0),
+            rescale=False
+        ),
             RotationModel(
             origin=(8, 8, 8),
             axis="y",

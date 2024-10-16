@@ -101,7 +101,7 @@ class DisplayModel(BaseModel):
 class RotationModel(BaseModel):
     origin: tuple[float, float, float]
     axis: Literal["x", "y", "z"]
-    angle: float
+    angle: Literal[0, 90, 180, 270]
     rescale: bool = False
 
 class FaceModel(BaseModel):

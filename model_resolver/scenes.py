@@ -7,7 +7,7 @@ from PIL import Image
 from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
 from nbtlib.contrib.minecraft.structure import StructureFileData
-from typing import Any, cast, Generator, Type, Union, TypedDict
+from typing import Any, cast, Generator, Type, Union, TypedDict, Literal
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel, DisplayOptionModel
 
 from math import cos, sin, pi, sqrt
@@ -213,6 +213,7 @@ class ItemRenderTask(Task):
     do_rotate_camera: bool = True
     zoom: int = 8
     additional_rotations: list[RotationModel] = Field(default_factory=list)
+    uvlock: bool = False
 
     model_config  = ConfigDict(protected_namespaces=())
 
@@ -445,10 +446,11 @@ class ItemRenderTask(Task):
                     point[2] = point[2] * factor
         return vertices
 
+
     
     def draw_face(
         self,
-        face: str,
+        face: Literal["down", "up", "north", "south", "east", "west"],
         data: FaceModel,
         vertices: tuple,
         from_element: tuple[float, float, float],
@@ -460,6 +462,7 @@ class ItemRenderTask(Task):
         else:
             uv = self.get_uv(face, from_element, to_element)
             uv = [x / 16 for x in uv]
+        assert len(uv) == 4
 
 
         match face:
@@ -698,6 +701,7 @@ class StructureRenderTask(Task):
             center_offset=center,
             do_rotate_camera=False,
             additional_rotations=rots,
+            uvlock=variant.get("uvlock", False),
         ).run(ctx, opts, models)
             
 

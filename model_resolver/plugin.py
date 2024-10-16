@@ -1,7 +1,7 @@
 from beet import Context, Model, Texture
 from beet.contrib.vanilla import Vanilla, Release
 from beet.core.cache import Cache
-from beet import NamespaceProxy
+from beet import NamespaceProxy, ResourcePack
 from copy import deepcopy
 from typing import TypedDict, Mapping, Annotated, Any
 from PIL import Image
@@ -11,6 +11,7 @@ import hashlib
 import logging
 from rich import print
 from model_resolver.scenes import Scene, ItemRenderTask, StructureRenderTask
+import pathlib
 
 logger = logging.getLogger("model_resolver")
 
@@ -41,16 +42,27 @@ def beet_default(ctx: Context):
     generated_textures = set()
     not_rendered_models = set()
 
+    if opts.extra_block_entity_models:
+        extra_rp_path = pathlib.Path(__file__).parent / "static_models" 
+        rp = ResourcePack(path=extra_rp_path)
+        for model in rp.models:
+            if model in model_set:
+                continue
+            generated_models.add(model)
+            model_set.add(model)
+            not_rendered_models.add(resolve_key(model))
+            ctx.assets.models[model] = rp.models[model]
+            
+
     for structure in ctx.data.structures:
         structure_task = StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure)
         for model in structure_task.get_needed_models(ctx=ctx, opts=opts):
             if model in model_set:
                 continue
-            else:
-                generated_models.add(model)
-                model_set.add(model)
-                not_rendered_models.add(resolve_key(model))
-                ctx.assets.models[model] = vanilla.assets.models[model]
+            generated_models.add(model)
+            model_set.add(model)
+            not_rendered_models.add(resolve_key(model))
+            ctx.assets.models[model] = vanilla.assets.models[model]
         tasks.append(structure_task)
 
     for atlas in ctx.assets.atlases:

@@ -17,3 +17,4 @@ meta:
     load_vanilla: false
     render_size: 1024
     minecraft_version: "1.21"
+    extra_block_entity_models: true

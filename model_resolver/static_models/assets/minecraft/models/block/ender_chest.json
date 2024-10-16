@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/generic_chest",
+    "textures": {
+        "all": "minecraft:entity/chest/ender"
+    }
+}

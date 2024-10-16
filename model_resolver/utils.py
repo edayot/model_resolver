@@ -70,6 +70,7 @@ class ModelResolverOptions(BaseModel):
     special_filter: dict[str, str] = Field(default_factory=dict)
     light: LightOptions = LightOptions()
     save_namespace: Optional[str] = None
+    extra_block_entity_models: bool = False
 
 
 
@@ -101,7 +102,7 @@ class DisplayModel(BaseModel):
 class RotationModel(BaseModel):
     origin: tuple[float, float, float]
     axis: Literal["x", "y", "z"]
-    angle: Literal[0, 90, 180, 270]
+    angle: float
     rescale: bool = False
 
 class FaceModel(BaseModel):

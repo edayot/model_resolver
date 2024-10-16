@@ -7,7 +7,7 @@ from PIL import Image
 from beet import Context, Texture, Structure
 from beet.contrib.vanilla import Vanilla
 from nbtlib.contrib.minecraft.structure import StructureFileData
-from typing import Any, cast, Generator, Type, Union, TypedDict, Literal
+from typing import Any, cast, Generator, Type, Union, TypedDict, Literal, Optional
 from model_resolver.utils import load_textures, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel, DisplayOptionModel
 
 from math import cos, sin, pi, sqrt
@@ -17,6 +17,9 @@ from dataclasses import dataclass
 import random
 from rich import print
 
+
+def intToRGB(i: int) -> tuple[float, float, float]:
+    return ((i >> 16) & 0xFF) / 255, ((i >> 8) & 0xFF) / 255, (i & 0xFF) / 255
 
 
 class Task(BaseModel):
@@ -214,6 +217,8 @@ class ItemRenderTask(Task):
     zoom: int = 8
     additional_rotations: list[RotationModel] = Field(default_factory=list)
     uvlock: bool = False
+    block_state: dict[str, Any] = Field(default_factory=dict)
+    opts: Optional[ModelResolverOptions] = None
 
     model_config  = ConfigDict(protected_namespaces=())
 
@@ -233,13 +238,13 @@ class ItemRenderTask(Task):
         else:
             return textures[key]
 
-    def load_textures(self, ctx: Context, opts: ModelResolverOptions) -> dict[str, Image.Image]:
-        res = {}
+    def load_textures(self, ctx: Context, opts: ModelResolverOptions) -> dict[str, tuple[Image.Image, str]]:
+        res : dict[str, tuple[Image.Image, str]] = {}
         vanilla = ctx.inject(Vanilla)
         for key in self.model.textures.keys():
             value = self.get_real_key(key, self.model.textures)
             if value == "__not_found__":
-                res[key] = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                res[key] = (Image.new("RGBA", (16, 16), (0, 0, 0, 0)), "")
             else:
                 path = f"minecraft:{value}" if ":" not in value else value
                 if path in ctx.assets.textures:
@@ -250,12 +255,13 @@ class ItemRenderTask(Task):
                     raise KeyError(f"Texture {path} not found")
                 img: Image.Image = texture.image
                 img = img.convert("RGBA")
-                res[key] = img
+                res[key] = (img, path)
         return res
     
-    def generate_textures_bindings(self, ctx: Context, opts: ModelResolverOptions):
-        res = {}
-        for key, value in self.load_textures(ctx, opts).items():
+    def generate_textures_bindings(self, ctx: Context, opts: ModelResolverOptions) -> dict[str, tuple[int, str]]:
+        res: dict[str, tuple[int, str]] = {}
+        textures = self.load_textures(ctx, opts)
+        for key, (value, path) in textures.items():
             tex_id = glGenTextures(1)
             glBindTexture(GL_TEXTURE_2D, tex_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -272,7 +278,7 @@ class ItemRenderTask(Task):
                 GL_UNSIGNED_BYTE,
                 img_data,
             )
-            res[key] = tex_id
+            res[key] = (tex_id, path)
         return res
 
     def save_image(self, ctx: Context, opts: ModelResolverOptions, img: Image.Image):
@@ -308,6 +314,7 @@ class ItemRenderTask(Task):
         glScalef(scale[0], scale[1], scale[2])
 
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
+        self.opts = opts
         self.rotate_camera()
         textures_bindings = self.generate_textures_bindings(ctx, opts)
         if self.model.gui_light == "side":
@@ -333,7 +340,7 @@ class ItemRenderTask(Task):
         glDisable(GL_LIGHT0)
         glDisable(GL_LIGHT1)
 
-    def draw_element(self, element: ElementModel, textures_bindings: dict[str, int]):
+    def draw_element(self, element: ElementModel, textures_bindings: dict[str, tuple[int, str]]):
         glEnable(GL_TEXTURE_2D)
 
         from_element_centered, to_element_centered = self.center_element(
@@ -360,12 +367,12 @@ class ItemRenderTask(Task):
         for texture in texture_used:
             if texture not in textures_bindings:
                 continue
-            glBindTexture(GL_TEXTURE_2D, textures_bindings[texture])
+            glBindTexture(GL_TEXTURE_2D, textures_bindings[texture][0])
             glColor3f(1.0, 1.0, 1.0)
             # get all the faces with the same texture
             for face, data in element.faces.items():
                 if data.texture.lstrip("#") == texture:
-                    self.draw_face(face, data, vertices, element.from_, element.to)
+                    self.draw_face(face, data, vertices, element.from_, element.to, texture_name=textures_bindings[texture][1])
 
         glDisable(GL_TEXTURE_2D)
 
@@ -455,6 +462,7 @@ class ItemRenderTask(Task):
         vertices: tuple,
         from_element: tuple[float, float, float],
         to_element: tuple[float, float, float],
+        texture_name: str,
     ):
 
         if data.uv:
@@ -534,11 +542,45 @@ class ItemRenderTask(Task):
             normal = normals[i]
             glNormal3fv(normal)
 
+        color = self.get_color_from_texture(texture_name, data.tintindex)
         for i, (uv0, uv1) in enumerate(texcoords):
+            glColor3f(*color)
             glTexCoord2f(uv[uv0], uv[uv1])
             glVertex3fv(rotated_vertices[i])
         glEnd()
         # glUseProgram(0)
+
+    def get_color_from_texture(self, texture_name: str, tintindex: int) -> tuple[float, float, float]:
+        if not self.opts:
+            return (1.0, 1.0, 1.0)
+        if not self.opts.colorize_blocks:
+            return (1.0, 1.0, 1.0)
+        grass = (124 / 255, 189 / 255, 107 / 255)
+        spruce = intToRGB(6396257)
+        birch = intToRGB(8431445)
+        foliage = intToRGB(4764952)
+        water = intToRGB(4159204)
+        attached_stem = intToRGB(8431445)
+        lily_pad = intToRGB(2129968)
+
+        if texture_name in ["minecraft:block/redstone_dust_dot", "minecraft:block/redstone_dust_line0", "minecraft:block/redstone_dust_line1"]:
+            power = self.block_state.get("power", 0)
+            a = int(power) / 15
+            r = a * 0.6 + (0.4 if a > 0 else 0.3)
+            g = min(max(a * a * 0.7 - 0.5, 0), 1)
+            b = min(max(a * a * 0.6 - 0.7, 0), 1)
+            return (r, g, b)
+        if texture_name in ["minecraft:block/grass_block_side_overlay", "minecraft:block/grass_block_top"]:
+            return grass
+        
+        if texture_name in ["minecraft:block/spruce_leaves"]:
+            return spruce
+        if texture_name in ["minecraft:block/birch_leaves"]:
+            return birch
+        if texture_name.startswith("minecraft:block/") and texture_name.endswith("_leaves"):
+            return foliage
+
+        return (1.0, 1.0, 1.0)
 
     def get_uv(
         self,
@@ -670,7 +712,8 @@ class StructureRenderTask(Task):
         variant: dict[str, Any] | list[dict[str, Any]],
         pos: tuple[int, int, int],
         center: tuple[int, int, int],
-        ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]
+        ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel],
+        block_state: dict[str, Any]
         ):
         if isinstance(variant, list):
             # choose randomly a variant by the weight property
@@ -702,6 +745,7 @@ class StructureRenderTask(Task):
             do_rotate_camera=False,
             additional_rotations=rots,
             uvlock=variant.get("uvlock", False),
+            block_state=block_state
         ).run(ctx, opts, models)
             
 
@@ -747,15 +791,15 @@ class StructureRenderTask(Task):
                             break
                     if variant is None:
                         raise KeyError(f"Blockstate {block_state['Name']} has no variant for {block_state['Properties']}")
-                self.render_variant(variant, pos, center, ctx, opts, models)
+                self.render_variant(variant, pos, center, ctx, opts, models, block_state.get("Properties", {}))
             elif "multipart" in blockstate_json.data:
                 for part in blockstate_json.data["multipart"]:
                     if not "when" in part:
-                        self.render_variant(part["apply"], pos, center, ctx, opts, models)
+                        self.render_variant(part["apply"], pos, center, ctx, opts, models, block_state.get("Properties", {}))
                     else:
                         when = part["when"]
                         if verify_when(when, block_state["Properties"]):
-                            self.render_variant(part["apply"], pos, center, ctx, opts, models)
+                            self.render_variant(part["apply"], pos, center, ctx, opts, models, block_state.get("Properties", {}))
             else:
                 raise KeyError(f"Blockstate {block_state['Name']} has no variants or multipart")
             

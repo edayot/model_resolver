@@ -71,6 +71,7 @@ class ModelResolverOptions(BaseModel):
     light: LightOptions = LightOptions()
     save_namespace: Optional[str] = None
     extra_block_entity_models: bool = False
+    colorize_blocks: bool = False
 
 
 

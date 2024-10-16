@@ -241,6 +241,10 @@ class ItemRenderTask(Task):
     def load_textures(self, ctx: Context, opts: ModelResolverOptions) -> dict[str, tuple[Image.Image, str]]:
         res : dict[str, tuple[Image.Image, str]] = {}
         vanilla = ctx.inject(Vanilla)
+        if not opts.minecraft_version == "latest":
+            vanilla = vanilla.releases[opts.minecraft_version]
+        else:
+            vanilla = vanilla.releases[vanilla.minecraft_version]
         for key in self.model.textures.keys():
             value = self.get_real_key(key, self.model.textures)
             if value == "__not_found__":
@@ -693,6 +697,10 @@ class StructureRenderTask(Task):
 
     def get_needed_models(self, ctx: Context, opts: ModelResolverOptions):
         vanilla = ctx.inject(Vanilla)
+        if not opts.minecraft_version == "latest":
+            vanilla = vanilla.releases[opts.minecraft_version]
+        else:
+            vanilla = vanilla.releases[vanilla.minecraft_version]
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
         for palette in self.get_palettes():
             for block in blocks:
@@ -752,6 +760,10 @@ class StructureRenderTask(Task):
     def run(self, ctx: Context, opts: ModelResolverOptions, models: dict[str, MinecraftModel]):
         self.rotate_camera()
         vanilla = ctx.inject(Vanilla)
+        if not opts.minecraft_version == "latest":
+            vanilla = vanilla.releases[opts.minecraft_version]
+        else:
+            vanilla = vanilla.releases[vanilla.minecraft_version]
         blocks = cast(list[StructureFileData.Block], self.structure.data["blocks"])
         if "palette" in self.structure.data:
             palette = cast(list[StructureFileData.BlockState], self.structure.data["palette"])

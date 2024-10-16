@@ -8,4 +8,4 @@ meta:
   model_resolver:
     # load vanilla item models
     load_vanilla: true
-    minecraft_version: "1.21"
+    minecraft_version: "1.21.1"

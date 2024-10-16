@@ -78,7 +78,7 @@ def beet_default(ctx: Context):
         for atlas in vanilla.assets.atlases:
             resolve_atlas(ctx, vanilla, vanilla, atlas, generated_textures)
     if opts.load_vanilla:
-        render_vanilla(ctx, vanilla, generated_models)
+        render_vanilla(ctx, vanilla, generated_models, model_set)
 
     use_cache = opts.use_cache
     cache = ctx.cache["model_resolver"]
@@ -95,7 +95,7 @@ def beet_default(ctx: Context):
         cache.json["render_size"] = opts.render_size
         cache.json["minecraft_version"] = opts.minecraft_version
 
-    logger.info(f"Resolving models...")
+    logger.info(f"Resolving models... {len(model_set)} in total")
 
     models : Annotated[dict[str, dict[str, Any]], "The resolved models"]= {}
     for model in model_set:
@@ -124,7 +124,11 @@ def beet_default(ctx: Context):
     if len(models) > 0 or len(tasks) > 0:
         logger.info(f"Rendering models...")
         for model_name, model_data in models.items():
-            model_obj = MinecraftModel.model_validate(model_data)
+            try:
+                model_obj = MinecraftModel.model_validate(model_data)
+            except Exception as e:
+                logger.error(f"Error validating model {model_name}: {e}")
+                continue
             models_ojb[model_name] = model_obj
             if resolve_key(model_name) not in not_rendered_models:
                 tasks.append(ItemRenderTask(model=model_obj, model_name=model_name))
@@ -157,7 +161,7 @@ def handle_cache(cache: Cache, model, resolved_model, ctx, vanilla):
     return img
 
 
-def render_vanilla(ctx: Context, vanilla: Release, models: set[str]):
+def render_vanilla(ctx: Context, vanilla: Release, models: set[str], model_set: set[str]):
     vanilla_models = vanilla.assets.models
 
     for model in vanilla_models.match("minecraft:*"):
@@ -167,6 +171,7 @@ def render_vanilla(ctx: Context, vanilla: Release, models: set[str]):
         if model not in ctx.assets.models:
             ctx.assets.models[model] = vanilla_models[model]
             models.add(model)
+            model_set.add(resolve_key(model))
 
 
 class Atlas(TypedDict):

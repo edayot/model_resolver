@@ -108,7 +108,7 @@ class RotationModel(BaseModel):
 class FaceModel(BaseModel):
     uv: Optional[tuple[float, float, float, float]] = None
     texture: Annotated[str, "The texture variable for the face"]
-    cullface: Optional[faces_keys] = None
+    cullface: Optional[faces_keys | str] = None
     rotation: Literal[0, 90, 180, 270] = 0
     tintindex: int = -1
 

@@ -41,6 +41,7 @@ def beet_default(ctx: Context):
     generated_models = set()
     generated_textures = set()
     not_rendered_models = set()
+    generated_blockstates = set()
 
     if opts.extra_block_entity_models:
         extra_rp_path = pathlib.Path(__file__).parent / "static_models" 
@@ -52,6 +53,12 @@ def beet_default(ctx: Context):
             model_set.add(model)
             not_rendered_models.add(resolve_key(model))
             ctx.assets.models[model] = rp.models[model]
+        for blockstate in rp.blockstates:
+            if blockstate in ctx.assets.blockstates:
+                continue
+            generated_blockstates.add(blockstate)
+            ctx.assets.blockstates[blockstate] = rp.blockstates[blockstate]
+            
             
 
     for structure in ctx.data.structures:
@@ -127,7 +134,7 @@ def beet_default(ctx: Context):
         
 
     logger.info(f"Cleaning up...")
-    clean_generated(ctx, generated_textures, generated_models)
+    clean_generated(ctx, generated_textures, generated_models, generated_blockstates)
 
 
 def handle_cache(cache: Cache, model, resolved_model, ctx, vanilla):
@@ -170,7 +177,7 @@ class Atlas(TypedDict):
 
 
 def clean_generated(
-    ctx: Context, generated_textures: set[str], generated_models: set[str]
+    ctx: Context, generated_textures: set[str], generated_models: set[str], generated_blockstates: set[str]
 ):
     for texture in generated_textures:
         if texture in ctx.assets.textures:
@@ -178,6 +185,9 @@ def clean_generated(
     for model in generated_models:
         if model in ctx.assets.models:
             del ctx.assets.models[model]
+    for blockstate in generated_blockstates:
+        if blockstate in ctx.assets.blockstates:
+            del ctx.assets.blockstates[blockstate]
 
 
 def resolve_atlas(

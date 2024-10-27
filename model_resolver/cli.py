@@ -26,6 +26,7 @@ def main(
     __special_filter__ : Annotated[str, typer.Option(hidden=True)] = "",
     __light__ : Annotated[str, typer.Option(hidden=True)] = "",
     resource_pack_name: Annotated[Optional[str], typer.Option(help="Name of the resourcepack")] = None,
+    disable_print: Annotated[bool, typer.Option(help="Disable print")] = False,
     # fmt: on
 ):
     """
@@ -62,8 +63,9 @@ def main(
     )
     with run_beet(config=config) as ctx:
         pass
-    t_end = perf_counter()
-    print(f"[green][bold]✔️[/bold]  Finished in {t_end - t_start:.2f} seconds [/green]")
+    if not disable_print:
+        t_end = perf_counter()
+        print(f"[green][bold]✔️[/bold]  Finished in {t_end - t_start:.2f} seconds [/green]")
 
 
 if __name__ == "__main__":

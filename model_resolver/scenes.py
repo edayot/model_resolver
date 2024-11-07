@@ -256,7 +256,10 @@ class ItemRenderTask(Task):
                 elif path in vanilla.assets.textures:
                     texture = vanilla.assets.textures[path]
                 else:
-                    raise KeyError(f"Texture {path} not found")
+                    if opts.disable_missing_texture_error:
+                        texture = Texture(Image.new("RGBA", (16, 16), (0, 0, 0, 0)))
+                    else:
+                        raise KeyError(f"Texture {path} not found")
                 img: Image.Image = texture.image
                 img = img.convert("RGBA")
                 res[key] = (img, path)

@@ -27,6 +27,7 @@ def main(
     __light__ : Annotated[str, typer.Option(hidden=True)] = "",
     resource_pack_name: Annotated[Optional[str], typer.Option(help="Name of the resourcepack")] = None,
     disable_print: Annotated[bool, typer.Option(help="Disable print")] = False,
+    disable_missing_texture_error: Annotated[bool, typer.Option(help="Disable missing texture error")] = False,
     # fmt: on
 ):
     """
@@ -58,6 +59,7 @@ def main(
                 "special_filter": __special_filter__,
                 "save_namespace": save_namespace,
                 "light": light,
+                "disable_missing_texture_error": disable_missing_texture_error,
             },
         },
     )

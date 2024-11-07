@@ -22,12 +22,15 @@ def load_textures(
 
 
 def load_texture(path: str, ctx: Context, vanilla: Release) -> Image.Image:
+    opts = ctx.validate("model_resolver", ModelResolverOptions)
     path = f"minecraft:{path}" if ":" not in path else path
     if path in ctx.assets.textures:
         texture = ctx.assets.textures[path]
     elif path in vanilla.assets.textures:
         texture = vanilla.assets.textures[path]
     else:
+        if opts.disable_missing_texture_error:
+            return Image.new("RGBA", (16, 16), (0, 0, 0, 0))
         raise KeyError(f"Texture {path} not found")
     img: Image.Image = texture.image
     img = img.convert("RGBA")
@@ -72,6 +75,7 @@ class ModelResolverOptions(BaseModel):
     save_namespace: Optional[str] = None
     extra_block_entity_models: bool = False
     colorize_blocks: bool = False
+    disable_missing_texture_error: bool = False
 
 
 

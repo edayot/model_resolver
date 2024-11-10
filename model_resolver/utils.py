@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 from typing import Annotated, Literal, Optional
 from beet import Context
 
+
+def resolve_key(key: str) -> str:
+    return f"minecraft:{key}" if ":" not in key else key
+
+
 def load_textures(
     textures: dict, ctx: Context, vanilla: Release
 ) -> dict[str, Image.Image]:
@@ -120,7 +125,7 @@ class FaceModel(BaseModel):
 
 
 class ElementModel(BaseModel):
-    from_: tuple[float, float, float] = Field(alias="from")
+    from_: tuple[float, float, float] = Field(alias="from", serialization_alias="from")
     to: tuple[float, float, float]
     rotation: Optional[RotationModel] = None
     shade: bool = True
@@ -128,8 +133,17 @@ class ElementModel(BaseModel):
     faces: dict[faces_keys, FaceModel]
 
 
+class MinecraftModelNullable(BaseModel):
+    parent: Annotated[Optional[str], "The parent of the model"] = None
+    ambientocclusion: Annotated[Optional[bool], "Whether the model should use ambient occlusion"] = None
+    display: Annotated[DisplayModel, "The display settings for the model in various situations in the game"] = Field(default_factory=lambda: DisplayModel())
+    textures: Annotated[dict[str, str], "Resource locations for the textures used in the model, can also be a texture variable"] = Field(default_factory=dict)
+    elements: Annotated[list[ElementModel], "The elements that make up the model"] = Field(default_factory=list)
+    gui_light: Annotated[Optional[Literal["front", "side"]], "Control the light position"] = None
+
 
 class MinecraftModel(BaseModel):
+    parent: Annotated[Optional[str], "The parent of the model"] = None
     ambientocclusion: Annotated[bool, "Whether the model should use ambient occlusion"] = True
     display: Annotated[DisplayModel, "The display settings for the model in various situations in the game"] = Field(default_factory=lambda: DisplayModel())
     textures: Annotated[dict[str, str], "Resource locations for the textures used in the model, can also be a texture variable"] = Field(default_factory=dict)
@@ -137,6 +151,15 @@ class MinecraftModel(BaseModel):
     gui_light: Annotated[Literal["front", "side"], "Control the light position"] = "side"
 
 
+    def bake(self):
+        if not self.parent:
+            return
+        if not resolve_key(self.parent) == "builtin/generated":
+            return
+        if not self.textures:
+            return
+        raise NotImplementedError()
+        
 
 if __name__ == "__main__":
     obj = {'from': [0, 0, 0], 'to': [16, 2, 16], 'faces': {'up': {'texture': '#inside'}, 'down': {'texture': '#bottom', 'cullface': 'down'}}}

@@ -3,8 +3,11 @@
 resource_pack:
   load: .
 
+require:
+  - model_resolver.require
+
 pipeline:
-  - model_resolver
+  - model_resolver.pipeline
 
 
 meta:

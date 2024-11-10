@@ -76,6 +76,7 @@ class ModelResolverOptions(BaseModel):
     extra_block_entity_models: bool = False
     colorize_blocks: bool = False
     disable_missing_texture_error: bool = False
+    experimental_render_structure: bool = False
 
 
 

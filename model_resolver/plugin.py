@@ -61,16 +61,17 @@ def beet_default(ctx: Context):
             
             
 
-    for structure in ctx.data.structures:
-        structure_task = StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure)
-        for model in structure_task.get_needed_models(ctx=ctx, opts=opts):
-            if model in model_set:
-                continue
-            generated_models.add(model)
-            model_set.add(model)
-            not_rendered_models.add(resolve_key(model))
-            ctx.assets.models[model] = vanilla.assets.models[model]
-        tasks.append(structure_task)
+    if opts.experimental_render_structure:
+        for structure in ctx.data.structures:
+            structure_task = StructureRenderTask(structure=ctx.data.structures[structure], structure_name=structure)
+            for model in structure_task.get_needed_models(ctx=ctx, opts=opts):
+                if model in model_set:
+                    continue
+                generated_models.add(model)
+                model_set.add(model)
+                not_rendered_models.add(resolve_key(model))
+                ctx.assets.models[model] = vanilla.assets.models[model]
+            tasks.append(structure_task)
 
     for atlas in ctx.assets.atlases:
         resolve_atlas(ctx, vanilla, ctx, atlas, generated_textures)

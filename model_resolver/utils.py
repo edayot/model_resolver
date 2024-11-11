@@ -12,6 +12,14 @@ from beet import Context
 def resolve_key(key: str) -> str:
     return f"minecraft:{key}" if ":" not in key else key
 
+import typing
+if typing.TYPE_CHECKING:
+    from _typeshed import SupportsRichComparison
+
+
+def clamp[T: (SupportsRichComparison)](minimum: T, x: T, maximum: T) -> T:
+    return max(minimum, min(x, maximum))
+
 
 def load_textures(
     textures: dict, ctx: Context, vanilla: Release

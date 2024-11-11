@@ -74,11 +74,17 @@ class TintSourceGrass(TintSourceBase):
             raise ValueError(f"{texture_key} not found in Context or Vanilla")
         img: Image.Image = texture.image
         img = img.convert(mode="RGB")
-        y = clamp(0, int(self.temperature * (img.size[0] - 1)), img.size[0] - 1)
-        x = clamp(0, int(self.downfall * (img.size[1] - 1)), img.size[1] - 1)
+        temperature = clamp(0, self.temperature, 1)
+        downfall = clamp(0, self.downfall, 1)
+        adjusted_downfall = downfall * temperature
+        width, height = img.size
+        x = int(temperature * (width - 1))
+        y = int(adjusted_downfall * (height - 1))
+        x = width - 1 - x
+        y = height - 1 - y
         color = img.getpixel((x, y))
         if not color:
-            raise ValueError(f"Color not found at {x}, {y}")
+            raise ValueError(f"Color not found at {temperature}, {downfall}")
         return color  # type: ignore
 
 
@@ -147,7 +153,7 @@ class TintSourceCustomModelData(TintSourceBase):
             return to_rgb(0)
         if not "colors" in item.components["minecraft:custom_model_data"]:
             return to_rgb(0)
-        return to_rgb(item.components["minecraft:custom_model_data"][self.index or 0])
+        return to_rgb(item.components["minecraft:custom_model_data"]["colors"][self.index or 0])
 
 
 type TintSource = TintSourceDye | TintSourceConstant | TintSourceGrass | TintSourceFirework | TintSourcePotion | TintSourceMap | TintSourceCustomModelData

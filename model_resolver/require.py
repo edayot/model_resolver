@@ -1,15 +1,19 @@
 
 
 from beet import Context, Model, NamespaceFileScope, JsonFile
-from typing import ClassVar
+from typing import ClassVar, Type
 from model_resolver.utils import MinecraftModelNullable, MinecraftModel, DisplayModel, resolve_key
 from model_resolver.vanilla import Vanilla
 
 class ModelResolveNamespace(Model):
 
     def resolve(self, ctx: Context, vanilla: "Vanilla") -> MinecraftModel:
-        internal = self.resolve_internal(ctx, vanilla).model_dump(by_alias=True)
-        return MinecraftModel.model_validate(internal)
+        internal = self.resolve_internal(ctx, vanilla)
+        if internal.ambientocclusion is None:
+            internal.ambientocclusion = True
+        if internal.gui_light is None:
+            internal.gui_light = "side"
+        return MinecraftModel.model_validate(internal, from_attributes=True)
 
     def resolve_internal(self, ctx: Context, vanilla: "Vanilla") -> MinecraftModelNullable:
         if not "parent" in self.data:

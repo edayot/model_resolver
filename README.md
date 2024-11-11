@@ -96,3 +96,8 @@ pip install model-resolver
 Pypi: https://pypi.org/project/model-resolver/
 
 
+
+
+## Credits
+
+- RedCoal27 for this big item model : https://github.com/RedCoal27/Custom-Item

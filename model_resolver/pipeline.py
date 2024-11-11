@@ -67,7 +67,7 @@ def beet_default(ctx: Context):
 }
     
     model = ItemModel.model_validate(test)
-    models = model.resolve(ctx, vanilla, Item(id="minecraft:crossbow"))
+    models = model.resolve(ctx, vanilla, Item(id="minecraft:crossbow").fill(ctx))
     print(list(models))
 
 

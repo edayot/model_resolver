@@ -378,8 +378,20 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
     
 type ItemModelRangeDispatch = ItemModelRangeDispatchCustomModelData | ItemModelRangeDispatchBundleFullness | ItemModelRangeDispatchDamage | ItemModelRangeDispatchCount | ItemModelRangeDispatchCooldown | ItemModelRangeDispatchTime | ItemModelRangeDispatchCompass | ItemModelRangeDispatchCrossbowPull | ItemModelRangeDispatchUseDuration | ItemModelRangeDispatchUseCycle
 
+class ItemModelBundleSelectedItem(ItemModelBase):
+    type: Literal["minecraft:bundle/selected_item"]
 
-type ItemModelAll = ItemModelModel | ItemModelComposite | ItemModelCondition | ItemModelSelect | ItemModelRangeDispatch
+
+
+class ItemModelSpecialBase(ItemModelBase):
+    type: Literal["minecraft:special"]
+    base: str
+
+    
+
+    
+
+type ItemModelAll = ItemModelModel | ItemModelComposite | ItemModelCondition | ItemModelSelect | ItemModelRangeDispatch | ItemModelBundleSelectedItem
 
 
 class ItemModel(BaseModel):

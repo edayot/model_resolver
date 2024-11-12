@@ -1,6 +1,5 @@
 from PIL import Image
 from beet import Context
-from beet.contrib.vanilla import Vanilla, Release
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -21,33 +20,6 @@ def clamp[T: (SupportsRichComparison)](minimum: T, x: T, maximum: T) -> T:
     return max(minimum, min(x, maximum))
 
 
-def load_textures(
-    textures: dict, ctx: Context, vanilla: Release
-) -> dict[str, Image.Image]:
-    res = {}
-    for key in textures.keys():
-        value = get_real_key(key, textures)
-        if value == "__not_found__":
-            res[key] = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-        else:
-            res[key] = load_texture(value, ctx, vanilla)
-    return res
-
-
-def load_texture(path: str, ctx: Context, vanilla: Release) -> Image.Image:
-    opts = ctx.validate("model_resolver", ModelResolverOptions)
-    path = f"minecraft:{path}" if ":" not in path else path
-    if path in ctx.assets.textures:
-        texture = ctx.assets.textures[path]
-    elif path in vanilla.assets.textures:
-        texture = vanilla.assets.textures[path]
-    else:
-        if opts.disable_missing_texture_error:
-            return Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-        raise KeyError(f"Texture {path} not found")
-    img: Image.Image = texture.image
-    img = img.convert("RGBA")
-    return img
 
 
 def get_real_key(key: str, textures: dict, max_depth: int = 10) -> str:

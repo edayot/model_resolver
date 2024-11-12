@@ -221,7 +221,7 @@ class ItemRenderTask(Task):
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
 
-        center = (8, 8, 8)
+        center : tuple[float, float, float] = (8, 8, 8)
         center = (center[0] + self.center_offset[0], center[1] + self.center_offset[1], center[2] + self.center_offset[2])
 
         # compute the new from and to
@@ -303,7 +303,7 @@ class ItemRenderTask(Task):
         if data.uv:
             uv = [x / 16 for x in data.uv]
         else:
-            uv = self.get_uv(face, from_element, to_element)
+            uv = list(self.get_uv(face, from_element, to_element))
             uv = [x / 16 for x in uv]
         assert len(uv) == 4
 
@@ -377,11 +377,11 @@ class ItemRenderTask(Task):
             normal = normals[i]
             glNormal3fv(normal)
 
-        color = [1.0, 1.0, 1.0]
+        color = (1.0, 1.0, 1.0)
         if len(tints) > data.tintindex and data.tintindex >= 0:
             tint = tints[data.tintindex]
             color = tint.resolve(self.ctx, self.vanilla, item=self.item)
-            color = [x / 255 for x in color]
+            color = (color[0] / 255, color[1] / 255, color[2] / 255)
         for i, (uv0, uv1) in enumerate(texcoords):
             glColor3f(*color)
             glTexCoord2f(uv[uv0], uv[uv1])

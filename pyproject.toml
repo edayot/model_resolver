@@ -20,7 +20,6 @@ pyopenglalwaysworking = "3.1.99"
 pytest-insta = "^0.3.0"
 
 [tool.poetry.scripts]
-model_resolver = "model_resolver.cli:app"
 
 
 [build-system]

@@ -4,7 +4,7 @@ resource_pack:
   load: .
 
 require:
-  - model_resolver.require
+  - model_resolver
 
 pipeline:
   - my_pipeline

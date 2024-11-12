@@ -159,14 +159,37 @@ class MinecraftModel(BaseModel):
     gui_light: Annotated[Literal["front", "side"], "Control the light position"] = "side"
 
 
-    def bake(self):
+    def bake(self) -> "MinecraftModel":
         if not self.parent:
-            return
-        if not resolve_key(self.parent) == "builtin/generated":
-            return
+            return self
+        if not resolve_key(self.parent) == "minecraft:builtin/generated":
+            return self
         if not self.textures:
-            return
-        raise NotImplementedError()
+            return self
+        max = 0
+        for key in self.textures.keys():
+            if not key.startswith("layer"):
+                continue
+            index = int(key.removeprefix("layer"))
+            if index > max:
+                max = index
+        for i in range(0, max+1):
+            if not f"layer{i}" in self.textures:
+                continue
+            self.elements.append(ElementModel.model_validate({
+                "from": [0, 0, -i],
+                "to": [16, 16, -i],
+                "faces": {
+                    "north": {
+                        "texture": f"#layer{i}",
+                        "uv": [0, 0, 16, 16],
+                    }
+                }
+            }))
+        self.parent = None
+        self.display.gui = DisplayOptionModel(rotation=(180, 0, 180)) 
+        return self
+            
         
 
 if __name__ == "__main__":

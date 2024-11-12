@@ -266,11 +266,11 @@ class ItemModelSelectTrimMaterial(ItemModelSelectBase):
     ) -> "ItemModelAll":
         if not item.components:
             return self.fallback
-        if not "minecraft:trim_material" in item.components:
+        if not "minecraft:trim" in item.components:
             return self.fallback
-        if not "material" in item.components["minecraft:trim_material"]:
+        if not "material" in item.components["minecraft:trim"]:
             return self.fallback
-        return self.resolve_case(item.components["minecraft:trim_material"]["material"])
+        return self.resolve_case(item.components["minecraft:trim"]["material"])
 
 
 class ItemModelSelectBlockState(ItemModelSelectBase):

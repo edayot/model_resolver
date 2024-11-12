@@ -3,7 +3,7 @@ from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
-from beet import Context, Texture
+from beet import Context, Texture, Atlas
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel, resolve_key
@@ -11,7 +11,7 @@ from model_resolver.vanilla import Vanilla
 from model_resolver.require import ModelResolveNamespace, ItemModelNamespace
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Literal
+from typing import Optional, Literal, TypedDict
 from pathlib import Path
 import logging
 from PIL import Image
@@ -25,12 +25,13 @@ class RenderError(Exception):
 class Task:
     ctx: Context
     vanilla: Vanilla
-    save_path_ctx: Optional[str] = None
-    save_path: Optional[Path] = None
+    path_ctx: Optional[str] = None
+    path_save: Optional[Path] = None
     render_size: int = 512
     zoom: float = 8
 
     ensure_params: bool = False
+    dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
 
     def change_params(self):
         glMatrixMode(GL_PROJECTION)
@@ -43,10 +44,10 @@ class Task:
         pass
 
     def save(self, img: Image.Image):
-        if self.save_path_ctx:
-            self.ctx.assets.textures[self.save_path_ctx] = Texture(img)
-        elif self.save_path:
-            img.save(self.save_path)
+        if self.path_ctx:
+            self.ctx.assets.textures[self.path_ctx] = Texture(img)
+        elif self.path_save:
+            img.save(self.path_save)
 
 
 @dataclass(kw_only=True)
@@ -76,6 +77,7 @@ class ItemRenderTask(Task):
                 model_def = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
             else:
                 raise RenderError(f"Model {key} not found")
+            model_def = model_def.bake()
             self.render_model(model_def, model.tints)
     
     def rotate_camera(self, model: MinecraftModel):
@@ -116,6 +118,8 @@ class ItemRenderTask(Task):
                     texture = self.ctx.assets.textures[path]
                 elif path in self.vanilla.assets.textures:
                     texture = self.vanilla.assets.textures[path]
+                elif path in self.dynamic_textures:
+                    texture = Texture(self.dynamic_textures[path])
                 else:
                     texture = Texture(Image.new("RGBA", (16, 16), (0, 0, 0, 0)))
                 img: Image.Image = texture.image
@@ -414,6 +418,11 @@ class ItemRenderTask(Task):
         
 
 
+class AtlasDict(TypedDict):
+    type: str
+    textures: list[str]
+    palette_key: str
+    permutations: dict[str, str]
 
 
 @dataclass
@@ -423,6 +432,7 @@ class Render:
     tasks: list[Task] = field(default_factory=list)
     tasks_index: int = 0
     light: LightOptions = field(default_factory=LightOptions)
+    dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
 
     def __post_init__(self):
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
@@ -442,8 +452,8 @@ class Render:
     def add_item_task(
         self, 
         item: Item, 
-        save_path_ctx: Optional[str] = None,
-        save_path: Optional[Path] = None, 
+        path_ctx: Optional[str] = None,
+        path_save: Optional[Path] = None, 
         render_size: int = 512
     ):
         self.tasks.append(
@@ -451,14 +461,96 @@ class Render:
                 ctx=self.ctx,
                 vanilla=self.vanilla,
                 item=item.fill(self.ctx),
-                save_path_ctx=save_path_ctx,
-                save_path=save_path,
+                path_ctx=path_ctx,
+                path_save=path_save,
                 render_size=render_size,
             )
         )
 
+    def resolve_dynamic_textures(self):
+        # first, resolve all vanilla altas
+        atlases = {
+            **{key: value for key, value in self.vanilla.assets.atlases.items()},
+            **{key: value for key, value in self.ctx.assets.atlases.items()}
+        }
+        for key, atlas in atlases.items():
+            self.resolve_altas(key, atlas)
+
+    def apply_palette(
+        self, texture: Image.Image, palette: Image.Image, color_palette: Image.Image
+        ) -> Image.Image:
+            new_image = Image.new("RGBA", texture.size)
+            texture = texture.convert("RGBA")
+            palette = palette.convert("RGB")
+            color_palette = color_palette.convert("RGB")
+            for x in range(texture.width):
+                for y in range(texture.height):
+                    pixel = texture.getpixel((x, y))
+                    if not isinstance(pixel, tuple):
+                        raise ValueError("Texture is not RGBA")
+                    color = pixel[:3]
+                    alpha = pixel[3]
+                    # if the color is in palette_key, replace it with the color from color_palette
+                    found = False
+                    for i in range(palette.width):
+                        for j in range(palette.height):
+                            if palette.getpixel((i, j)) == color:
+                                new_color = color_palette.getpixel((i, j))
+                                if not isinstance(new_color, tuple):
+                                    raise ValueError("Color palette is not RGB")
+                                new_image.putpixel((x, y), new_color + (alpha,))
+                                found = True
+                                break
+                        if found:
+                            break
+                    if not found:
+                        new_image.putpixel((x, y), pixel)
+            return new_image
+
+    def resolve_altas(self, key: str,  atlas: Atlas):
+        for source in atlas.data["sources"]:
+            if source["type"] != "paletted_permutations":
+                continue
+            source : AtlasDict
+            for texture in source["textures"]:
+                for variant, color_palette_path in source["permutations"].items():
+                    new_texture_path = f"{texture}_{variant}"
+                    new_texture_path = resolve_key(new_texture_path)
+
+                    palette_key = resolve_key(source["palette_key"])
+                    if palette_key in self.ctx.assets.textures:
+                        palette = self.ctx.assets.textures[palette_key].image
+                    elif palette_key in self.vanilla.assets.textures:
+                        palette = self.vanilla.assets.textures[palette_key].image
+                    else:
+                        raise RenderError(f"Palette {palette_key} not found")
+
+                    color_palette_key = resolve_key(color_palette_path)
+                    if color_palette_key in self.ctx.assets.textures:
+                        color_palette: Image.Image = self.ctx.assets.textures[
+                            color_palette_key
+                        ].image
+                    elif color_palette_key in self.vanilla.assets.textures:
+                        color_palette: Image.Image = self.vanilla.assets.textures[
+                            color_palette_key
+                        ].image
+                    else:
+                        raise RenderError(f"Color palette {color_palette_key} not found")
+
+                    grayscale_key = resolve_key(texture)
+                    if grayscale_key in self.ctx.assets.textures:
+                        grayscale = self.ctx.assets.textures[grayscale_key].image
+                    elif grayscale_key in self.vanilla.assets.textures:
+                        grayscale = self.vanilla.assets.textures[grayscale_key].image
+
+                    img = self.apply_palette(grayscale, palette, color_palette)
+
+                    self.dynamic_textures[new_texture_path] = img
+
+
 
     def run(self):
+        self.resolve_dynamic_textures()
         glutInit()
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH) # type: ignore
         glutInitWindowSize(512, 512) 
@@ -565,6 +657,7 @@ class Render:
         glViewport(0, 0, self.current_task.render_size, self.current_task.render_size)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore
 
+        self.current_task.dynamic_textures = self.dynamic_textures
         self.current_task.run()
 
         pixel_data = glReadPixels(

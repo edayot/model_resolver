@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Any, Self
+from pydantic import BaseModel, Field
+from typing import Any, Self
 from beet import Context, LATEST_MINECRAFT_VERSION
 from model_resolver.utils import ModelResolverOptions
 import json

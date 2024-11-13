@@ -6,9 +6,9 @@ from OpenGL.GLU import *  # type: ignore
 from beet import Context, Texture, Atlas
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
-from model_resolver.utils import LightOptions, ModelResolverOptions, MinecraftModel, ElementModel, RotationModel, FaceModel, resolve_key
+from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import ModelResolveNamespace, ItemModelNamespace
+from model_resolver.require import ModelResolveNamespace, ItemModelNamespace, MinecraftModel, ElementModel, RotationModel, FaceModel
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
 from typing import Optional, Literal, TypedDict
@@ -51,35 +51,14 @@ class Task:
 
 
 @dataclass(kw_only=True)
-class ItemRenderTask(Task):
-    item: Item
+class GenericModelRenderTask(Task):
+    item: Optional[Item] = None
+
     do_rotate_camera: bool = True
     offset: tuple[float, float, float] = (0, 0, 0)
     center_offset: tuple[float, float, float] = (0, 0, 0)
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
-    def run(self):
-        item_model_key = self.item.components["minecraft:item_model"]
-        if not item_model_key:
-            raise RenderError(f"Item {self.item} does not have a model")
-        if item_model_key in self.ctx.assets[ItemModelNamespace]:
-            item_model = self.ctx.assets[ItemModelNamespace][item_model_key]
-        elif item_model_key in self.vanilla.assets[ItemModelNamespace]:
-            item_model = self.vanilla.assets[ItemModelNamespace][item_model_key]
-        else:
-            raise RenderError(f"Item model {item_model_key} not found")
-        parsed_item_model = ItemModel.model_validate(item_model.data)
-        for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
-            key = resolve_key(model.model)
-            if key in self.ctx.assets[ModelResolveNamespace]:
-                model_def = self.ctx.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
-            elif key in self.vanilla.assets[ModelResolveNamespace]:
-                model_def = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
-            else:
-                raise RenderError(f"Model {key} not found")
-            model_def = model_def.bake()
-            self.render_model(model_def, model.tints)
-    
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
             return
@@ -378,7 +357,7 @@ class ItemRenderTask(Task):
             glNormal3fv(normal)
 
         color = (1.0, 1.0, 1.0)
-        if len(tints) > data.tintindex and data.tintindex >= 0:
+        if len(tints) > data.tintindex and data.tintindex >= 0 and self.item:
             tint = tints[data.tintindex]
             color = tint.resolve(self.ctx, self.vanilla, item=self.item)
             color = (color[0] / 255, color[1] / 255, color[2] / 255)
@@ -414,6 +393,51 @@ class ItemRenderTask(Task):
                 return (x1+x_offset, y1+y_offset, x2+x_offset, y2+y_offset)
             case _:
                 raise RenderError(f"Unknown face {face}")
+
+@dataclass(kw_only=True)
+class ItemRenderTask(GenericModelRenderTask):
+    def run(self):
+        assert self.item
+        item_model_key = self.item.components["minecraft:item_model"]
+        if not item_model_key:
+            raise RenderError(f"Item {self.item} does not have a model")
+        if item_model_key in self.ctx.assets[ItemModelNamespace]:
+            item_model = self.ctx.assets[ItemModelNamespace][item_model_key]
+        elif item_model_key in self.vanilla.assets[ItemModelNamespace]:
+            item_model = self.vanilla.assets[ItemModelNamespace][item_model_key]
+        else:
+            raise RenderError(f"Item model {item_model_key} not found")
+        parsed_item_model = ItemModel.model_validate(item_model.data)
+        for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
+            key = resolve_key(model.model)
+            if key in self.ctx.assets[ModelResolveNamespace]:
+                model_def = self.ctx.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+            elif key in self.vanilla.assets[ModelResolveNamespace]:
+                model_def = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+            else:
+                raise RenderError(f"Model {key} not found")
+            model_def = model_def.bake()
+            self.render_model(model_def, model.tints)
+    
+    
+
+@dataclass(kw_only=True)
+class ModelRenderTask(GenericModelRenderTask):
+    model: str
+    tints: list[TintSource] = field(default_factory=list)
+
+    def run(self):
+        if len(self.tints) > 0:
+            assert self.item, "Tints are only available if you provide an item"
+        key = resolve_key(self.model)
+        if key in self.ctx.assets[ModelResolveNamespace]:
+            model = self.ctx.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+        elif key in self.vanilla.assets[ModelResolveNamespace]:
+            model = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+        else:
+            raise RenderError(f"Model {key} not found")
+        model = model.bake()
+        self.render_model(model, self.tints)
 
         
 
@@ -452,6 +476,7 @@ class Render:
     def add_item_task(
         self, 
         item: Item, 
+        *,
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None, 
         render_size: int = 512
@@ -466,6 +491,26 @@ class Render:
                 render_size=render_size,
             )
         )
+
+    def add_model_task(
+        self, 
+        model: str, 
+        *,
+        path_ctx: Optional[str] = None,
+        path_save: Optional[Path] = None, 
+        render_size: int = 512
+    ):
+        self.tasks.append(
+            ModelRenderTask(
+                ctx=self.ctx,
+                vanilla=self.vanilla,
+                model=model,
+                path_ctx=path_ctx,
+                path_save=path_save,
+                render_size=render_size,
+            )
+        )
+    
 
     def resolve_dynamic_textures(self):
         # first, resolve all vanilla altas
@@ -532,38 +577,41 @@ class Render:
             source : AtlasDict
             for texture in source["textures"]:
                 for variant, color_palette_path in source["permutations"].items():
-                    new_texture_path = f"{texture}_{variant}"
-                    new_texture_path = resolve_key(new_texture_path)
+                    self.resolve_altas_texture(texture, variant, source, color_palette_path)
+    
+    def resolve_altas_texture(self, texture: str, variant: str, source: AtlasDict, color_palette_path: str):
+        new_texture_path = f"{texture}_{variant}"
+        new_texture_path = resolve_key(new_texture_path)
 
-                    palette_key = resolve_key(source["palette_key"])
-                    if palette_key in self.ctx.assets.textures:
-                        palette = self.ctx.assets.textures[palette_key].image
-                    elif palette_key in self.vanilla.assets.textures:
-                        palette = self.vanilla.assets.textures[palette_key].image
-                    else:
-                        raise RenderError(f"Palette {palette_key} not found")
+        palette_key = resolve_key(source["palette_key"])
+        if palette_key in self.ctx.assets.textures:
+            palette = self.ctx.assets.textures[palette_key].image
+        elif palette_key in self.vanilla.assets.textures:
+            palette = self.vanilla.assets.textures[palette_key].image
+        else:
+            raise RenderError(f"Palette {palette_key} not found")
 
-                    color_palette_key = resolve_key(color_palette_path)
-                    if color_palette_key in self.ctx.assets.textures:
-                        color_palette: Image.Image = self.ctx.assets.textures[
-                            color_palette_key
-                        ].image
-                    elif color_palette_key in self.vanilla.assets.textures:
-                        color_palette: Image.Image = self.vanilla.assets.textures[
-                            color_palette_key
-                        ].image
-                    else:
-                        raise RenderError(f"Color palette {color_palette_key} not found")
+        color_palette_key = resolve_key(color_palette_path)
+        if color_palette_key in self.ctx.assets.textures:
+            color_palette: Image.Image = self.ctx.assets.textures[
+                color_palette_key
+            ].image
+        elif color_palette_key in self.vanilla.assets.textures:
+            color_palette: Image.Image = self.vanilla.assets.textures[
+                color_palette_key
+            ].image
+        else:
+            raise RenderError(f"Color palette {color_palette_key} not found")
 
-                    grayscale_key = resolve_key(texture)
-                    if grayscale_key in self.ctx.assets.textures:
-                        grayscale = self.ctx.assets.textures[grayscale_key].image
-                    elif grayscale_key in self.vanilla.assets.textures:
-                        grayscale = self.vanilla.assets.textures[grayscale_key].image
+        grayscale_key = resolve_key(texture)
+        if grayscale_key in self.ctx.assets.textures:
+            grayscale = self.ctx.assets.textures[grayscale_key].image
+        elif grayscale_key in self.vanilla.assets.textures:
+            grayscale = self.vanilla.assets.textures[grayscale_key].image
 
-                    img = self.apply_palette(grayscale, palette, color_palette)
+        img = self.apply_palette(grayscale, palette, color_palette)
 
-                    self.dynamic_textures[new_texture_path] = img
+        self.dynamic_textures[new_texture_path] = img
 
 
 

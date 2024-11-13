@@ -8,7 +8,15 @@ from model_resolver.utils import clamp
 
 
 class ItemModelBase(BaseModel):
-    type: str
+    type: Literal[
+        "minecraft:model",
+        "minecraft:composite",
+        "minecraft:condition",
+        "minecraft:select",
+        "minecraft:range_dispatch",
+        "minecraft:bundle/selected_item",
+        "minecraft:special",
+    ]
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
@@ -17,7 +25,7 @@ class ItemModelBase(BaseModel):
 
 
 class ItemModelModel(ItemModelBase):
-    type: str = "minecraft:model"
+    type: Literal["minecraft:model"]
     model: str
     tints: list[TintSource] = Field(default_factory=list)
 
@@ -28,7 +36,7 @@ class ItemModelModel(ItemModelBase):
 
 
 class ItemModelComposite(ItemModelBase):
-    type: str = "minecraft:composite"
+    type: Literal["minecraft:composite"]
     models: list["ItemModelAll"]
 
     def resolve(
@@ -39,7 +47,7 @@ class ItemModelComposite(ItemModelBase):
 
 
 class ItemModelConditionBase(ItemModelBase):
-    type: str = "minecraft:condition"
+    type: Literal["minecraft:condition"]
     property: Literal[
         "minecraft:using_item",
         "minecraft:broken",
@@ -47,11 +55,12 @@ class ItemModelConditionBase(ItemModelBase):
         "minecraft:has_component",
         "minecraft:fishing_rod/cast",
         "minecraft:bundle/has_selected_item",
-        "minecraft:xmas",
+        "minecraft:local_time",
         "minecraft:selected",
         "minecraft:carried",
-        "minecraft:shift_down",
+        "minecraft:extended_view",
         "minecraft:custom_model_data",
+        "minecraft:keybind_down",
     ]
     on_true: "ItemModelAll"
     on_false: "ItemModelAll"
@@ -107,6 +116,7 @@ class ItemModelConditionDamaged(ItemModelConditionBase):
 class ItemModelConditionHasComponent(ItemModelConditionBase):
     property: Literal["minecraft:has_component"]
     component: str
+    ignore_default: Optional[bool] = False # TODO: Implement this
 
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         if not item.components:
@@ -130,14 +140,6 @@ class ItemModelConditionBundleHasSelectedItem(ItemModelConditionBase):
         return False
 
 
-class ItemModelConditionXmas(ItemModelConditionBase):
-    property: Literal["minecraft:xmas"]
-
-    def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
-        # Possible to implement, but not implemented
-        return False
-
-
 class ItemModelConditionSelected(ItemModelConditionBase):
     property: Literal["minecraft:selected"]
 
@@ -154,8 +156,17 @@ class ItemModelConditionCarried(ItemModelConditionBase):
         return False
 
 
-class ItemModelConditionShiftDown(ItemModelConditionBase):
-    property: Literal["minecraft:shift_down"]
+class ItemModelConditionExtendedView(ItemModelConditionBase):
+    property: Literal["minecraft:extended_view"]
+
+    def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
+        # Not possible to implement
+        return False
+    
+
+class ItemModelConditionKeybindDown(ItemModelConditionBase):
+    property: Literal["minecraft:keybind_down"]
+    keybind: str
 
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         # Not possible to implement
@@ -186,21 +197,21 @@ type ItemModelCondition = Union[
     ItemModelConditionHasComponent,
     ItemModelConditionFishingRodCast,
     ItemModelConditionBundleHasSelectedItem,
-    ItemModelConditionXmas,
     ItemModelConditionSelected,
     ItemModelConditionCarried,
-    ItemModelConditionShiftDown,
+    ItemModelConditionExtendedView,
     ItemModelConditionCustomModelData,
+    ItemModelConditionKeybindDown,
 ]
 
 
 class SelectCase(BaseModel):
-    when: str
+    when: str | list[str]
     model: "ItemModelAll"
 
 
 class ItemModelSelectBase(ItemModelBase):
-    type: str = "minecraft:select"
+    type: Literal["minecraft:select"]
     property: Literal[
         "minecraft:main_hand",
         "minecraft:charge_type",
@@ -221,8 +232,12 @@ class ItemModelSelectBase(ItemModelBase):
 
     def resolve_case(self, value: str) -> "ItemModelAll":
         for case in self.cases:
-            if case.when == value:
-                return case.model
+            if isinstance(case.when, list):
+                if value in case.when:
+                    return case.model
+            elif isinstance(case.when, str):
+                if case.when == value:
+                    return case.model
         return self.fallback
 
     def resolve(
@@ -256,6 +271,19 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
         if charge_type == "none" and len(items) > 0:
             charge_type = "arrow"
         return self.resolve_case(charge_type)
+
+
+class ItemModelConditionLocalTime(ItemModelSelectBase):
+    property: Literal["minecraft:local_time"]
+    locale: str = ""
+    time_zone: Optional[str] = None
+    pattern: str
+
+    def resolve_select(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> "ItemModelAll":
+        # Not possible to implement
+        return self.fallback
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
@@ -339,6 +367,7 @@ type ItemModelSelect = Union[
     ItemModelSelectBlockState,
     ItemModelSelectDisplayContext,
     ItemModelSelectCustomModelData,
+    ItemModelConditionLocalTime,
 ]
 
 
@@ -348,7 +377,7 @@ class RangeDispatchEntry(BaseModel):
 
 
 class ItemModelRangeDispatchBase(ItemModelBase):
-    type: str = "minecraft:range_dispatch"
+    type: Literal["minecraft:range_dispatch"]
     property: Literal[
         "minecraft:custom_model_data",
         "minecraft:bundle/fullness",
@@ -362,8 +391,8 @@ class ItemModelRangeDispatchBase(ItemModelBase):
         "minecraft:use_cycle",
     ]
     scale: Optional[float] = 1.0
-    entries: list[RangeDispatchEntry]
-    fallback: "ItemModelAll"
+    entries: list[RangeDispatchEntry] = Field(default_factory=list)
+    fallback: Optional["ItemModelAll"] = None
 
     def resolve_range_dispatch(
         self, ctx: Context, vanilla: Vanilla, item: Item
@@ -378,7 +407,8 @@ class ItemModelRangeDispatchBase(ItemModelBase):
             if value >= entry.threshold:
                 yield from entry.model.resolve(ctx, vanilla, item)
                 return
-        yield from self.fallback.resolve(ctx, vanilla, item)
+        if self.fallback:
+            yield from self.fallback.resolve(ctx, vanilla, item)
 
 
 class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
@@ -461,8 +491,8 @@ class ItemModelRangeDispatchCooldown(ItemModelRangeDispatchBase):
 
 class ItemModelRangeDispatchTime(ItemModelRangeDispatchBase):
     property: Literal["minecraft:time"]
-    wobble: Optional[bool] = True
-    natural_only: Optional[bool] = True
+    # wobble: Optional[bool] = True
+    # natural_only: Optional[bool] = True
 
     def resolve_range_dispatch(
         self, ctx: Context, vanilla: Vanilla, item: Item
@@ -544,6 +574,8 @@ class SpecialModelBase(BaseModel):
         "minecraft:shield",
         "minecraft:trident",
         "minecraft:decorated_pot",
+        "minecraft:standing_sign",
+        "minecraft:hanging_sign",
     ]
 
 
@@ -572,6 +604,7 @@ class SpecialModelHead(SpecialModelBase):
     kind: Literal[
         "skeleton", "wither_skeleton", "player", "zombie", "creeper", "piglin", "dragon"
     ]
+    texture: str
 
 
 class SpecialModelShulkerBox(SpecialModelBase):
@@ -593,6 +626,17 @@ class SpecialModelDecoratedPot(SpecialModelBase):
     type: Literal["minecraft:decorated_pot"]
 
 
+wood_types = Literal["oak", "spruce", "birch", "acacia", "cherry", "jungle", "dark_oak", "pale_oak", "mangrove", "bamboo", "crimson", "warped"]
+class SpecialModelStandingSign(SpecialModelBase):
+    type: Literal["minecraft:standing_sign"]
+    texture: str
+    wood_type: wood_types
+
+class SpecialModelHangingSign(SpecialModelBase):
+    type: Literal["minecraft:hanging_sign"]
+    texture: str
+    wood_type: wood_types
+
 type SpecialModel = Union[
     SpecialModelBed,
     SpecialModelBase,
@@ -607,7 +651,7 @@ type SpecialModel = Union[
 ]
 
 
-class ItemModelSpecialBase(ItemModelBase):
+class ItemModelSpecial(ItemModelBase):
     type: Literal["minecraft:special"]
     base: str
     model: SpecialModel
@@ -620,6 +664,7 @@ type ItemModelAll = Union[
     ItemModelSelect,
     ItemModelRangeDispatch,
     ItemModelBundleSelectedItem,
+    ItemModelSpecial,
 ]
 
 

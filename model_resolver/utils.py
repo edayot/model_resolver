@@ -155,6 +155,7 @@ class MinecraftModel(BaseModel):
                     "north": {
                         "texture": f"#layer{i}",
                         "uv": [0, 0, 16, 16],
+                        "tintindex": i
                     }
                 }
             }))

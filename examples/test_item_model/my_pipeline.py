@@ -2,7 +2,7 @@ from beet import Context
 from model_resolver.item_model.item import Item
 from model_resolver.render import Render
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import ModelResolveNamespace, ItemModelNamespace
+from model_resolver.require import ItemModelNamespace
 from pathlib import Path
 import json
 import requests
@@ -21,7 +21,7 @@ def beet_default(ctx: Context):
         render.add_item_task(item, path_ctx=path)
         
     
-    for key in render.vanilla.assets[ModelResolveNamespace].keys():
+    for key in render.vanilla.assets.models.keys():
         path = key.split(":")
         path = f"{path[0]}:render/{path[1]}"
         render.add_model_task(key, path_ctx=path)

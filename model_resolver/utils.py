@@ -40,4 +40,3 @@ class ModelResolverOptions(BaseModel):
     use_cache: bool = False
     minecraft_version: str = "latest"
 
-

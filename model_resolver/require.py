@@ -8,49 +8,7 @@ from copy import deepcopy
 from pydantic import BaseModel, Field
 from typing import Annotated, Literal, Optional
 
-class ModelResolveNamespace(Model):
 
-    def resolve(self, ctx: Context, vanilla: "Vanilla") -> "MinecraftModel":
-        internal = self.resolve_internal(ctx, vanilla)
-        return MinecraftModel.model_validate(internal, from_attributes=True)
-
-    def resolve_internal(self, ctx: Context, vanilla: "Vanilla") -> dict[str, Any]:
-        if not "parent" in self.data:
-            return self.data
-        parent_key = resolve_key(self.data["parent"])
-        if parent_key in [
-            "minecraft:builtin/generated",
-            "minecraft:builtin/entity",
-        ]:
-            return self.data
-        if parent_key in ctx.assets[ModelResolveNamespace]:
-            parent = ctx.assets[ModelResolveNamespace][parent_key]
-        elif parent_key in vanilla.assets[ModelResolveNamespace]:
-            parent = vanilla.assets[ModelResolveNamespace][parent_key]
-        else:
-            raise ValueError(f"{parent_key} not in Context or Vanilla")
-        resolved_parent = parent.resolve_internal(ctx, vanilla)
-        return self.merge_parent(resolved_parent)
-
-        
-    def merge_parent(self, parent: dict[str, Any]) -> dict[str, Any]:
-        res = deepcopy(parent)
-        if "textures" in self.data:
-            res.setdefault("textures", {})
-            res["textures"].update(self.data["textures"])
-        if "elements" in self.data:
-            res["elements"] = self.data["elements"]
-        if "display" in self.data:
-            res.setdefault("display", {})
-            for key in self.data["display"].keys():
-                res["display"][key] = self.data["display"][key]
-        if "ambientocclusion" in self.data:
-            res["ambientocclusion"] = self.data["ambientocclusion"]
-        if "overrides" in self.data:
-            res["overrides"] = self.data["overrides"]
-        if "gui_light" in self.data:
-            res["gui_light"] = self.data["gui_light"]
-        return res
 
 class ItemModelNamespace(JsonFile):
     """Class representing a model."""
@@ -60,7 +18,7 @@ class ItemModelNamespace(JsonFile):
          
 
 def beet_default(ctx: Context):
-    ctx.assets.extend_namespace.extend([ModelResolveNamespace, ItemModelNamespace])
+    ctx.assets.extend_namespace.extend([ItemModelNamespace])
 
 
 

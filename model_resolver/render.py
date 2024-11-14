@@ -8,14 +8,15 @@ from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import ModelResolveNamespace, ItemModelNamespace, MinecraftModel, ElementModel, RotationModel, FaceModel
+from model_resolver.require import ItemModelNamespace, MinecraftModel, ElementModel, RotationModel, FaceModel
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Literal, TypedDict
+from typing import Optional, Literal, TypedDict, Any
 from pathlib import Path
 import logging
 from PIL import Image
 from math import cos, sin, pi, sqrt
+from copy import deepcopy
 
 class RenderError(Exception):
     pass
@@ -52,12 +53,50 @@ class Task:
 
 @dataclass(kw_only=True)
 class GenericModelRenderTask(Task):
-    item: Optional[Item] = None
+    item: Item
 
     do_rotate_camera: bool = True
     offset: tuple[float, float, float] = (0, 0, 0)
     center_offset: tuple[float, float, float] = (0, 0, 0)
     additional_rotations: list[RotationModel] = field(default_factory=list)
+
+    def resolve_model(self, data: dict[str, Any]) -> dict[str, Any]:
+        if not "parent" in data:
+            return data
+        parent_key = resolve_key(data["parent"])
+        if parent_key in [
+            "minecraft:builtin/generated",
+            "minecraft:builtin/entity",
+        ]:
+            return data
+        if parent_key in self.ctx.assets.models:
+            parent = self.ctx.assets.models[parent_key].data
+        elif parent_key in self.vanilla.assets.models:
+            parent = self.vanilla.assets.models[parent_key].data
+        else:
+            raise ValueError(f"{parent_key} not in Context or Vanilla")
+        resolved_parent = self.resolve_model(parent)
+        return self.merge_parent(resolved_parent, data)
+    
+    def merge_parent(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
+        res = deepcopy(parent)
+        if "textures" in child:
+            res.setdefault("textures", {})
+            res["textures"].update(child["textures"])
+        if "elements" in child:
+            res["elements"] = child["elements"]
+        if "display" in child:
+            res.setdefault("display", {})
+            for key in child["display"].keys():
+                res["display"][key] = child["display"][key]
+        if "ambientocclusion" in child:
+            res["ambientocclusion"] = child["ambientocclusion"]
+        if "overrides" in child:
+            res["overrides"] = child["overrides"]
+        if "gui_light" in child:
+            res["gui_light"] = child["gui_light"]
+        return res
+
 
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
@@ -410,13 +449,13 @@ class ItemRenderTask(GenericModelRenderTask):
         parsed_item_model = ItemModel.model_validate(item_model.data)
         for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
             key = resolve_key(model.model)
-            if key in self.ctx.assets[ModelResolveNamespace]:
-                model_def = self.ctx.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
-            elif key in self.vanilla.assets[ModelResolveNamespace]:
-                model_def = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+            if key in self.ctx.assets.models:
+                data = self.ctx.assets.models[key].data
+            elif key in self.vanilla.assets.models:
+                data = self.vanilla.assets.models[key].data
             else:
                 raise RenderError(f"Model {key} not found")
-            model_def = model_def.bake()
+            model_def = MinecraftModel.model_validate(self.resolve_model(data)).bake()
             self.render_model(model_def, model.tints)
     
     
@@ -425,18 +464,19 @@ class ItemRenderTask(GenericModelRenderTask):
 class ModelRenderTask(GenericModelRenderTask):
     model: str
     tints: list[TintSource] = field(default_factory=list)
+    item: Item = field(default_factory=lambda: Item(id="do_not_use"))
 
     def run(self):
         if len(self.tints) > 0:
             assert self.item, "Tints are only available if you provide an item"
         key = resolve_key(self.model)
-        if key in self.ctx.assets[ModelResolveNamespace]:
-            model = self.ctx.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
-        elif key in self.vanilla.assets[ModelResolveNamespace]:
-            model = self.vanilla.assets[ModelResolveNamespace][key].resolve(self.ctx, self.vanilla)
+        if key in self.ctx.assets.models:
+            data = self.ctx.assets.models[key].data
+        elif key in self.vanilla.assets.models:
+            data = self.vanilla.assets.models[key].data
         else:
             raise RenderError(f"Model {key} not found")
-        model = model.bake()
+        model = MinecraftModel.model_validate(self.resolve_model(data)).bake()
         self.render_model(model, self.tints)
 
         
@@ -462,7 +502,7 @@ class Render:
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
         self.vanilla = Vanilla(
             self.ctx, 
-            extend_namespace=([],[ModelResolveNamespace, ItemModelNamespace]),
+            extend_namespace=([],[ItemModelNamespace]),
             minecraft_version=opts.minecraft_version
         )
 

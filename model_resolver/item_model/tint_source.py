@@ -153,7 +153,9 @@ class TintSourceCustomModelData(TintSourceBase):
             return to_rgb(0)
         if not "colors" in item.components["minecraft:custom_model_data"]:
             return to_rgb(0)
-        return to_rgb(item.components["minecraft:custom_model_data"]["colors"][self.index or 0])
+        return to_rgb(
+            item.components["minecraft:custom_model_data"]["colors"][self.index or 0]
+        )
 
 
 type TintSource = TintSourceDye | TintSourceConstant | TintSourceGrass | TintSourceFirework | TintSourcePotion | TintSourceMap | TintSourceCustomModelData

@@ -116,7 +116,7 @@ class ItemModelConditionDamaged(ItemModelConditionBase):
 class ItemModelConditionHasComponent(ItemModelConditionBase):
     property: Literal["minecraft:has_component"]
     component: str
-    ignore_default: Optional[bool] = False # TODO: Implement this
+    ignore_default: Optional[bool] = False  # TODO: Implement this
 
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         if not item.components:
@@ -162,7 +162,7 @@ class ItemModelConditionExtendedView(ItemModelConditionBase):
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         # Not possible to implement
         return False
-    
+
 
 class ItemModelConditionKeybindDown(ItemModelConditionBase):
     property: Literal["minecraft:keybind_down"]
@@ -626,16 +626,33 @@ class SpecialModelDecoratedPot(SpecialModelBase):
     type: Literal["minecraft:decorated_pot"]
 
 
-wood_types = Literal["oak", "spruce", "birch", "acacia", "cherry", "jungle", "dark_oak", "pale_oak", "mangrove", "bamboo", "crimson", "warped"]
+wood_types = Literal[
+    "oak",
+    "spruce",
+    "birch",
+    "acacia",
+    "cherry",
+    "jungle",
+    "dark_oak",
+    "pale_oak",
+    "mangrove",
+    "bamboo",
+    "crimson",
+    "warped",
+]
+
+
 class SpecialModelStandingSign(SpecialModelBase):
     type: Literal["minecraft:standing_sign"]
     texture: str
     wood_type: wood_types
 
+
 class SpecialModelHangingSign(SpecialModelBase):
     type: Literal["minecraft:hanging_sign"]
     texture: str
     wood_type: wood_types
+
 
 type SpecialModel = Union[
     SpecialModelBed,
@@ -655,7 +672,6 @@ class ItemModelSpecial(ItemModelBase):
     type: Literal["minecraft:special"]
     base: str
     model: SpecialModel
-
 
 
 type ItemModelResolvable = ItemModelModel

@@ -1,4 +1,3 @@
-
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
@@ -8,7 +7,13 @@ from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import ItemModelNamespace, MinecraftModel, ElementModel, RotationModel, FaceModel
+from model_resolver.require import (
+    ItemModelNamespace,
+    MinecraftModel,
+    ElementModel,
+    RotationModel,
+    FaceModel,
+)
 from model_resolver.item_model.model import ItemModel, ItemModelModel
 from model_resolver.item_model.tint_source import TintSource
 from typing import Optional, Literal, TypedDict, Any, Generator
@@ -20,6 +25,7 @@ from copy import deepcopy
 from pydantic import BaseModel, ConfigDict
 import numpy as np
 from rich import print
+
 
 class RenderError(Exception):
     pass
@@ -40,13 +46,20 @@ class Task:
     def change_params(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        glOrtho(self.zoom, -self.zoom, -self.zoom, self.zoom, self.render_size, -self.render_size)
+        glOrtho(
+            self.zoom,
+            -self.zoom,
+            -self.zoom,
+            self.zoom,
+            self.render_size,
+            -self.render_size,
+        )
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
     def resolve(self) -> Generator["Task", None, None]:
         yield self
-    
+
     def run(self):
         pass
 
@@ -60,6 +73,7 @@ class Task:
 class TickGrouped(TypedDict):
     tick: dict[str, int]
     duration: int
+
 
 @dataclass(kw_only=True)
 class GenericModelRenderTask(Task):
@@ -87,8 +101,10 @@ class GenericModelRenderTask(Task):
             raise ValueError(f"{parent_key} not in Context or Vanilla")
         resolved_parent = self.resolve_model(parent)
         return self.merge_parent(resolved_parent, data)
-    
-    def merge_parent(self, parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
+
+    def merge_parent(
+        self, parent: dict[str, Any], child: dict[str, Any]
+    ) -> dict[str, Any]:
         res = deepcopy(parent)
         if "textures" in child:
             res.setdefault("textures", {})
@@ -106,7 +122,7 @@ class GenericModelRenderTask(Task):
         if "gui_light" in child:
             res["gui_light"] = child["gui_light"]
         return res
-    
+
     def get_texture(self, key: str) -> Texture | None:
         key = resolve_key(key)
         if key in self.ctx.assets.textures:
@@ -114,7 +130,7 @@ class GenericModelRenderTask(Task):
         if key in self.vanilla.assets.textures:
             return self.vanilla.assets.textures[key]
         return None
-    
+
     def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
         key = resolve_key(texture_key)
         if key in self.ctx.assets.textures_mcmeta:
@@ -124,7 +140,7 @@ class GenericModelRenderTask(Task):
         else:
             return None
         return TextureMcMetaModel.model_validate(mcmeta.data)
-    
+
     def get_texture_path_to_frames(self, model: MinecraftModel) -> dict[str, list[int]]:
         texture_path_to_frames = {}
         for texture_path in set(model.textures.values()):
@@ -144,24 +160,25 @@ class GenericModelRenderTask(Task):
             texture_path_to_frames[texture_path] = frames
         return texture_path_to_frames
 
-    def get_tick_grouped(self, texture_path_to_frames: dict[str, list[int]]) -> list[TickGrouped]:
-        total_number_of_tick = np.lcm.reduce([len(frames) for frames in texture_path_to_frames.values()])
+    def get_tick_grouped(
+        self, texture_path_to_frames: dict[str, list[int]]
+    ) -> list[TickGrouped]:
+        total_number_of_tick = np.lcm.reduce(
+            [len(frames) for frames in texture_path_to_frames.values()]
+        )
         ticks = []
         for i in range(total_number_of_tick):
             current_tick = {}
             for texture_path, frames in texture_path_to_frames.items():
                 current_tick[texture_path] = frames[i % len(frames)]
             ticks.append(current_tick)
-        
+
         ticks_grouped = []
         for tick in ticks:
             if len(ticks_grouped) > 0 and ticks_grouped[-1]["tick"] == tick:
                 ticks_grouped[-1]["duration"] += 1
             else:
-                ticks_grouped.append({
-                    "tick": tick,
-                    "duration": 1
-                })
+                ticks_grouped.append({"tick": tick, "duration": 1})
         return ticks_grouped
 
     def rotate_camera(self, model: MinecraftModel):
@@ -180,7 +197,9 @@ class GenericModelRenderTask(Task):
         glRotatef(rotation[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
 
-    def get_real_key(self, key: str, textures: dict[str, str | Image.Image], max_depth: int = 10) -> str | Image.Image:
+    def get_real_key(
+        self, key: str, textures: dict[str, str | Image.Image], max_depth: int = 10
+    ) -> str | Image.Image:
         if max_depth == 0:
             return "__not_found__"
         if key not in textures:
@@ -193,7 +212,9 @@ class GenericModelRenderTask(Task):
         else:
             return textures[key]
 
-    def load_textures(self, model: MinecraftModel) -> dict[str, tuple[Image.Image, str]]:
+    def load_textures(
+        self, model: MinecraftModel
+    ) -> dict[str, tuple[Image.Image, str]]:
         res: dict[str, tuple[Image.Image, str]] = {}
         for key in model.textures.keys():
             value = self.get_real_key(key, model.textures)
@@ -216,7 +237,9 @@ class GenericModelRenderTask(Task):
                 res[key] = (img, path)
         return res
 
-    def generate_textures_bindings(self, model: MinecraftModel) -> dict[str, tuple[int, str]]:
+    def generate_textures_bindings(
+        self, model: MinecraftModel
+    ) -> dict[str, tuple[int, str]]:
         res: dict[str, tuple[int, str]] = {}
         textures = self.load_textures(model)
         for key, (value, path) in textures.items():
@@ -266,7 +289,12 @@ class GenericModelRenderTask(Task):
         glDisable(GL_LIGHT0)
         glDisable(GL_LIGHT1)
 
-    def draw_element(self, element: ElementModel, textures_bindings: dict[str, tuple[int, str]], tints: list[TintSource]):
+    def draw_element(
+        self,
+        element: ElementModel,
+        textures_bindings: dict[str, tuple[int, str]],
+        tints: list[TintSource],
+    ):
         glEnable(GL_TEXTURE_2D)
 
         from_element_centered, to_element_centered = self.center_element(
@@ -298,7 +326,9 @@ class GenericModelRenderTask(Task):
             # get all the faces with the same texture
             for face, data in element.faces.items():
                 if data.texture.lstrip("#") == texture:
-                    self.draw_face(face, data, vertices, element.from_, element.to, tints, texture)
+                    self.draw_face(
+                        face, data, vertices, element.from_, element.to, tints, texture
+                    )
 
         glDisable(GL_TEXTURE_2D)
 
@@ -311,18 +341,30 @@ class GenericModelRenderTask(Task):
         x1, y1, z1 = from_element
         x2, y2, z2 = to_element
 
-        center : tuple[float, float, float] = (8, 8, 8)
-        center = (center[0] + self.center_offset[0], center[1] + self.center_offset[1], center[2] + self.center_offset[2])
+        center: tuple[float, float, float] = (8, 8, 8)
+        center = (
+            center[0] + self.center_offset[0],
+            center[1] + self.center_offset[1],
+            center[2] + self.center_offset[2],
+        )
 
         # compute the new from and to
         from_element = (x1 - center[0], y1 - center[1], z1 - center[2])
         to_element = (x2 - center[0], y2 - center[1], z2 - center[2])
 
-        from_element = (from_element[0] + self.offset[0], from_element[1] + self.offset[1], from_element[2] + self.offset[2])
-        to_element = (to_element[0] + self.offset[0], to_element[1] + self.offset[1], to_element[2] + self.offset[2])
+        from_element = (
+            from_element[0] + self.offset[0],
+            from_element[1] + self.offset[1],
+            from_element[2] + self.offset[2],
+        )
+        to_element = (
+            to_element[0] + self.offset[0],
+            to_element[1] + self.offset[1],
+            to_element[2] + self.offset[2],
+        )
 
         return from_element, to_element
-    
+
     def get_vertices(
         self,
         from_element: tuple[float, float, float],
@@ -344,8 +386,10 @@ class GenericModelRenderTask(Task):
         if rotation is None:
             return res
         return self.rotate_vertices(res, rotation)
-    
-    def rotate_vertices(self, vertices: tuple[list[float], ...], rotation: RotationModel):
+
+    def rotate_vertices(
+        self, vertices: tuple[list[float], ...], rotation: RotationModel
+    ):
         origin = [x - 8 for x in rotation.origin]
         origin = [x - self.center_offset[i] for i, x in enumerate(origin)]
         origin = [x + self.offset[i] for i, x in enumerate(origin)]
@@ -378,7 +422,7 @@ class GenericModelRenderTask(Task):
                 if rotation.axis != "z":
                     point[2] = point[2] * factor
         return vertices
-    
+
     def draw_face(
         self,
         face: Literal["down", "up", "north", "south", "east", "west"],
@@ -396,7 +440,6 @@ class GenericModelRenderTask(Task):
             uv = list(self.get_uv(face, from_element, to_element))
             uv = [x / 16 for x in uv]
         assert len(uv) == 4
-
 
         match face:
             case "down":
@@ -491,17 +534,17 @@ class GenericModelRenderTask(Task):
 
         match face:
             case "east" | "west":
-                x_offset = (- (z2 + z1)) % 16
+                x_offset = (-(z2 + z1)) % 16
                 y_offset = (y2 - y1) % 16
-                return (z1+x_offset, y1+y_offset, z2+x_offset, y2+y_offset)
+                return (z1 + x_offset, y1 + y_offset, z2 + x_offset, y2 + y_offset)
             case "up" | "down":
                 x_offset = 0
                 y_offset = 0
-                return (x1+x_offset, z1+y_offset, x2+x_offset, z2+y_offset)
+                return (x1 + x_offset, z1 + y_offset, x2 + x_offset, z2 + y_offset)
             case "south" | "north":
-                x_offset = (- (x2 + x1)) % 16
+                x_offset = (-(x2 + x1)) % 16
                 y_offset = (y2 - y1) % 16
-                return (x1+x_offset, y1+y_offset, x2+x_offset, y2+y_offset)
+                return (x1 + x_offset, y1 + y_offset, x2 + x_offset, y2 + y_offset)
             case _:
                 raise RenderError(f"Unknown face {face}")
 
@@ -516,7 +559,7 @@ class ItemModelModelRenderTask(GenericModelRenderTask):
     def run(self):
         for model, tints in self.models:
             self.render_model(model, tints)
-            
+
 
 @dataclass(kw_only=True)
 class ItemRenderTask(GenericModelRenderTask):
@@ -552,7 +595,9 @@ class ItemRenderTask(GenericModelRenderTask):
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
-        item_model_models = list(parsed_item_model.resolve(self.ctx, self.vanilla, self.item))
+        item_model_models = list(
+            parsed_item_model.resolve(self.ctx, self.vanilla, self.item)
+        )
         texture_path_to_frames = {}
         for model in item_model_models:
             model_def = self.get_parsed_model(model.model).bake()
@@ -570,9 +615,11 @@ class ItemRenderTask(GenericModelRenderTask):
                 if not texture:
                     raise RenderError(f"WTF")
                 img: Image.Image = texture.image
-                cropped = img.crop((0, index * img.width, img.width, (index + 1) * img.width))
+                cropped = img.crop(
+                    (0, index * img.width, img.width, (index + 1) * img.width)
+                )
                 images[texture_path] = cropped
-            
+
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
                 model_def = self.get_parsed_model(model.model).bake()
@@ -610,8 +657,8 @@ class ItemRenderTask(GenericModelRenderTask):
                 render_size=self.render_size,
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
-                dynamic_textures=self.dynamic_textures
-            )        
+                dynamic_textures=self.dynamic_textures,
+            )
 
 
 @dataclass(kw_only=True)
@@ -619,10 +666,10 @@ class ModelRenderTask(GenericModelRenderTask):
     model: MinecraftModel
     tints: list[TintSource] = field(default_factory=list)
     item: Item = field(default_factory=lambda: Item(id="do_not_use"))
-    
+
     def resolve(self) -> Generator[Task, None, None]:
         yield self
-    
+
     def run(self):
         self.render_model(self.model, self.tints)
 
@@ -630,6 +677,7 @@ class ModelRenderTask(GenericModelRenderTask):
 class FrameModel(BaseModel):
     index: int
     time: int
+
 
 class AnimationModel(BaseModel):
     interpolate: bool = False
@@ -649,10 +697,11 @@ class AnimationModel(BaseModel):
             else:
                 for _ in range(frame.time):
                     yield frame.index
-        
+
+
 class TextureMcMetaModel(BaseModel):
     animation: Optional[AnimationModel] = None
-    
+
 
 @dataclass(kw_only=True)
 class ModelPathRenderTask(GenericModelRenderTask):
@@ -685,9 +734,9 @@ class ModelPathRenderTask(GenericModelRenderTask):
         if len(texture_path_to_frames) == 0:
             yield self
             return
-        
+
         ticks_grouped = self.get_tick_grouped(texture_path_to_frames)
-        
+
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
             images = {}
@@ -696,7 +745,9 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 if not texture:
                     raise RenderError(f"WTF")
                 img: Image.Image = texture.image
-                cropped = img.crop((0, index * img.width, img.width, (index + 1) * img.width))
+                cropped = img.crop(
+                    (0, index * img.width, img.width, (index + 1) * img.width)
+                )
                 images[texture_path] = cropped
             textures = {}
             for key, value in model.textures.items():
@@ -731,10 +782,8 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 render_size=self.render_size,
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
-                dynamic_textures=self.dynamic_textures
+                dynamic_textures=self.dynamic_textures,
             )
-
-        
 
 
 class AtlasDict(TypedDict):
@@ -756,9 +805,9 @@ class Render:
     def __post_init__(self):
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
         self.vanilla = Vanilla(
-            self.ctx, 
-            extend_namespace=([],[ItemModelNamespace]),
-            minecraft_version=opts.minecraft_version
+            self.ctx,
+            extend_namespace=([], [ItemModelNamespace]),
+            minecraft_version=opts.minecraft_version,
         )
 
     def __repr__(self):
@@ -769,12 +818,12 @@ class Render:
         return self.tasks[self.tasks_index]
 
     def add_item_task(
-        self, 
-        item: Item, 
+        self,
+        item: Item,
         *,
         path_ctx: Optional[str] = None,
-        path_save: Optional[Path] = None, 
-        render_size: int = 512
+        path_save: Optional[Path] = None,
+        render_size: int = 512,
     ):
         self.tasks.append(
             ItemRenderTask(
@@ -788,12 +837,12 @@ class Render:
         )
 
     def add_model_task(
-        self, 
-        model: str, 
+        self,
+        model: str,
         *,
         path_ctx: Optional[str] = None,
-        path_save: Optional[Path] = None, 
-        render_size: int = 512
+        path_save: Optional[Path] = None,
+        render_size: int = 512,
     ):
         self.tasks.append(
             ModelPathRenderTask(
@@ -805,7 +854,6 @@ class Render:
                 render_size=render_size,
             )
         )
-    
 
     def resolve_dynamic_textures(self):
         # first, resolve all vanilla altas
@@ -819,7 +867,7 @@ class Render:
         # construct the dynamic textures
         atlases = {
             **{key: value for key, value in self.vanilla.assets.atlases.items()},
-            **{key: value for key, value in self.ctx.assets.atlases.items()}
+            **{key: value for key, value in self.ctx.assets.atlases.items()},
         }
         for key, atlas in atlases.items():
             self.resolve_altas(key, atlas)
@@ -832,49 +880,52 @@ class Render:
             with open(path, "wb") as f:
                 value.save(f, "PNG")
             cache.json["dynamic_textures"][key] = str(path)
-        
 
     def apply_palette(
         self, texture: Image.Image, palette: Image.Image, color_palette: Image.Image
-        ) -> Image.Image:
-            new_image = Image.new("RGBA", texture.size)
-            texture = texture.convert("RGBA")
-            palette = palette.convert("RGB")
-            color_palette = color_palette.convert("RGB")
-            for x in range(texture.width):
-                for y in range(texture.height):
-                    pixel = texture.getpixel((x, y))
-                    if not isinstance(pixel, tuple):
-                        raise ValueError("Texture is not RGBA")
-                    color = pixel[:3]
-                    alpha = pixel[3]
-                    # if the color is in palette_key, replace it with the color from color_palette
-                    found = False
-                    for i in range(palette.width):
-                        for j in range(palette.height):
-                            if palette.getpixel((i, j)) == color:
-                                new_color = color_palette.getpixel((i, j))
-                                if not isinstance(new_color, tuple):
-                                    raise ValueError("Color palette is not RGB")
-                                new_image.putpixel((x, y), new_color + (alpha,))
-                                found = True
-                                break
-                        if found:
+    ) -> Image.Image:
+        new_image = Image.new("RGBA", texture.size)
+        texture = texture.convert("RGBA")
+        palette = palette.convert("RGB")
+        color_palette = color_palette.convert("RGB")
+        for x in range(texture.width):
+            for y in range(texture.height):
+                pixel = texture.getpixel((x, y))
+                if not isinstance(pixel, tuple):
+                    raise ValueError("Texture is not RGBA")
+                color = pixel[:3]
+                alpha = pixel[3]
+                # if the color is in palette_key, replace it with the color from color_palette
+                found = False
+                for i in range(palette.width):
+                    for j in range(palette.height):
+                        if palette.getpixel((i, j)) == color:
+                            new_color = color_palette.getpixel((i, j))
+                            if not isinstance(new_color, tuple):
+                                raise ValueError("Color palette is not RGB")
+                            new_image.putpixel((x, y), new_color + (alpha,))
+                            found = True
                             break
-                    if not found:
-                        new_image.putpixel((x, y), pixel)
-            return new_image
+                    if found:
+                        break
+                if not found:
+                    new_image.putpixel((x, y), pixel)
+        return new_image
 
-    def resolve_altas(self, key: str,  atlas: Atlas):
+    def resolve_altas(self, key: str, atlas: Atlas):
         for source in atlas.data["sources"]:
             if source["type"] != "paletted_permutations":
                 continue
-            source : AtlasDict
+            source: AtlasDict
             for texture in source["textures"]:
                 for variant, color_palette_path in source["permutations"].items():
-                    self.resolve_altas_texture(texture, variant, source, color_palette_path)
-    
-    def resolve_altas_texture(self, texture: str, variant: str, source: AtlasDict, color_palette_path: str):
+                    self.resolve_altas_texture(
+                        texture, variant, source, color_palette_path
+                    )
+
+    def resolve_altas_texture(
+        self, texture: str, variant: str, source: AtlasDict, color_palette_path: str
+    ):
         new_texture_path = f"{texture}_{variant}"
         new_texture_path = resolve_key(new_texture_path)
 
@@ -908,13 +959,11 @@ class Render:
 
         self.dynamic_textures[new_texture_path] = img
 
-
-
     def run(self):
         self.resolve_dynamic_textures()
         glutInit()
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH) # type: ignore
-        glutInitWindowSize(512, 512) 
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
+        glutInitWindowSize(512, 512)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
         glutHideWindow()
@@ -940,7 +989,6 @@ class Render:
 
         glutMainLoop()
 
-
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)
         glMatrixMode(GL_PROJECTION)
@@ -961,14 +1009,16 @@ class Render:
         if self.tasks_index >= len(self.tasks):
             glutLeaveMainLoop()
             return
-        logging.debug(f"Rendering task {self.current_task}... ({self.tasks_index}/{len(self.tasks)})")
+        logging.debug(
+            f"Rendering task {self.current_task}... ({self.tasks_index}/{len(self.tasks)})"
+        )
 
     def real_display(self):
         if not self.current_task.ensure_params:
             self.current_task.ensure_params = True
             self.current_task.change_params()
             return 0
-        
+
         glClearColor(0.0, 0.0, 0.0, 0.0)  # Set clear color to black with alpha 0
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_CULL_FACE)
@@ -1035,7 +1085,9 @@ class Render:
             GL_UNSIGNED_BYTE,
         )
         img = Image.frombytes(
-            "RGBA", (self.current_task.render_size, self.current_task.render_size), pixel_data
+            "RGBA",
+            (self.current_task.render_size, self.current_task.render_size),
+            pixel_data,
         )
         img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 
@@ -1052,9 +1104,4 @@ class Render:
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
 
-
         return 1
-
-
-
-

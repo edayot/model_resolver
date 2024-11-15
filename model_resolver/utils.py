@@ -1,24 +1,19 @@
-from PIL import Image
-from beet import Context
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel
+from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
-from typing import Annotated, Literal, Optional
-from beet import Context
+from pydantic import BaseModel
 
 
 def resolve_key(key: str) -> str:
     return f"minecraft:{key}" if ":" not in key else key
 
-import typing
-if typing.TYPE_CHECKING:
+
+if TYPE_CHECKING:
     from _typeshed import SupportsRichComparison
 
 
 def clamp[T: (SupportsRichComparison)](minimum: T, x: T, maximum: T) -> T:
     return max(minimum, min(x, maximum))
-
 
 
 class LightOptions(BaseModel):
@@ -39,4 +34,3 @@ class ModelResolverOptions(BaseModel):
 
     use_cache: bool = False
     minecraft_version: str = "latest"
-

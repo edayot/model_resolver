@@ -5,10 +5,12 @@ from model_resolver.utils import ModelResolverOptions
 import json
 
 
+
 class Item(BaseModel):
     id: str
     count: int = 1
-    components: dict[str, Any] = Field(default_factory=dict)
+    components_from_user: dict[str, Any] = Field(default_factory=dict, alias="components")
+    default_components: dict[str, Any] = Field(default_factory=dict)
 
     __resolved__: bool = False
 
@@ -26,9 +28,10 @@ class Item(BaseModel):
         with open(path) as file:
             components = json.load(file)
         if self.id.removeprefix("minecraft:") in components:
-            self.components = {
-                **components[self.id.removeprefix("minecraft:")],
-                **self.components,
-            }
+            self.default_components = components[self.id.removeprefix("minecraft:")]
         self.__resolved__ = True
         return self
+    
+    @property
+    def components(self) -> dict[str, Any]:
+        return {**self.default_components, **self.components_from_user}

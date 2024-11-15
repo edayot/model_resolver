@@ -55,7 +55,6 @@ class ItemModelConditionBase(ItemModelBase):
         "minecraft:has_component",
         "minecraft:fishing_rod/cast",
         "minecraft:bundle/has_selected_item",
-        "minecraft:local_time",
         "minecraft:selected",
         "minecraft:carried",
         "minecraft:extended_view",
@@ -116,12 +115,15 @@ class ItemModelConditionDamaged(ItemModelConditionBase):
 class ItemModelConditionHasComponent(ItemModelConditionBase):
     property: Literal["minecraft:has_component"]
     component: str
-    ignore_default: Optional[bool] = False  # TODO: Implement this
+    ignore_default: Optional[bool] = False
 
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         if not item.components:
             return False
-        return self.component in item.components
+        if self.ignore_default:
+            return self.component in item.components_from_user
+        else:
+            return self.component in item.components
 
 
 class ItemModelConditionFishingRodCast(ItemModelConditionBase):
@@ -218,6 +220,8 @@ class ItemModelSelectBase(ItemModelBase):
         "minecraft:trim_material",
         "minecraft:block_state",
         "minecraft:display_context",
+        "minecraft:local_time",
+        "minecraft:holder_type",
         "minecraft:custom_model_data",
     ]
     cases: list[SelectCase] = Field(default_factory=list)
@@ -273,7 +277,7 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
         return self.resolve_case(charge_type)
 
 
-class ItemModelConditionLocalTime(ItemModelSelectBase):
+class ItemModelSelectLocalTime(ItemModelSelectBase):
     property: Literal["minecraft:local_time"]
     locale: str = ""
     time_zone: Optional[str] = None
@@ -284,6 +288,14 @@ class ItemModelConditionLocalTime(ItemModelSelectBase):
     ) -> "ItemModelAll":
         # Not possible to implement
         return self.fallback
+    
+class ItemModelSelectHolderType(ItemModelSelectBase):
+    property: Literal["minecraft:holder_type"]
+    
+    def resolve_select(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> "ItemModelAll":
+        return self.resolve_case("minecraft:player")
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
@@ -367,7 +379,7 @@ type ItemModelSelect = Union[
     ItemModelSelectBlockState,
     ItemModelSelectDisplayContext,
     ItemModelSelectCustomModelData,
-    ItemModelConditionLocalTime,
+    ItemModelSelectLocalTime,
 ]
 
 

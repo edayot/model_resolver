@@ -26,4 +26,5 @@ def beet_default(ctx: Context):
         path = f"{path[0]}:render/{path[1]}"
         render.add_model_task(key, path_ctx=path)
 
+
     render.run()

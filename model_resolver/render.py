@@ -9,14 +9,17 @@ from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
 from model_resolver.vanilla import Vanilla
 from model_resolver.require import ItemModelNamespace, MinecraftModel, ElementModel, RotationModel, FaceModel
-from model_resolver.item_model.model import ItemModel
+from model_resolver.item_model.model import ItemModel, ItemModelModel
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Literal, TypedDict, Any
+from typing import Optional, Literal, TypedDict, Any, Generator
 from pathlib import Path
 import logging
 from PIL import Image
 from math import cos, sin, pi, sqrt
 from copy import deepcopy
+from pydantic import BaseModel, ConfigDict
+import numpy as np
+from rich import print
 
 class RenderError(Exception):
     pass
@@ -41,6 +44,9 @@ class Task:
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
+    def resolve(self) -> Generator["Task", None, None]:
+        yield self
+    
     def run(self):
         pass
 
@@ -50,6 +56,10 @@ class Task:
         elif self.path_save:
             img.save(self.path_save)
 
+
+class TickGrouped(TypedDict):
+    tick: dict[str, int]
+    duration: int
 
 @dataclass(kw_only=True)
 class GenericModelRenderTask(Task):
@@ -96,7 +106,63 @@ class GenericModelRenderTask(Task):
         if "gui_light" in child:
             res["gui_light"] = child["gui_light"]
         return res
+    
+    def get_texture(self, key: str) -> Texture | None:
+        key = resolve_key(key)
+        if key in self.ctx.assets.textures:
+            return self.ctx.assets.textures[key]
+        if key in self.vanilla.assets.textures:
+            return self.vanilla.assets.textures[key]
+        return None
+    
+    def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
+        key = resolve_key(texture_key)
+        if key in self.ctx.assets.textures_mcmeta:
+            mcmeta = self.ctx.assets.textures_mcmeta[key]
+        elif key in self.vanilla.assets.textures_mcmeta:
+            mcmeta = self.vanilla.assets.textures_mcmeta[key]
+        else:
+            return None
+        return TextureMcMetaModel.model_validate(mcmeta.data)
+    
+    def get_texture_path_to_frames(self, model: MinecraftModel) -> dict[str, list[int]]:
+        texture_path_to_frames = {}
+        for texture_path in set(model.textures.values()):
+            if isinstance(texture_path, Image.Image):
+                continue
+            texture = self.get_texture(texture_path)
+            if not texture:
+                continue
+            mcmeta = self.get_texture_mcmeta(texture_path)
+            if not mcmeta:
+                continue
+            if not mcmeta.animation:
+                continue
+            img: Image.Image = texture.image
 
+            frames = list(mcmeta.animation.resolve_frames(img.height, img.width))
+            texture_path_to_frames[texture_path] = frames
+        return texture_path_to_frames
+
+    def get_tick_grouped(self, texture_path_to_frames: dict[str, list[int]]) -> list[TickGrouped]:
+        total_number_of_tick = np.lcm.reduce([len(frames) for frames in texture_path_to_frames.values()])
+        ticks = []
+        for i in range(total_number_of_tick):
+            current_tick = {}
+            for texture_path, frames in texture_path_to_frames.items():
+                current_tick[texture_path] = frames[i % len(frames)]
+            ticks.append(current_tick)
+        
+        ticks_grouped = []
+        for tick in ticks:
+            if len(ticks_grouped) > 0 and ticks_grouped[-1]["tick"] == tick:
+                ticks_grouped[-1]["duration"] += 1
+            else:
+                ticks_grouped.append({
+                    "tick": tick,
+                    "duration": 1
+                })
+        return ticks_grouped
 
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
@@ -114,13 +180,16 @@ class GenericModelRenderTask(Task):
         glRotatef(rotation[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
 
-    def get_real_key(self, key: str, textures: dict, max_depth: int = 10) -> str:
+    def get_real_key(self, key: str, textures: dict[str, str | Image.Image], max_depth: int = 10) -> str | Image.Image:
         if max_depth == 0:
             return "__not_found__"
         if key not in textures:
             return "__not_found__"
-        if textures[key][0] == "#":
-            return self.get_real_key(textures[key][1:], textures, max_depth - 1)
+        value = textures[key]
+        if isinstance(value, Image.Image):
+            return textures[key]
+        if value[0] == "#":
+            return self.get_real_key(value[1:], textures, max_depth - 1)
         else:
             return textures[key]
 
@@ -130,6 +199,8 @@ class GenericModelRenderTask(Task):
             value = self.get_real_key(key, model.textures)
             if value == "__not_found__":
                 res[key] = (Image.new("RGBA", (16, 16), (0, 0, 0, 0)), "")
+            elif isinstance(value, Image.Image):
+                res[key] = (value, "dynamic")
             else:
                 path = f"minecraft:{value}" if ":" not in value else value
                 if path in self.ctx.assets.textures:
@@ -153,6 +224,7 @@ class GenericModelRenderTask(Task):
             glBindTexture(GL_TEXTURE_2D, tex_id)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            value = value.convert("RGBA")
             img_data = value.tobytes("raw", "RGBA")
             glTexImage2D(
                 GL_TEXTURE_2D,
@@ -433,9 +505,23 @@ class GenericModelRenderTask(Task):
             case _:
                 raise RenderError(f"Unknown face {face}")
 
+
+@dataclass(kw_only=True)
+class ItemModelModelRenderTask(GenericModelRenderTask):
+    models: list[tuple[MinecraftModel, list[TintSource]]]
+
+    def resolve(self) -> Generator[Task, None, None]:
+        yield self
+
+    def run(self):
+        for model, tints in self.models:
+            self.render_model(model, tints)
+            
+
 @dataclass(kw_only=True)
 class ItemRenderTask(GenericModelRenderTask):
-    def run(self):
+
+    def get_parsed_item_model(self) -> ItemModel:
         assert self.item
         item_model_key = self.item.components["minecraft:item_model"]
         if not item_model_key:
@@ -446,22 +532,130 @@ class ItemRenderTask(GenericModelRenderTask):
             item_model = self.vanilla.assets[ItemModelNamespace][item_model_key]
         else:
             raise RenderError(f"Item model {item_model_key} not found")
-        parsed_item_model = ItemModel.model_validate(item_model.data)
+        return ItemModel.model_validate(item_model.data)
+
+    def run(self):
+        parsed_item_model = self.get_parsed_item_model()
         for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
-            key = resolve_key(model.model)
-            if key in self.ctx.assets.models:
-                data = self.ctx.assets.models[key].data
-            elif key in self.vanilla.assets.models:
-                data = self.vanilla.assets.models[key].data
-            else:
-                raise RenderError(f"Model {key} not found")
-            model_def = MinecraftModel.model_validate(self.resolve_model(data)).bake()
+            model_def = self.get_parsed_model(model.model).bake()
             self.render_model(model_def, model.tints)
-    
-    
+
+    def get_parsed_model(self, model_path: str) -> MinecraftModel:
+        key = resolve_key(model_path)
+        if key in self.ctx.assets.models:
+            data = self.ctx.assets.models[key].data
+        elif key in self.vanilla.assets.models:
+            data = self.vanilla.assets.models[key].data
+        else:
+            raise RenderError(f"Model {key} not found")
+        return MinecraftModel.model_validate(self.resolve_model(data)).bake()
+
+    def resolve(self) -> Generator[Task, None, None]:
+        parsed_item_model = self.get_parsed_item_model()
+        item_model_models = list(parsed_item_model.resolve(self.ctx, self.vanilla, self.item))
+        texture_path_to_frames = {}
+        for model in item_model_models:
+            model_def = self.get_parsed_model(model.model).bake()
+            texture_path_to_frames.update(self.get_texture_path_to_frames(model_def))
+        if len(texture_path_to_frames) == 0:
+            yield self
+            return
+        ticks_grouped = self.get_tick_grouped(texture_path_to_frames)
+
+        for i, tick in enumerate(ticks_grouped):
+            # get the images for the tick
+            images = {}
+            for texture_path, index in tick["tick"].items():
+                texture = self.get_texture(texture_path)
+                if not texture:
+                    raise RenderError(f"WTF")
+                img: Image.Image = texture.image
+                cropped = img.crop((0, index * img.width, img.width, (index + 1) * img.width))
+                images[texture_path] = cropped
+            
+            models: list[tuple[MinecraftModel, list[TintSource]]] = []
+            for model in item_model_models:
+                model_def = self.get_parsed_model(model.model).bake()
+                model_def = model_def.model_copy()
+                textures = {}
+                for key, value in model_def.textures.items():
+                    if isinstance(value, Image.Image):
+                        raise RenderError(f"WTF is going on")
+                    if resolve_key(value) in images:
+                        textures[key] = images[value]
+                    else:
+                        textures[key] = value
+                model_def.textures = textures
+                models.append((model_def, model.tints))
+
+            if self.path_save:
+                new_path_save = self.path_save / f"{i}_{tick['duration']}.png"
+            else:
+                new_path_save = None
+            if self.path_ctx:
+                new_path_ctx = self.path_ctx + f"/{i}_{tick['duration']}"
+            else:
+                new_path_ctx = None
+            yield ItemModelModelRenderTask(
+                ctx=self.ctx,
+                vanilla=self.vanilla,
+                models=models,
+                item=self.item,
+                do_rotate_camera=self.do_rotate_camera,
+                offset=self.offset,
+                center_offset=self.center_offset,
+                additional_rotations=self.additional_rotations,
+                path_ctx=new_path_ctx,
+                path_save=new_path_save,
+                render_size=self.render_size,
+                zoom=self.zoom,
+                ensure_params=self.ensure_params,
+                dynamic_textures=self.dynamic_textures
+            )        
+
 
 @dataclass(kw_only=True)
 class ModelRenderTask(GenericModelRenderTask):
+    model: MinecraftModel
+    tints: list[TintSource] = field(default_factory=list)
+    item: Item = field(default_factory=lambda: Item(id="do_not_use"))
+    
+    def resolve(self) -> Generator[Task, None, None]:
+        yield self
+    
+    def run(self):
+        self.render_model(self.model, self.tints)
+
+
+class FrameModel(BaseModel):
+    index: int
+    time: int
+
+class AnimationModel(BaseModel):
+    interpolate: bool = False
+    frametime: int = 1
+    frames: Optional[list[int | FrameModel]] = None
+
+    def resolve_frames(self, height: int, width: int) -> Generator[int, None, None]:
+        if not self.frames:
+            for i in range(height // width):
+                for _ in range(self.frametime):
+                    yield i
+            return
+        for frame in self.frames:
+            if isinstance(frame, int):
+                for _ in range(self.frametime):
+                    yield frame
+            else:
+                for _ in range(frame.time):
+                    yield frame.index
+        
+class TextureMcMetaModel(BaseModel):
+    animation: Optional[AnimationModel] = None
+    
+
+@dataclass(kw_only=True)
+class ModelPathRenderTask(GenericModelRenderTask):
     model: str
     tints: list[TintSource] = field(default_factory=list)
     item: Item = field(default_factory=lambda: Item(id="do_not_use"))
@@ -469,6 +663,10 @@ class ModelRenderTask(GenericModelRenderTask):
     def run(self):
         if len(self.tints) > 0:
             assert self.item, "Tints are only available if you provide an item"
+        model = self.get_parsed_model()
+        self.render_model(model, self.tints)
+
+    def get_parsed_model(self) -> MinecraftModel:
         key = resolve_key(self.model)
         if key in self.ctx.assets.models:
             data = self.ctx.assets.models[key].data
@@ -476,8 +674,65 @@ class ModelRenderTask(GenericModelRenderTask):
             data = self.vanilla.assets.models[key].data
         else:
             raise RenderError(f"Model {key} not found")
-        model = MinecraftModel.model_validate(self.resolve_model(data)).bake()
-        self.render_model(model, self.tints)
+        return MinecraftModel.model_validate(self.resolve_model(data)).bake()
+
+    def resolve(self) -> Generator[Task, None, None]:
+        model = self.get_parsed_model()
+        if not model.textures:
+            yield self
+            return
+        texture_path_to_frames = self.get_texture_path_to_frames(model)
+        if len(texture_path_to_frames) == 0:
+            yield self
+            return
+        
+        ticks_grouped = self.get_tick_grouped(texture_path_to_frames)
+        
+        for i, tick in enumerate(ticks_grouped):
+            # get the images for the tick
+            images = {}
+            for texture_path, index in tick["tick"].items():
+                texture = self.get_texture(texture_path)
+                if not texture:
+                    raise RenderError(f"WTF")
+                img: Image.Image = texture.image
+                cropped = img.crop((0, index * img.width, img.width, (index + 1) * img.width))
+                images[texture_path] = cropped
+            textures = {}
+            for key, value in model.textures.items():
+                if isinstance(value, Image.Image):
+                    raise RenderError(f"WTF is going on")
+                if resolve_key(value) in images:
+                    textures[key] = images[value]
+                else:
+                    textures[key] = value
+            new_model = model.model_copy()
+            new_model.textures = textures
+            if self.path_save:
+                new_path_save = self.path_save / f"{i}_{tick['duration']}.png"
+            else:
+                new_path_save = None
+            if self.path_ctx:
+                new_path_ctx = self.path_ctx + f"/{i}_{tick['duration']}"
+            else:
+                new_path_ctx = None
+            yield ModelRenderTask(
+                ctx=self.ctx,
+                vanilla=self.vanilla,
+                model=new_model,
+                tints=self.tints,
+                item=self.item,
+                do_rotate_camera=self.do_rotate_camera,
+                offset=self.offset,
+                center_offset=self.center_offset,
+                additional_rotations=self.additional_rotations,
+                path_ctx=new_path_ctx,
+                path_save=new_path_save,
+                render_size=self.render_size,
+                zoom=self.zoom,
+                ensure_params=self.ensure_params,
+                dynamic_textures=self.dynamic_textures
+            )
 
         
 
@@ -541,7 +796,7 @@ class Render:
         render_size: int = 512
     ):
         self.tasks.append(
-            ModelRenderTask(
+            ModelPathRenderTask(
                 ctx=self.ctx,
                 vanilla=self.vanilla,
                 model=model,
@@ -673,6 +928,11 @@ class Render:
 
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
+
+        new_tasks = []
+        for task in self.tasks:
+            new_tasks.extend(task.resolve())
+        self.tasks = new_tasks
 
         glutDisplayFunc(self.display)
         glutIdleFunc(self.display)

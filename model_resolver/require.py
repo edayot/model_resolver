@@ -5,8 +5,9 @@ from typing import ClassVar, Type, Any
 from model_resolver.utils import resolve_key
 from model_resolver.vanilla import Vanilla
 from copy import deepcopy
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Annotated, Literal, Optional
+from PIL import Image
 
 
 
@@ -75,9 +76,11 @@ class MinecraftModel(BaseModel):
     parent: Annotated[Optional[str], "The parent of the model"] = None
     ambientocclusion: Annotated[bool, "Whether the model should use ambient occlusion"] = True
     display: Annotated[DisplayModel, "The display settings for the model in various situations in the game"] = Field(default_factory=lambda: DisplayModel())
-    textures: Annotated[dict[str, str], "Resource locations for the textures used in the model, can also be a texture variable"] = Field(default_factory=dict)
+    textures: Annotated[dict[str, str | Image.Image], "Resource locations for the textures used in the model, can also be a texture variable"] = Field(default_factory=dict)
     elements: Annotated[list[ElementModel], "The elements that make up the model"] = Field(default_factory=list)
     gui_light: Annotated[Literal["front", "side"], "Control the light position"] = "side"
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
     def bake(self) -> "MinecraftModel":

@@ -20,7 +20,7 @@ class ItemModelBase(BaseModel):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         yield from []
 
 
@@ -31,7 +31,7 @@ class ItemModelModel(ItemModelBase):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         yield self
 
 
@@ -41,7 +41,7 @@ class ItemModelComposite(ItemModelBase):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         for model in self.models:
             yield from model.resolve(ctx, vanilla, item)
 
@@ -70,7 +70,7 @@ class ItemModelConditionBase(ItemModelBase):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         if self.resolve_condition(ctx, vanilla, item):
             yield from self.on_true.resolve(ctx, vanilla, item)
         else:
@@ -242,7 +242,7 @@ class ItemModelSelectBase(ItemModelBase):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.resolve_select(ctx, vanilla, item).resolve(ctx, vanilla, item)
 
 
@@ -401,7 +401,7 @@ class ItemModelRangeDispatchBase(ItemModelBase):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         value = self.resolve_range_dispatch(ctx, vanilla, item)
         for entry in self.entries:
             if value >= entry.threshold:
@@ -657,6 +657,9 @@ class ItemModelSpecial(ItemModelBase):
     model: SpecialModel
 
 
+
+type ItemModelResolvable = ItemModelModel
+
 type ItemModelAll = Union[
     ItemModelModel,
     ItemModelComposite,
@@ -673,5 +676,5 @@ class ItemModel(BaseModel):
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
-    ) -> Generator["ItemModelModel", None, None]:
+    ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve(ctx, vanilla, item)

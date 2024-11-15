@@ -2,7 +2,7 @@ from beet import Context
 from model_resolver.item_model.item import Item
 from model_resolver.render import Render
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import ItemModelNamespace
+from model_resolver.minecraft_model import ItemModelNamespace
 from pathlib import Path
 import json
 import requests

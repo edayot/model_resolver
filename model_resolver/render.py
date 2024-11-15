@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
 from model_resolver.vanilla import Vanilla
-from model_resolver.require import (
+from model_resolver.minecraft_model import (
     ItemModelNamespace,
     MinecraftModel,
     ElementModel,

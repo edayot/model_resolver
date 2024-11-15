@@ -1,1 +1,1 @@
-from model_resolver.require import beet_default
+from model_resolver.minecraft_model import beet_default

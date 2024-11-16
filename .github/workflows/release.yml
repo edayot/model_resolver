@@ -62,5 +62,6 @@ jobs:
             poetry run semantic-release -v version --major
           fi
           poetry run semantic-release -v publish
+          poetry publish --username __token__ --password $PYPI_TOKEN
 
           

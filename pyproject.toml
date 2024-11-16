@@ -39,6 +39,7 @@ major_on_zero = true
 version_toml = ["pyproject.toml:tool.poetry.version"]
 tag_format = "{version}"
 build_command = "poetry build"
+remove_dist = false
 
 
 [tool.semantic_release.publish]

@@ -15,6 +15,7 @@ pillow = "^10.3.0"
 black = "^24.4.2"
 typer = "^0.12.3"
 pyopenglalwaysworking = "3.1.99"
+python-semantic-release = "^9.14.0"
 
 [tool.poetry.dev-dependencies]
 pytest-insta = "^0.3.0"
@@ -30,3 +31,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
 typeCheckingMode = "basic"
+
+
+[tool.semantic_release]
+version_toml = [
+    "pyproject.toml:tool.poetry.version",
+]
+tag_format = "{version}"
+

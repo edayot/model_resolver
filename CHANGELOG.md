@@ -2,6 +2,13 @@
 
 
 
+## v0.16.1 (2024-11-16)
+
+### Chore
+
+* chore: retry ([`a6e5246`](https://github.com/edayot/model_resolver/commit/a6e5246dad098f2ae7add66ed4352347fd4cc9bf))
+
+
 ## v0.16.0 (2024-11-16)
 
 ### Chore

@@ -4,7 +4,7 @@ resource_pack:
   load: .
 
 require:
-  - model_resolver.require
+  - model_resolver
 
 pipeline:
   - my_pipeline
@@ -16,5 +16,5 @@ meta:
   model_resolver:
     # load vanilla item models
     load_vanilla: false
-    minecraft_version: "24w45a"
+    minecraft_version: "24w46a"
     use_cache: true

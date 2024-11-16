@@ -54,11 +54,22 @@ class ClientJar:
     assets: ResourcePack
     data: DataPack
 
-    def __init__(self, cache: Cache, path: FileSystemPath, extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]] = None):
+    def __init__(
+        self,
+        cache: Cache,
+        path: FileSystemPath,
+        extend_namespace: Optional[
+            tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+        ] = None,
+    ):
         self.cache = cache
         self.path = Path(path)
-        self.assets = ResourcePack(extend_namespace=extend_namespace[1] if extend_namespace else ())
-        self.data = DataPack(extend_namespace=extend_namespace[0] if extend_namespace else ())
+        self.assets = ResourcePack(
+            extend_namespace=extend_namespace[1] if extend_namespace else ()
+        )
+        self.data = DataPack(
+            extend_namespace=extend_namespace[0] if extend_namespace else ()
+        )
         worldgen(self.data)
 
     def mount(
@@ -139,12 +150,21 @@ class Release:
 
     cache: Cache
     info: JsonFile
-    extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]]
+    extend_namespace: Optional[
+        tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+    ]
 
     _client_jar: Optional[ClientJar]
     _object_mapping: Optional[UnveilMapping]
 
-    def __init__(self, cache: Cache, info: JsonFile, extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]] = None):
+    def __init__(
+        self,
+        cache: Cache,
+        info: JsonFile,
+        extend_namespace: Optional[
+            tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+        ] = None,
+    ):
         self.cache = cache
         self.info = info
         self._client_jar = None
@@ -159,7 +179,9 @@ class Release:
     def client_jar(self) -> ClientJar:
         if not self._client_jar:
             path = self.cache.download(self.info.data["downloads"]["client"]["url"])
-            self._client_jar = ClientJar(self.cache, path, extend_namespace=self.extend_namespace)
+            self._client_jar = ClientJar(
+                self.cache, path, extend_namespace=self.extend_namespace
+            )
         return self._client_jar
 
     @property
@@ -195,13 +217,17 @@ class ReleaseRegistry(Container[str, Release]):
 
     cache: Cache
     manifest: JsonFile
-    extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]]
+    extend_namespace: Optional[
+        tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+    ]
 
     def __init__(
         self,
         cache: Cache,
         manifest: Optional[Union[FileSystemPath, JsonFile]] = None,
-        extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]] = None,
+        extend_namespace: Optional[
+            tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+        ] = None,
     ):
         super().__init__()
         self.cache = cache
@@ -246,7 +272,9 @@ class Vanilla:
         cache: Optional[Cache] = None,
         manifest: Optional[Union[FileSystemPath, JsonFile]] = None,
         minecraft_version: Optional[str] = None,
-        extend_namespace: Optional[tuple[list[Type[NamespaceFile]],list[Type[NamespaceFile]]]] = None,
+        extend_namespace: Optional[
+            tuple[list[Type[NamespaceFile]], list[Type[NamespaceFile]]]
+        ] = None,
     ):
         opts = ctx and ctx.validate("vanilla", VanillaOptions)
 
@@ -257,7 +285,11 @@ class Vanilla:
         else:
             raise ValueError("Cache was not provided.")
 
-        self.releases = ReleaseRegistry(self.cache, manifest or opts and opts.manifest, extend_namespace=extend_namespace)
+        self.releases = ReleaseRegistry(
+            self.cache,
+            manifest or opts and opts.manifest,
+            extend_namespace=extend_namespace,
+        )
 
         if minecraft_version:
             self.minecraft_version = minecraft_version

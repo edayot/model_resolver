@@ -47,17 +47,20 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "action@github.com"
-
-          poetry version $VERSION_BUMP
-          poetry build
-
-          git add pyproject.toml
-          git commit -m "$(poetry version -s)"
-          git tag -a $(poetry version -s) -m "$(poetry version -s)"
-          git push origin $(poetry version -s)
-          git push origin master
-
-
-          poetry publish --username __token__ --password $PYPI_TOKEN
+          # print the version bump
+          echo "Version bump: $VERSION_BUMP"
+          if [ "$VERSION_BUMP" = "automatic" ]; then
+            poetry run semantic-release -v version
+          fi
+          if [ "$VERSION_BUMP" = "patch" ]; then
+            poetry run semantic-release -v version --patch
+          fi
+          if [ "$VERSION_BUMP" = "minor" ]; then
+            poetry run semantic-release -v version --minor
+          fi
+          if [ "$VERSION_BUMP" = "major" ]; then
+            poetry run semantic-release -v version --major
+          fi
+          poetry run semantic-release -v publish
 
           

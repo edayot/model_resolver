@@ -1,10 +1,12 @@
 from pydantic import BaseModel, Field
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Literal, ClassVar, Generator, Union
+from typing import Optional, Literal, ClassVar, Generator, Union, Any
 from beet import Context
 from model_resolver.vanilla import Vanilla
 from model_resolver.item_model.item import Item
-from model_resolver.utils import clamp
+from model_resolver.utils import clamp, resolve_key
+from model_resolver.minecraft_model import MinecraftModel, resolve_model
+from copy import deepcopy
 
 
 class ItemModelBase(BaseModel):
@@ -33,6 +35,17 @@ class ItemModelModel(ItemModelBase):
         self, ctx: Context, vanilla: Vanilla, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
+
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        key = resolve_key(self.model)
+        if key in ctx.assets.models:
+            data = ctx.assets.models[key].data
+        elif key in vanilla.assets.models:
+            data = vanilla.assets.models[key].data
+        else:
+            raise ValueError(f"Model {key} not found")
+        return MinecraftModel.model_validate(resolve_model(data, ctx, vanilla)).bake()
+    
 
 
 class ItemModelComposite(ItemModelBase):
@@ -590,6 +603,8 @@ class SpecialModelBase(BaseModel):
         "minecraft:hanging_sign",
     ]
 
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        return MinecraftModel()
 
 class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed"]
@@ -609,6 +624,59 @@ class SpecialModelChest(SpecialModelBase):
     type: Literal["minecraft:chest"]
     texture: str
     openness: float = 0.0
+
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        openness = clamp(0.0, self.openness, 1.0)
+        angle = openness * 90
+        namespace, path = resolve_key(self.texture).split(":")
+        model: dict[str, Any] = {
+	        "elements": [
+                {
+                    "from": [1, 0, 1],
+                    "to": [15, 10, 15],
+                    "faces": {
+                        "north": {"uv": [10.5, 8.25, 14, 10.75], "rotation": 180, "texture": "#all"},
+                        "east": {"uv": [7, 8.25, 10.5, 10.75], "rotation": 180, "texture": "#all"},
+                        "south": {"uv": [3.5, 8.25, 7, 10.75], "rotation": 180, "texture": "#all"},
+                        "west": {"uv": [0, 8.25, 3.5, 10.75], "rotation": 180, "texture": "#all"},
+                        "up": {"uv": [7, 4.75, 10.5, 8.25], "texture": "#all"},
+                        "down": {"uv": [3.5, 4.75, 7, 8.25], "texture": "#all"}
+                    }
+                },
+                {
+                    "from": [1, 10, 1],
+                    "to": [15, 14, 15],
+                    "rotation": {"angle": angle, "axis": "x", "origin": [8, 10, 15]},
+                    "faces": {
+                        "north": {"uv": [10.5, 3.75, 14, 4.75], "rotation": 180, "texture": "#all"},
+                        "east": {"uv": [7, 3.75, 10.5, 4.75], "rotation": 180, "texture": "#all"},
+                        "south": {"uv": [3.5, 3.75, 7, 4.75], "rotation": 180, "texture": "#all"},
+                        "west": {"uv": [0, 3.75, 3.5, 4.75], "rotation": 180, "texture": "#all"},
+                        "up": {"uv": [7, 0, 10.5, 3.5], "texture": "#all"},
+                        "down": {"uv": [3.5, 0, 7, 3.5], "texture": "#all"}
+                    }
+                },
+                {
+                    "from": [7, 7, 0],
+                    "to": [9, 11, 2],
+                    "rotation": {"angle": angle, "axis": "x", "origin": [8, 10, 15]},
+                    "faces": {
+                        "north": {"uv": [0.25, 0.25, 0.75, 1.25], "rotation": 180, "texture": "#all"},
+                        "east": {"uv": [0, 0.25, 0.25, 1.25], "rotation": 180, "texture": "#all"},
+                        "south": {"uv": [1, 0.25, 1.5, 1.25], "rotation": 180, "texture": "#all"},
+                        "west": {"uv": [0.75, 0.25, 1, 1.25], "rotation": 180, "texture": "#all"},
+                        "up": {"uv": [0.25, 0, 0.75, 0.25], "rotation": 180, "texture": "#all"},
+                        "down": {"uv": [0.75, 0, 1.25, 0.25], "rotation": 180, "texture": "#all"}
+                    }
+                }
+            ],
+            "textures": {
+                "all": f"{namespace}:entity/chest/{path}"
+            }
+        }
+        return MinecraftModel.model_validate(model).bake()
+        
+        
 
 
 class SpecialModelHead(SpecialModelBase):
@@ -677,6 +745,8 @@ type SpecialModel = Union[
     SpecialModelShield,
     SpecialModelTrident,
     SpecialModelDecoratedPot,
+    SpecialModelStandingSign,
+    SpecialModelHangingSign,
 ]
 
 
@@ -685,8 +755,20 @@ class ItemModelSpecial(ItemModelBase):
     base: str
     model: SpecialModel
 
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        return self.model.get_model(ctx, vanilla, item)
+    
+    def resolve(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> Generator["ItemModelResolvable", None, None]:
+        yield self
+    
+    @property
+    def tints(self) -> list[TintSource]:
+        return []
 
-type ItemModelResolvable = ItemModelModel
+
+type ItemModelResolvable = Union[ItemModelModel, ItemModelSpecial]
 
 type ItemModelAll = Union[
     ItemModelModel,

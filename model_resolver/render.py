@@ -5,7 +5,7 @@ from OpenGL.GLU import *  # type: ignore
 from beet import Context, Texture, Atlas
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
-from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key
+from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key, DEFAULT_RENDER_SIZE
 from model_resolver.vanilla import Vanilla
 from model_resolver.minecraft_model import (
     ItemModelNamespace,
@@ -13,6 +13,7 @@ from model_resolver.minecraft_model import (
     ElementModel,
     RotationModel,
     FaceModel,
+    resolve_model,
 )
 from model_resolver.item_model.model import ItemModel, ItemModelModel
 from model_resolver.item_model.tint_source import TintSource
@@ -37,7 +38,7 @@ class Task:
     vanilla: Vanilla
     path_ctx: Optional[str] = None
     path_save: Optional[Path] = None
-    render_size: int = 512
+    render_size: int = DEFAULT_RENDER_SIZE
     zoom: float = 8
 
     ensure_params: bool = False
@@ -84,44 +85,6 @@ class GenericModelRenderTask(Task):
     center_offset: tuple[float, float, float] = (0, 0, 0)
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
-    def resolve_model(self, data: dict[str, Any]) -> dict[str, Any]:
-        if not "parent" in data:
-            return data
-        parent_key = resolve_key(data["parent"])
-        if parent_key in [
-            "minecraft:builtin/generated",
-            "minecraft:builtin/entity",
-        ]:
-            return data
-        if parent_key in self.ctx.assets.models:
-            parent = self.ctx.assets.models[parent_key].data
-        elif parent_key in self.vanilla.assets.models:
-            parent = self.vanilla.assets.models[parent_key].data
-        else:
-            raise ValueError(f"{parent_key} not in Context or Vanilla")
-        resolved_parent = self.resolve_model(parent)
-        return self.merge_parent(resolved_parent, data)
-
-    def merge_parent(
-        self, parent: dict[str, Any], child: dict[str, Any]
-    ) -> dict[str, Any]:
-        res = deepcopy(parent)
-        if "textures" in child:
-            res.setdefault("textures", {})
-            res["textures"].update(child["textures"])
-        if "elements" in child:
-            res["elements"] = child["elements"]
-        if "display" in child:
-            res.setdefault("display", {})
-            for key in child["display"].keys():
-                res["display"][key] = child["display"][key]
-        if "ambientocclusion" in child:
-            res["ambientocclusion"] = child["ambientocclusion"]
-        if "overrides" in child:
-            res["overrides"] = child["overrides"]
-        if "gui_light" in child:
-            res["gui_light"] = child["gui_light"]
-        return res
 
     def get_texture(self, key: str) -> Texture | None:
         key = resolve_key(key)
@@ -580,18 +543,8 @@ class ItemRenderTask(GenericModelRenderTask):
     def run(self):
         parsed_item_model = self.get_parsed_item_model()
         for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
-            model_def = self.get_parsed_model(model.model).bake()
+            model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
             self.render_model(model_def, model.tints)
-
-    def get_parsed_model(self, model_path: str) -> MinecraftModel:
-        key = resolve_key(model_path)
-        if key in self.ctx.assets.models:
-            data = self.ctx.assets.models[key].data
-        elif key in self.vanilla.assets.models:
-            data = self.vanilla.assets.models[key].data
-        else:
-            raise RenderError(f"Model {key} not found")
-        return MinecraftModel.model_validate(self.resolve_model(data)).bake()
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
@@ -600,7 +553,7 @@ class ItemRenderTask(GenericModelRenderTask):
         )
         texture_path_to_frames = {}
         for model in item_model_models:
-            model_def = self.get_parsed_model(model.model).bake()
+            model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
             texture_path_to_frames.update(self.get_texture_path_to_frames(model_def))
         if len(texture_path_to_frames) == 0:
             yield self
@@ -622,7 +575,7 @@ class ItemRenderTask(GenericModelRenderTask):
 
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
-                model_def = self.get_parsed_model(model.model).bake()
+                model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
                 model_def = model_def.model_copy()
                 textures = {}
                 for key, value in model_def.textures.items():
@@ -723,7 +676,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             data = self.vanilla.assets.models[key].data
         else:
             raise RenderError(f"Model {key} not found")
-        return MinecraftModel.model_validate(self.resolve_model(data)).bake()
+        return MinecraftModel.model_validate(resolve_model(data, self.ctx, self.vanilla)).bake()
 
     def resolve(self) -> Generator[Task, None, None]:
         model = self.get_parsed_model()
@@ -823,7 +776,7 @@ class Render:
         *,
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
-        render_size: int = 512,
+        render_size: int = DEFAULT_RENDER_SIZE,
     ):
         self.tasks.append(
             ItemRenderTask(
@@ -842,7 +795,7 @@ class Render:
         *,
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
-        render_size: int = 512,
+        render_size: int = DEFAULT_RENDER_SIZE,
     ):
         self.tasks.append(
             ModelPathRenderTask(

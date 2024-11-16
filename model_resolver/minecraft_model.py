@@ -3,7 +3,7 @@ from typing import ClassVar, Type, Any
 from model_resolver.utils import resolve_key
 from model_resolver.vanilla import Vanilla
 from copy import deepcopy
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from typing import Annotated, Literal, Optional
 from PIL import Image
 
@@ -63,7 +63,7 @@ class FaceModel(BaseModel):
 
 
 class ElementModel(BaseModel):
-    from_: tuple[float, float, float] = Field(alias="from", serialization_alias="from")
+    from_: tuple[float, float, float] = Field(validation_alias=AliasChoices("from", "from_"))
     to: tuple[float, float, float]
     rotation: Optional[RotationModel] = None
     shade: bool = True
@@ -128,3 +128,45 @@ class MinecraftModel(BaseModel):
         self.parent = None
         self.display.gui = DisplayOptionModel(rotation=(180, 0, 180))
         return self
+
+
+
+
+def resolve_model(data: dict[str, Any], ctx: Context, vanilla: Vanilla) -> dict[str, Any]:
+    if not "parent" in data:
+        return data
+    parent_key = resolve_key(data["parent"])
+    if parent_key in [
+        "minecraft:builtin/generated",
+        "minecraft:builtin/entity",
+    ]:
+        return data
+    if parent_key in ctx.assets.models:
+        parent = ctx.assets.models[parent_key].data
+    elif parent_key in vanilla.assets.models:
+        parent = vanilla.assets.models[parent_key].data
+    else:
+        raise ValueError(f"{parent_key} not in Context or Vanilla")
+    resolved_parent = resolve_model(parent, ctx, vanilla)
+    return merge_parent(resolved_parent, data)
+
+def merge_parent(
+    parent: dict[str, Any], child: dict[str, Any]
+) -> dict[str, Any]:
+    res = deepcopy(parent)
+    if "textures" in child:
+        res.setdefault("textures", {})
+        res["textures"].update(child["textures"])
+    if "elements" in child:
+        res["elements"] = child["elements"]
+    if "display" in child:
+        res.setdefault("display", {})
+        for key in child["display"].keys():
+            res["display"][key] = child["display"][key]
+    if "ambientocclusion" in child:
+        res["ambientocclusion"] = child["ambientocclusion"]
+    if "overrides" in child:
+        res["overrides"] = child["overrides"]
+    if "gui_light" in child:
+        res["gui_light"] = child["gui_light"]
+    return res

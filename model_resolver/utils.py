@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
+DEFAULT_RENDER_SIZE = 128
+
 
 def resolve_key(key: str) -> str:
     return f"minecraft:{key}" if ":" not in key else key

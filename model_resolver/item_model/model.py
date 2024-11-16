@@ -7,6 +7,11 @@ from model_resolver.item_model.item import Item
 from model_resolver.utils import clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
 from copy import deepcopy
+from PIL import Image
+from uuid import UUID
+import json
+import base64
+from rich import print
 
 
 class ItemModelBase(BaseModel):
@@ -603,8 +608,8 @@ class SpecialModelBase(BaseModel):
         "minecraft:hanging_sign",
     ]
 
-    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
-        return MinecraftModel()
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+        return {}
 
 class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed"]
@@ -625,7 +630,7 @@ class SpecialModelChest(SpecialModelBase):
     texture: str
     openness: float = 0.0
 
-    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
         openness = clamp(0.0, self.openness, 1.0)
         angle = openness * 90
         namespace, path = resolve_key(self.texture).split(":")
@@ -674,9 +679,19 @@ class SpecialModelChest(SpecialModelBase):
                 "all": f"{namespace}:entity/chest/{path}"
             }
         }
-        return MinecraftModel.model_validate(model).bake()
+        return model
         
         
+
+class PropertiesModel(BaseModel):
+    name: str
+    value: str
+    signature: Optional[str] = None
+
+class ProfileComponent(BaseModel):
+    name: Optional[str] = None
+    id: Optional[list[int]] | str = None
+    properties: Optional[list[PropertiesModel]] = None
 
 
 class SpecialModelHead(SpecialModelBase):
@@ -684,7 +699,102 @@ class SpecialModelHead(SpecialModelBase):
     kind: Literal[
         "skeleton", "wither_skeleton", "player", "zombie", "creeper", "piglin", "dragon"
     ]
-    texture: str
+    texture: Optional[str] = None
+
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+        match self.kind:
+            case "player":
+                return self.get_model_player(ctx, vanilla, item)
+            case _:
+                raise NotImplementedError(f"Head kind {self.kind} not implemented")
+
+    def get_model_player(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+        texture = self.get_player_texture(ctx, vanilla, item)
+        model = {
+            "textures": {
+                "1": texture,
+                "particle": texture
+            },
+            "elements": [
+                {
+                    "from": [4, 4, 4],
+                    "to": [12, 12, 12],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [6, 2, 8, 4], "texture": "#1"},
+                        "east": {"uv": [4, 2, 6, 4], "texture": "#1"},
+                        "south": {"uv": [2, 2, 4, 4], "texture": "#1"},
+                        "west": {"uv": [0, 2, 2, 4], "texture": "#1"},
+                        "up": {"uv": [2, 0, 4, 2], "rotation": 180, "texture": "#1"},
+                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"}
+                    }
+                },
+                {
+                    "from": [3.75, 3.75, 3.75],
+                    "to": [12.25, 12.25, 12.25],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [14, 2, 16, 4], "texture": "#1"},
+                        "east": {"uv": [12, 2, 14, 4], "texture": "#1"},
+                        "south": {"uv": [10, 2, 12, 4], "texture": "#1"},
+                        "west": {"uv": [8, 2, 10, 4], "texture": "#1"},
+                        "up": {"uv": [10, 0, 12, 2], "rotation": 180, "texture": "#1"},
+                        "down": {"uv": [12, 0, 14, 2], "rotation": 180, "texture": "#1"}
+                    }
+                }
+            ]
+        }
+        return model
+    
+    def get_player_texture(self, ctx: Context, vanilla: Vanilla, item: Item) -> str | Image.Image:
+        DEFAULT_TEXTURE = "minecraft:textures/entity/player/wide/steve"
+        if self.texture:
+            return self.texture
+        if not item.components:
+            return DEFAULT_TEXTURE
+        if not "minecraft:profile" in item.components:
+            return DEFAULT_TEXTURE
+        cache = ctx.cache["model_resolver"]
+        if not isinstance(item.components["minecraft:profile"], str):
+            profile = ProfileComponent.model_validate(item.components["minecraft:profile"])
+        else:
+            profile = ProfileComponent(name=item.components["minecraft:profile"])
+        
+        if profile.id or profile.name:
+            if profile.name:
+                url = "https://api.mojang.com/users/profiles/minecraft/" + profile.name
+                path = cache.download(url)
+                with open(path, "r") as f:
+                    data = json.load(f)
+                if not "id" in data:
+                    return DEFAULT_TEXTURE
+                uuid = UUID(data["id"])
+            elif profile.id:
+                assert isinstance(profile.id, list)
+                id = 0
+                for i, signed in enumerate(profile.id):
+                    # signed is a 32 bit signed integer
+                    unsigned = signed & 0xFFFFFFFF
+                    id += unsigned * 2**(32*(3-i))
+                uuid = UUID(int=id)
+            url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
+            path = cache.download(url)
+            with open(path, "r") as f:
+                data = json.load(f)
+            profile = ProfileComponent.model_validate(data)
+        if not profile.properties:
+            return DEFAULT_TEXTURE
+        if len(profile.properties) == 0:
+            return DEFAULT_TEXTURE
+        prop = profile.properties[0]
+        value = base64.b64decode(prop.value)
+        data = json.loads(value)
+        texture_url = data["textures"]["SKIN"]["url"]
+        texture_cache = cache.download(texture_url)
+        img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
+        with Image.open(texture_cache) as texture:
+            img.paste(texture, (0, 0))
+        return img
 
 
 class SpecialModelShulkerBox(SpecialModelBase):
@@ -736,7 +846,6 @@ class SpecialModelHangingSign(SpecialModelBase):
 
 type SpecialModel = Union[
     SpecialModelBed,
-    SpecialModelBase,
     SpecialModelBanner,
     SpecialModelConduit,
     SpecialModelChest,
@@ -756,7 +865,10 @@ class ItemModelSpecial(ItemModelBase):
     model: SpecialModel
 
     def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
-        return self.model.get_model(ctx, vanilla, item)
+        child = self.model.get_model(ctx, vanilla, item)
+        child["parent"] = resolve_key(self.base)
+        merged = resolve_model(child, ctx, vanilla)
+        return MinecraftModel.model_validate(merged).bake()
     
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item

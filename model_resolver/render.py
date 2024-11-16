@@ -106,7 +106,7 @@ class GenericModelRenderTask(Task):
 
     def get_texture_path_to_frames(self, model: MinecraftModel) -> dict[str, list[int]]:
         texture_path_to_frames = {}
-        for texture_path in set(model.textures.values()):
+        for texture_path in set([x for x in model.textures.values() if isinstance(x, str)]):
             if isinstance(texture_path, Image.Image):
                 continue
             texture = self.get_texture(texture_path)

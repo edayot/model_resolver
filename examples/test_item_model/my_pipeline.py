@@ -14,7 +14,31 @@ def beet_default(ctx: Context):
             "minecraft:profile": "AirDox_"
         }
     )
-    render.add_item_task(item, path_ctx="test:head", render_size=512)
+    # render.add_item_task(item, path_ctx="test:head", render_size=512)
+
+    # render.add_item_task(Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512)
+
+    # render.add_item_task(Item(id="minecraft:creeper_head"), path_ctx="test:creeper_head", render_size=512)
+    # render.add_item_task(Item(id="minecraft:zombie_head"), path_ctx="test:zombie_head", render_size=512)
+
+
+
+
+
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:skeleton"
+    }), path_ctx="test:render/skeleton", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:piglin"
+    }), path_ctx="test:render/piglin", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:dragon"
+    }), path_ctx="test:render/dragon", render_size=512)
+    # render.add_item_task(Item(id="minecraft:diamond", components={
+    #     "minecraft:item_model": "test:zombie"
+    # }), path_ctx="test:render/zombie", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond"), path_ctx="test:render/diamond", render_size=512)
+
 
 
     render.run()

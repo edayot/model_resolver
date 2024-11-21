@@ -16,5 +16,5 @@ meta:
   model_resolver:
     # load vanilla item models
     load_vanilla: false
-    minecraft_version: "24w46a"
+    minecraft_version: "1.21.4-pre1"
     use_cache: true

@@ -23,6 +23,7 @@ class ItemModelBase(BaseModel):
         "minecraft:range_dispatch",
         "minecraft:bundle/selected_item",
         "minecraft:special",
+        "minecraft:empty",
     ]
 
     def resolve(
@@ -78,6 +79,7 @@ class ItemModelConditionBase(ItemModelBase):
         "minecraft:extended_view",
         "minecraft:custom_model_data",
         "minecraft:keybind_down",
+        "minecraft:view_entity",
     ]
     on_true: "ItemModelAll"
     on_false: "ItemModelAll"
@@ -208,6 +210,13 @@ class ItemModelConditionCustomModelData(ItemModelConditionBase):
         if index >= len(item.components["minecraft:custom_model_data"]["flags"]):
             return False
         return item.components["minecraft:custom_model_data"]["flags"][index]
+    
+class ItemModelConditionViewEntity(ItemModelConditionBase):
+    property: Literal["minecraft:view_entity"]
+    
+    def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
+        # Not possible to implement
+        return False
 
 
 type ItemModelCondition = Union[
@@ -239,8 +248,9 @@ class ItemModelSelectBase(ItemModelBase):
         "minecraft:block_state",
         "minecraft:display_context",
         "minecraft:local_time",
-        "minecraft:holder_type",
+        "minecraft:context_entity_type",
         "minecraft:custom_model_data",
+        "minecraft:context_dimension",
     ]
     cases: list[SelectCase] = Field(default_factory=list)
     fallback: "ItemModelAll"
@@ -307,8 +317,8 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
         # Not possible to implement
         return self.fallback
     
-class ItemModelSelectHolderType(ItemModelSelectBase):
-    property: Literal["minecraft:holder_type"]
+class ItemModelSelectContextEntityType(ItemModelSelectBase):
+    property: Literal["minecraft:context_entity_type"]
     
     def resolve_select(
         self, ctx: Context, vanilla: Vanilla, item: Item
@@ -390,6 +400,14 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
         )
 
 
+class ItemModelSelectContextDimension(ItemModelSelectBase):
+    property: Literal["minecraft:context_dimension"]
+
+    def resolve_select(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> "ItemModelAll":
+        return self.resolve_case("minecraft:overworld")
+
 type ItemModelSelect = Union[
     ItemModelSelectMainHand,
     ItemModelSelectChargeType,
@@ -398,6 +416,8 @@ type ItemModelSelect = Union[
     ItemModelSelectDisplayContext,
     ItemModelSelectCustomModelData,
     ItemModelSelectLocalTime,
+    ItemModelSelectContextEntityType,
+    ItemModelSelectContextDimension,
 ]
 
 
@@ -521,7 +541,8 @@ class ItemModelRangeDispatchCooldown(ItemModelRangeDispatchBase):
 
 class ItemModelRangeDispatchTime(ItemModelRangeDispatchBase):
     property: Literal["minecraft:time"]
-    # wobble: Optional[bool] = True
+    wobble: Optional[bool] = True
+    source: Literal["daytime", "moon_phase", "random"]
     # natural_only: Optional[bool] = True
 
     def resolve_range_dispatch(
@@ -534,7 +555,7 @@ class ItemModelRangeDispatchTime(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchCompass(ItemModelRangeDispatchBase):
     property: Literal["minecraft:compass"]
     wobble: Optional[bool] = True
-    target: Literal["spawn", "lodestone", "recovery"]
+    target: Literal["spawn", "lodestone", "recovery", "none"]
 
     def resolve_range_dispatch(
         self, ctx: Context, vanilla: Vanilla, item: Item
@@ -573,6 +594,7 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
     ) -> float:
         # Not possible to implement
         return 0.0
+        
 
 
 type ItemModelRangeDispatch = Union[
@@ -700,6 +722,7 @@ class SpecialModelHead(SpecialModelBase):
         "skeleton", "wither_skeleton", "player", "zombie", "creeper", "piglin", "dragon"
     ]
     texture: Optional[str] = None
+    animation: float = 0.0
 
     def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
         match self.kind:
@@ -1144,6 +1167,21 @@ class ItemModelSpecial(ItemModelBase):
     def tints(self) -> list[TintSource]:
         return []
 
+class ItemModelEmpty(ItemModelBase):
+    type: Literal["minecraft:empty"]
+
+    def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        return MinecraftModel.model_validate({})
+
+    def resolve(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> Generator["ItemModelResolvable", None, None]:
+        yield from []
+
+    @property
+    def tints(self) -> list[TintSource]:
+        return []
+
 
 type ItemModelResolvable = Union[ItemModelModel, ItemModelSpecial]
 
@@ -1155,11 +1193,13 @@ type ItemModelAll = Union[
     ItemModelRangeDispatch,
     ItemModelBundleSelectedItem,
     ItemModelSpecial,
+    ItemModelEmpty,
 ]
 
 
 class ItemModel(BaseModel):
     model: ItemModelAll
+    hand_animation_on_swap: Optional[bool] = True
 
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item

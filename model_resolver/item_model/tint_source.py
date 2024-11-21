@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, Optional, Any
+from typing import Literal, Optional, Any, Union
 from beet import Context
 from model_resolver.vanilla import Vanilla
 from model_resolver.utils import clamp
@@ -27,6 +27,7 @@ class TintSourceBase(BaseModel):
         "minecraft:potion",
         "minecraft:map_color",
         "minecraft:custom_model_data",
+        "minecraft:team",
     ]
 
     def resolve(
@@ -156,6 +157,24 @@ class TintSourceCustomModelData(TintSourceBase):
         return to_rgb(
             item.components["minecraft:custom_model_data"]["colors"][self.index or 0]
         )
+    
+class TintSourceTeam(TintSourceBase):
+    type: Literal["minecraft:team"]
+    default: Color
+
+    def resolve(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> tuple[int, int, int]:
+        return to_rgb(self.default)
 
 
-type TintSource = TintSourceDye | TintSourceConstant | TintSourceGrass | TintSourceFirework | TintSourcePotion | TintSourceMap | TintSourceCustomModelData
+type TintSource = Union[
+    TintSourceDye, 
+    TintSourceConstant,
+    TintSourceGrass, 
+    TintSourceFirework, 
+    TintSourcePotion, 
+    TintSourceMap, 
+    TintSourceCustomModelData, 
+    TintSourceTeam
+]

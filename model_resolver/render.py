@@ -1,8 +1,9 @@
+from email.policy import default
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
-from beet import Context, Texture, Atlas
+from beet import Context, Texture, Atlas, run_beet
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key, DEFAULT_RENDER_SIZE
@@ -755,6 +756,7 @@ class Render:
     tasks_index: int = 0
     light: LightOptions = field(default_factory=LightOptions)
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
+    default_render_size: int = DEFAULT_RENDER_SIZE
 
     def __post_init__(self):
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
@@ -777,8 +779,10 @@ class Render:
         *,
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
-        render_size: int = DEFAULT_RENDER_SIZE,
+        render_size: Optional[int] = None,
     ):
+        if render_size is None:
+            render_size = self.default_render_size
         self.tasks.append(
             ItemRenderTask(
                 ctx=self.ctx,
@@ -796,8 +800,10 @@ class Render:
         *,
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
-        render_size: int = DEFAULT_RENDER_SIZE,
+        render_size: Optional[int] = None,
     ):
+        if render_size is None:
+            render_size = self.default_render_size
         self.tasks.append(
             ModelPathRenderTask(
                 ctx=self.ctx,

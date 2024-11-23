@@ -10,47 +10,37 @@ A beet plugin that render all models in the beet project.
 
 Without any installlation, all vanilla models are rendered in this [repository](https://github.com/edayot/renders/tree/renders)
 
-### With the CLI
 
-This command will show all available options:
+### As a beet service
 
-```bash
-model_resolver --help
+Example plugin to render an apple:
+```python
+
+from beet import Context
+from model_resolver import Render, Item
+
+
+
+
+def beet_default(ctx: Context):
+    render = Render(ctx)
+
+    item = Item(
+        id="minecraft:apple",
+    )
+    render.add_item_task(item, path_ctx="my_namespace:my_apple")
+    render.run()
 ```
 
-```bash
-# this will render the current resource pack models
-model_resolver 
-```
-
-```bash
-# this will render the current resource pack models and load vanilla models
-model_resolver --load-vanilla
-```
-
-
-
-### As a beet plugin
-Add the plugin to your pipeline:
-
+Additionally, you can customize the config :
 ```yaml
-# beet.yaml
-pipeline:
-  (...)  # other plugins you may have
-  - model_resolver
-
-# setup an output directory
-output: build
-
 meta:
   model_resolver:
     # load vanilla item models
-    load_vanilla: true
-
+    minecraft_version: "1.21.4-pre1"
+    use_cache: true
+    special_rendering: true
 ```
-
-Renders are now available in your ctx !
-
 
 ## Installation
 

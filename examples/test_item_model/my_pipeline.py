@@ -1,6 +1,5 @@
 from beet import Context
-from model_resolver.item_model.item import Item
-from model_resolver.render import Render
+from model_resolver import Item, Render
 
 
 

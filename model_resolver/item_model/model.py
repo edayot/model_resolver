@@ -4,7 +4,7 @@ from typing import Optional, Literal, ClassVar, Generator, Union, Any
 from beet import Context
 from model_resolver.vanilla import Vanilla
 from model_resolver.item_model.item import Item
-from model_resolver.utils import clamp, resolve_key
+from model_resolver.utils import ModelResolverOptions, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
 from copy import deepcopy
 from PIL import Image
@@ -1153,6 +1153,9 @@ class ItemModelSpecial(ItemModelBase):
     model: SpecialModel
 
     def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> MinecraftModel:
+        opts = ctx.validate("model_resolver", ModelResolverOptions)
+        if not opts.special_rendering:
+            return MinecraftModel()
         child = self.model.get_model(ctx, vanilla, item)
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, ctx, vanilla)

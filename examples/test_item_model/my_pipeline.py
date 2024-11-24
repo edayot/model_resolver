@@ -36,10 +36,13 @@ def beet_default(ctx: Context):
     render.add_item_task(Item(id="minecraft:diamond", components={
         "minecraft:item_model": "test:dragon_scales"
     }), path_ctx="test:render/dragon_scales", render_size=512)
+    render.add_item_task(Item(id="minecraft:grass", components={
+        "minecraft:item_model": "freerot:diamond"
+    }), path_ctx="test:render/model_resolver", render_size=512)
     # render.add_item_task(Item(id="minecraft:diamond", components={
     #     "minecraft:item_model": "test:zombie"
     # }), path_ctx="test:render/zombie", render_size=512)
-    render.add_item_task(Item(id="minecraft:diamond"), path_ctx="test:render/diamond", render_size=512)
+    # render.add_item_task(Item(id="minecraft:diamond"), path_ctx="test:render/diamond", render_size=512)
 
 
 

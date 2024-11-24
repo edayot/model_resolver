@@ -155,7 +155,7 @@ class GenericModelRenderTask(Task):
         # reset the matrix
         glLoadIdentity()
         # TODO: Check translation[2] for depth
-        glTranslatef(-translation[0], translation[1], translation[2])
+        glTranslatef(-translation[0], translation[1], -translation[2])
         glRotatef(-rotation[0], 1, 0, 0)
         glRotatef(rotation[1] + 180, 0, 1, 0)
         glRotatef(rotation[2], 0, 0, 1)

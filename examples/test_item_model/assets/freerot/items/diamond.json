@@ -1,0 +1,187 @@
+{
+	"model": {
+		"type": "composite",
+		"models": [
+			{
+				"type": "model",
+				"model": "freerot:diamond/0"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/1"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/2"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/3"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/4"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/5"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/6"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/7"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/8"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/9"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/10"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/11"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/12"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/13"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/14"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/15"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/16"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/17"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/18"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/19"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/20"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/21"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/22"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/23"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/24"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/25"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/26"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/27"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/28"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/29"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/30"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/31"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/32"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/33"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/34"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/35"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/36"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/37"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/38"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/39"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/40"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/41"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/42"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/43"
+			},
+			{
+				"type": "model",
+				"model": "freerot:diamond/44"
+			}
+		]
+	}
+}

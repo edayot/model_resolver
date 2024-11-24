@@ -2,6 +2,9 @@ from pydantic import BaseModel
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
+import logging
+
+log = logging.getLogger(__name__)
 
 DEFAULT_RENDER_SIZE = 128
 

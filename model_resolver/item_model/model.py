@@ -1203,7 +1203,7 @@ class SpecialModelHead(SpecialModelBase):
 
 class SpecialModelShulkerBox(SpecialModelBase):
     type: Literal["minecraft:shulker_box", "shulker_box"]
-    name: str
+    texture: str
     openness: float = 0.0
     orientation: Literal["down", "east", "north", "south", "up", "west"] = "up"
 

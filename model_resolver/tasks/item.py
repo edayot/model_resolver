@@ -32,6 +32,9 @@ class ItemRenderTask(GenericModelRenderTask):
 
     def get_parsed_item_model(self) -> ItemModel:
         assert self.item
+        assert self.item.__resolved__, f"Item {self.item.id} is not resolved"
+        assert self.item.components, f"Item {self.item.id} has no components"
+        assert "minecraft:item_model" in self.item.components, f"Item {self.item.id} has no item model"
         item_model_key = self.item.components["minecraft:item_model"]
         if not item_model_key:
             raise RenderError(f"Item {self.item} does not have a model")

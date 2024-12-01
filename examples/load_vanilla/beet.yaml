@@ -1,11 +1,14 @@
 
+require:
+  - model_resolver
 
 pipeline:
   - model_resolver.plugins.render_all_vanilla
+  - model_resolver.plugins.render_all_items
 
 output: dist
 
 meta:
   model_resolver:
     # load vanilla item models
-    minecraft_version: "1.21.1"
+    minecraft_version: "1.21.4-rc3"

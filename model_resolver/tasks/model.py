@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import re
 from model_resolver.item_model.item import Item
 from model_resolver.utils import resolve_key
 from model_resolver.minecraft_model import (
@@ -78,7 +79,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             for key, value in model.textures.items():
                 if isinstance(value, Image.Image):
                     raise RenderError(f"WTF is going on")
-                if resolve_key(value) in images:
+                if resolve_key(value) in [resolve_key(k) for k in images.keys()]:
                     textures[key] = images[value]
                 else:
                     textures[key] = value

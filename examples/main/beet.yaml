@@ -4,13 +4,11 @@ resource_pack:
   load: .
 
 pipeline:
-  - model_resolver
+  - model_resolver.plugins.render_all_context
 
+output: dist
 
 meta:
   model_resolver:
     # load vanilla item models
-    load_vanilla: false
     minecraft_version: "1.21"
-    render_size: 512
-    save_namespace: "model_resolver"

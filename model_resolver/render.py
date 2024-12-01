@@ -1,13 +1,17 @@
+from functools import cached_property
+import random
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
 from beet import Context, Texture, Atlas, run_beet
 from dataclasses import dataclass, field
+from model_resolver.blockstates import BlockState, Variant, VariantModel, verify_when
 from model_resolver.item_model.item import Item
 from model_resolver.utils import LightOptions, ModelResolverOptions, resolve_key, DEFAULT_RENDER_SIZE
 from model_resolver.vanilla import Vanilla
 from model_resolver.minecraft_model import (
+    DisplayOptionModel,
     ItemModelNamespace,
     MinecraftModel,
     ElementModel,
@@ -17,15 +21,17 @@ from model_resolver.minecraft_model import (
 )
 from model_resolver.item_model.model import ItemModel, ItemModelModel
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Literal, TypedDict, Any, Generator
+from typing import Optional, Literal, TypedDict, Any, Generator, Union, cast
 from pathlib import Path
 import logging
 from PIL import Image
 from math import cos, sin, pi, sqrt
 from copy import deepcopy
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 import numpy as np
 from rich import print
+from nbtlib.contrib.minecraft.structure import StructureFileData
+
 
 
 class RenderError(Exception):
@@ -739,6 +745,186 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 dynamic_textures=self.dynamic_textures,
             )
 
+NestedDictList = Union[dict[str, Any], list[Any]]
+def traverse_all(data: NestedDictList, key: str = "model"):
+    if isinstance(data, dict):
+        if key in data.keys() and isinstance(data[key], str):
+            yield data[key]
+        for x in data.values():
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x)
+    if isinstance(data, list):
+        for x in data:
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x, key)
+
+
+
+
+class PaletteModel(BaseModel):
+    Name: str
+    Properties: dict[str, str] = Field(default_factory=dict)
+
+class BlockModel(BaseModel):
+    state: int
+    pos: tuple[int, int, int]
+    nbt: Optional[dict[str, Any]] = None
+
+class StructureDataModel(BaseModel):
+    DataVersion: int
+    size: tuple[int, int, int]
+    palette_: Optional[list[PaletteModel]] = Field(alias="palette", default=None)
+    palettes: Optional[list[list[PaletteModel]]] = None
+    blocks: list[BlockModel]
+    entities: Any
+
+    @cached_property
+    def palette(self) -> list[PaletteModel]:
+        if self.palette_:
+            return self.palette_
+        if self.palettes:
+            return random.choice(self.palettes)
+        raise RenderError("No palette found")
+
+
+
+
+@dataclass(kw_only=True)
+class StructureRenderTask(Task):
+    structure_key: str
+    display_option: DisplayOptionModel = field(default_factory=lambda: DisplayOptionModel(
+        rotation=(30, 225, 0),
+        translation=(0, 0, 0),
+        scale=(0.625, 0.625, 0.625)
+    ))
+    zoom: int = 128
+    do_rotate_camera: bool = True
+
+    @cached_property
+    def structure(self):
+        key = resolve_key(self.structure_key)
+        if key in self.ctx.data.structures:
+            data = self.ctx.data.structures[key].data
+        elif key in self.vanilla.data.structures:
+            data = self.vanilla.data.structures[key].data
+        else:
+            raise RenderError(f"Structure {key} not found")
+        return StructureDataModel.model_validate(data)
+
+    
+    def rotate_camera(self):
+        if not self.do_rotate_camera:
+            return
+        # transform the vertices
+        scale = self.display_option.scale or [1, 1, 1]
+        translation = self.display_option.translation or [0, 0, 0]
+        rotation = self.display_option.rotation or [0, 0, 0]
+
+        # reset the matrix
+        glLoadIdentity()
+        glTranslatef(-translation[0], translation[1], -translation[2])
+        glRotatef(-rotation[0], 1, 0, 0)
+        glRotatef(rotation[1] + 180, 0, 1, 0)
+        glRotatef(rotation[2], 0, 0, 1)
+        glScalef(scale[0], scale[1], scale[2])
+            
+    def run(self):
+        self.rotate_camera()
+        sx, sy, sz = self.structure.size
+        center = (sx / 2, sy / 2, sz / 2)
+        for block in self.structure.blocks:
+            self.render_block(block, center)
+
+    def render_block(
+        self, 
+        block: BlockModel,
+        center: tuple[float, float, float]
+        ):
+        palleted = self.structure.palette[block.state]
+
+        if palleted.Name in self.ctx.assets.blockstates:
+            block_state = self.ctx.assets.blockstates[palleted.Name].data
+        elif palleted.Name in self.vanilla.assets.blockstates:
+            block_state = self.vanilla.assets.blockstates[palleted.Name].data
+        else:
+            raise RenderError(f"Blockstate {palleted.Name} not found")
+        
+        block_state = BlockState.model_validate(block_state)
+        if block_state.variants:
+            if "" in block_state.variants:
+                variant = block_state.variants[""]
+            else:
+                parsed_dict: dict[str, dict[str, str]] = {}
+                for key in block_state.variants.keys():
+                    parsed_key: dict[str, str] = {}
+                    key_split = key.split(",")
+                    for key_split_part in key_split:
+                        state, value = key_split_part.split("=")
+                        parsed_key[state] = value
+                    parsed_dict[key] = parsed_key
+                variant = None
+                for key, parsed_key in parsed_dict.items():
+                    if all([
+                        parsed_key.get(x, object()) == palleted.Properties.get(x, object())
+                        for x in parsed_key.keys()
+                    ]):
+                        variant = block_state.variants[key]
+                        break
+                if variant is None:
+                    raise RenderError("Variant not found")
+            self.render_variant(variant, block, center, palleted)
+        elif block_state.multipart:
+            for part in block_state.multipart:
+                if not part.when:
+                    self.render_variant(part.apply, block, center, palleted)
+                else:
+                    if verify_when(part.when, palleted.Properties):
+                        self.render_variant(part.apply, block, center, palleted)
+
+    def render_variant(
+        self,
+        variant: Variant,
+        block: BlockModel,
+        center: tuple[float, float, float],
+        palleted: PaletteModel,
+    ):
+        if isinstance(variant, list):
+            resolved_variant = random.choices(variant, weights=[x.weight for x in variant])[0]
+        else:
+            resolved_variant = variant
+        if resolve_key(resolved_variant.model) == "minecraft:block/air":
+            return
+        
+        rots = [
+            RotationModel(
+            origin=(8, 8, 8),
+            axis="x",
+            angle=resolved_variant.x,
+            rescale=False
+        ),
+            RotationModel(
+            origin=(8, 8, 8),
+            axis="y",
+            angle=-resolved_variant.y,
+            rescale=False
+        ),]
+        task = ModelPathRenderTask(
+            ctx=self.ctx,
+            vanilla=self.vanilla,
+            render_size=self.render_size,
+            model=resolved_variant.model,
+            dynamic_textures=self.dynamic_textures,
+            do_rotate_camera=False,
+            additional_rotations=rots,
+            offset=(block.pos[0]*16, block.pos[1]*16, block.pos[2]*16),
+            center_offset=center,
+        )
+        task.run()
+
+        
+
 
 class AtlasDict(TypedDict):
     type: str
@@ -808,6 +994,27 @@ class Render:
                 ctx=self.ctx,
                 vanilla=self.vanilla,
                 model=model,
+                path_ctx=path_ctx,
+                path_save=path_save,
+                render_size=render_size,
+            )
+        )
+
+    def add_structure_task(
+        self,
+        structure: str,
+        *,
+        path_ctx: Optional[str] = None,
+        path_save: Optional[Path] = None,
+        render_size: Optional[int] = None,
+    ):
+        if render_size is None:
+            render_size = self.default_render_size
+        self.tasks.append(
+            StructureRenderTask(
+                ctx=self.ctx,
+                vanilla=self.vanilla,
+                structure_key=structure,
                 path_ctx=path_ctx,
                 path_save=path_save,
                 render_size=render_size,

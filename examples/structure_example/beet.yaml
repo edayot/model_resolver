@@ -6,8 +6,11 @@ resource_pack:
 data_pack:
   load: .
 
-pipeline:
+require:
   - model_resolver
+
+pipeline:
+  - my_plugin
 
 output: dist
 

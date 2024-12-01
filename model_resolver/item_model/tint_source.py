@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, Optional, Any, Union
+from typing import Literal, Optional, Union
 from beet import Context
 from model_resolver.vanilla import Vanilla
 from model_resolver.utils import clamp

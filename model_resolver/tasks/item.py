@@ -1,32 +1,14 @@
-from functools import cached_property
-import random
-from OpenGL.GL import *  # type: ignore
-from OpenGL.GLUT import *  # type: ignore
-from OpenGL.GLU import *  # type: ignore
-
-from beet import Context, Texture, Atlas, run_beet
-from dataclasses import dataclass, field
-from model_resolver.item_model.item import Item
+from dataclasses import dataclass
 from model_resolver.utils import (
-    LightOptions,
-    ModelResolverOptions,
     resolve_key,
-    DEFAULT_RENDER_SIZE,
 )
-from model_resolver.vanilla import Vanilla
 from model_resolver.minecraft_model import (
-    DisplayOptionModel,
     ItemModelNamespace,
     MinecraftModel,
-    ElementModel,
-    RotationModel,
-    FaceModel,
-    resolve_model,
 )
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Generator
-from pathlib import Path
+from typing import Generator
 from PIL import Image
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError

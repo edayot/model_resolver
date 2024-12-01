@@ -1,4 +1,4 @@
-from model_resolver.render import verify_when
+from model_resolver.tasks.structure import verify_when
 from nbtlib import Compound, String
 
 

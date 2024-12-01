@@ -1,21 +1,12 @@
-from OpenGL.GL import *  # type: ignore
-from OpenGL.GLUT import *  # type: ignore
-from OpenGL.GLU import *  # type: ignore
-
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.utils import resolve_key
 from model_resolver.minecraft_model import (
-    DisplayOptionModel,
     MinecraftModel,
-    RotationModel,
     resolve_model,
 )
-from typing import Generator, Optional, Any
-from pydantic import BaseModel, Field
-from rich import print
-from functools import cached_property
-import random
+from typing import Generator
+from rich import print  # noqa
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.item_model.tint_source import TintSource

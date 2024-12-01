@@ -6,12 +6,11 @@ from model_resolver.vanilla import Vanilla
 from model_resolver.item_model.item import Item
 from model_resolver.utils import ModelResolverOptions, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
-from copy import deepcopy
 from PIL import Image
 from uuid import UUID
 import json
 import base64
-from rich import print
+from rich import print  # noqa
 
 
 class ItemModelBase(BaseModel):

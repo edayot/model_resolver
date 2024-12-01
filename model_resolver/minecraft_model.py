@@ -1,5 +1,5 @@
-from beet import Context, Model, NamespaceFileScope, JsonFile
-from typing import ClassVar, Type, Any
+from beet import Context, NamespaceFileScope, JsonFile
+from typing import ClassVar, Any
 from model_resolver.utils import resolve_key
 from model_resolver.vanilla import Vanilla
 from copy import deepcopy

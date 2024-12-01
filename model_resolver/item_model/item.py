@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Any, Self
 from beet import Context, LATEST_MINECRAFT_VERSION
-from model_resolver.utils import ModelResolverOptions, resolve_key
-from model_resolver.vanilla import Vanilla
+from model_resolver.utils import ModelResolverOptions
 import json
-from copy import deepcopy
 
 
 class Item(BaseModel):

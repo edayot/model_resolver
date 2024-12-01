@@ -63,7 +63,9 @@ class FaceModel(BaseModel):
 
 
 class ElementModel(BaseModel):
-    from_: tuple[float, float, float] = Field(validation_alias=AliasChoices("from", "from_"))
+    from_: tuple[float, float, float] = Field(
+        validation_alias=AliasChoices("from", "from_")
+    )
     to: tuple[float, float, float]
     rotation: Optional[RotationModel] = None
     shade: bool = True
@@ -130,9 +132,9 @@ class MinecraftModel(BaseModel):
         return self
 
 
-
-
-def resolve_model(data: dict[str, Any], ctx: Context, vanilla: Vanilla) -> dict[str, Any]:
+def resolve_model(
+    data: dict[str, Any], ctx: Context, vanilla: Vanilla
+) -> dict[str, Any]:
     if not "parent" in data:
         return data
     parent_key = resolve_key(data["parent"])
@@ -150,9 +152,8 @@ def resolve_model(data: dict[str, Any], ctx: Context, vanilla: Vanilla) -> dict[
     resolved_parent = resolve_model(parent, ctx, vanilla)
     return merge_parent(resolved_parent, data)
 
-def merge_parent(
-    parent: dict[str, Any], child: dict[str, Any]
-) -> dict[str, Any]:
+
+def merge_parent(parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
     res = deepcopy(parent)
     if "textures" in child:
         res.setdefault("textures", {})

@@ -7,11 +7,12 @@ import json
 from copy import deepcopy
 
 
-
 class Item(BaseModel):
     id: str
     count: int = 1
-    components_from_user: dict[str, Any] = Field(default_factory=dict, alias="components")
+    components_from_user: dict[str, Any] = Field(
+        default_factory=dict, alias="components"
+    )
     default_components: dict[str, Any] = Field(default_factory=dict)
 
     __resolved__: bool = False
@@ -33,7 +34,7 @@ class Item(BaseModel):
             self.default_components = components[self.id.removeprefix("minecraft:")]
         self.__resolved__ = True
         return self
-    
+
     @property
     def components(self) -> dict[str, Any]:
         return {**self.default_components, **self.components_from_user}

@@ -157,7 +157,8 @@ class TintSourceCustomModelData(TintSourceBase):
         return to_rgb(
             item.components["minecraft:custom_model_data"]["colors"][self.index or 0]
         )
-    
+
+
 class TintSourceTeam(TintSourceBase):
     type: Literal["minecraft:team"]
     default: Color
@@ -169,12 +170,12 @@ class TintSourceTeam(TintSourceBase):
 
 
 type TintSource = Union[
-    TintSourceDye, 
+    TintSourceDye,
     TintSourceConstant,
-    TintSourceGrass, 
-    TintSourceFirework, 
-    TintSourcePotion, 
-    TintSourceMap, 
-    TintSourceCustomModelData, 
-    TintSourceTeam
+    TintSourceGrass,
+    TintSourceFirework,
+    TintSourcePotion,
+    TintSourceMap,
+    TintSourceCustomModelData,
+    TintSourceTeam,
 ]

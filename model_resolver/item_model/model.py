@@ -59,7 +59,6 @@ class ItemModelModel(ItemModelBase):
         else:
             raise ValueError(f"Model {key} not found")
         return MinecraftModel.model_validate(resolve_model(data, ctx, vanilla)).bake()
-    
 
 
 class ItemModelComposite(ItemModelBase):
@@ -230,10 +229,11 @@ class ItemModelConditionCustomModelData(ItemModelConditionBase):
         if index >= len(item.components["minecraft:custom_model_data"]["flags"]):
             return False
         return item.components["minecraft:custom_model_data"]["flags"][index]
-    
+
+
 class ItemModelConditionViewEntity(ItemModelConditionBase):
     property: Literal["minecraft:view_entity", "view_entity"]
-    
+
     def resolve_condition(self, ctx: Context, vanilla: Vanilla, item: Item) -> bool:
         # Not possible to implement
         return False
@@ -345,10 +345,11 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
     ) -> "ItemModelAll":
         # Not possible to implement
         return self.fallback
-    
+
+
 class ItemModelSelectContextEntityType(ItemModelSelectBase):
     property: Literal["minecraft:context_entity_type", "context_entity_type"]
-    
+
     def resolve_select(
         self, ctx: Context, vanilla: Vanilla, item: Item
     ) -> "ItemModelAll":
@@ -436,6 +437,7 @@ class ItemModelSelectContextDimension(ItemModelSelectBase):
         self, ctx: Context, vanilla: Vanilla, item: Item
     ) -> "ItemModelAll":
         return self.resolve_case("minecraft:overworld")
+
 
 type ItemModelSelect = Union[
     ItemModelSelectMainHand,
@@ -633,7 +635,6 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
     ) -> float:
         # Not possible to implement
         return 0.0
-        
 
 
 type ItemModelRangeDispatch = Union[
@@ -683,6 +684,7 @@ class SpecialModelBase(BaseModel):
     def get_model(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
         return {}
 
+
 class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed", "bed"]
     texture: str
@@ -707,58 +709,120 @@ class SpecialModelChest(SpecialModelBase):
         angle = openness * 90
         namespace, path = resolve_key(self.texture).split(":")
         model: dict[str, Any] = {
-	        "elements": [
+            "elements": [
                 {
                     "from": [1, 0, 1],
                     "to": [15, 10, 15],
                     "faces": {
-                        "north": {"uv": [3.5, 8.25, 7, 10.75], "rotation": 180, "texture": "#0"},
-                        "east": {"uv": [0, 8.25, 3.5, 10.75], "rotation": 180, "texture": "#0"},
-                        "south": {"uv": [10.5, 8.25, 14, 10.75], "rotation": 180, "texture": "#0"},
-                        "west": {"uv": [7, 8.25, 10.5, 10.75], "rotation": 180, "texture": "#0"},
-                        "up": {"uv": [7, 4.75, 10.5, 8.25], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [3.5, 4.75, 7, 8.25], "rotation": 180, "texture": "#0"}
-                    }
+                        "north": {
+                            "uv": [3.5, 8.25, 7, 10.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "east": {
+                            "uv": [0, 8.25, 3.5, 10.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "south": {
+                            "uv": [10.5, 8.25, 14, 10.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [7, 8.25, 10.5, 10.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [7, 4.75, 10.5, 8.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [3.5, 4.75, 7, 8.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [1, 9, 1],
                     "to": [15, 14, 15],
                     "rotation": {"angle": -angle, "axis": "x", "origin": [8, 10, 1]},
                     "faces": {
-                        "north": {"uv": [3.5, 3.5, 7, 4.75], "rotation": 180, "texture": "#0"},
-                        "east": {"uv": [0, 3.5, 3.5, 4.75], "rotation": 180, "texture": "#0"},
-                        "south": {"uv": [10.5, 3.5, 14, 4.75], "rotation": 180, "texture": "#0"},
-                        "west": {"uv": [7, 3.5, 10.5, 4.75], "rotation": 180, "texture": "#0"},
-                        "up": {"uv": [7, 0, 10.5, 3.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [3.5, 0, 7, 3.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "north": {
+                            "uv": [3.5, 3.5, 7, 4.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "east": {
+                            "uv": [0, 3.5, 3.5, 4.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "south": {
+                            "uv": [10.5, 3.5, 14, 4.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [7, 3.5, 10.5, 4.75],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [7, 0, 10.5, 3.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [3.5, 0, 7, 3.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [7, 7, 14],
                     "to": [9, 11, 16],
                     "rotation": {"angle": -angle, "axis": "x", "origin": [8, 10, 1]},
                     "faces": {
-                        "north": {"uv": [1, 0.25, 1.5, 1.25], "rotation": 180, "texture": "#0"},
-                        "east": {"uv": [0.75, 0.25, 1, 1.25], "rotation": 180, "texture": "#0"},
-                        "south": {"uv": [0.25, 0.25, 0.75, 1.25], "rotation": 180, "texture": "#0"},
-                        "west": {"uv": [0, 0.25, 0.25, 1.25], "rotation": 180, "texture": "#0"},
+                        "north": {
+                            "uv": [1, 0.25, 1.5, 1.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "east": {
+                            "uv": [0.75, 0.25, 1, 1.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "south": {
+                            "uv": [0.25, 0.25, 0.75, 1.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [0, 0.25, 0.25, 1.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
                         "up": {"uv": [0.25, 0, 0.75, 0.25], "texture": "#0"},
-                        "down": {"uv": [0.75, 0, 1.25, 0.25], "texture": "#0"}
-                    }
-                }
+                        "down": {"uv": [0.75, 0, 1.25, 0.25], "texture": "#0"},
+                    },
+                },
             ],
-            "textures": {
-                "0": f"{namespace}:entity/chest/{path}"
-            }
+            "textures": {"0": f"{namespace}:entity/chest/{path}"},
         }
         return model
-        
-        
+
 
 class PropertiesModel(BaseModel):
     name: str
     value: str
     signature: Optional[str] = None
+
 
 class ProfileComponent(BaseModel):
     name: Optional[str] = None
@@ -778,31 +842,30 @@ class SpecialModelHead(SpecialModelBase):
         match self.kind:
             case "player":
                 return self.get_model_player(ctx, vanilla, item)
-            case 'zombie':
+            case "zombie":
                 return self.get_model_zombie(ctx, vanilla, item)
-            case 'skeleton':
+            case "skeleton":
                 texture = self.texture or "minecraft:entity/skeleton/skeleton"
                 return self.get_generic_mob_head(ctx, vanilla, item, texture)
-            case 'wither_skeleton':
+            case "wither_skeleton":
                 texture = self.texture or "minecraft:entity/skeleton/wither_skeleton"
                 return self.get_generic_mob_head(ctx, vanilla, item, texture)
-            case 'creeper':
+            case "creeper":
                 texture = self.texture or "minecraft:entity/creeper/creeper"
                 return self.get_generic_mob_head(ctx, vanilla, item, texture)
-            case 'piglin':
+            case "piglin":
                 return self.get_piglin_head(ctx, vanilla, item)
-            case 'dragon':
+            case "dragon":
                 return self.get_dragon_head(ctx, vanilla, item)
             case _:
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
-            
-    def get_dragon_head(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+
+    def get_dragon_head(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/enderdragon/dragon"
         model = {
-            "textures": {
-                "0": texture,
-                "particle": texture
-            },
+            "textures": {"0": texture, "particle": texture},
             "elements": [
                 {
                     "name": "head",
@@ -815,8 +878,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [8, 2.875, 9, 3.875], "texture": "#0"},
                         "west": {"uv": [7, 2.875, 8, 3.875], "texture": "#0"},
                         "up": {"uv": [8, 1.875, 9, 2.875], "texture": "#0"},
-                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"}
-                    }
+                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right ear",
@@ -829,8 +892,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [0.375, 0.375, 0.5, 0.625], "texture": "#0"},
                         "west": {"uv": [0.875, 0.375, 0.5, 0.625], "texture": "#0"},
                         "up": {"uv": [0.375, 0, 0.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"}
-                    }
+                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left ear",
@@ -843,8 +906,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [3.375, 0.375, 3.5, 0.625], "texture": "#0"},
                         "west": {"uv": [3.875, 0.375, 3.5, 0.625], "texture": "#0"},
                         "up": {"uv": [3.375, 0, 3.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"}
-                    }
+                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up mouse",
@@ -857,8 +920,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [12, 3.75, 12.75, 4.0625], "texture": "#0"},
                         "west": {"uv": [11, 3.75, 12, 4.0625], "texture": "#0"},
                         "up": {"uv": [12, 2.75, 12.75, 3.75], "texture": "#0"},
-                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"}
-                    }
+                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down mouse",
@@ -871,8 +934,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [12, 5.0625, 12.75, 5.3125], "texture": "#0"},
                         "west": {"uv": [11, 5.0625, 12, 5.3125], "texture": "#0"},
                         "up": {"uv": [12, 4.0625, 12.75, 5.0625], "texture": "#0"},
-                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"}
-                    }
+                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right nose",
@@ -885,8 +948,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
-                    }
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left nose",
@@ -899,20 +962,19 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
-                    }
-                }
-            ]
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
+                    },
+                },
+            ],
         }
         return model
-            
-    def get_piglin_head(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+
+    def get_piglin_head(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/piglin/piglin"
         model = {
-            "textures": {
-                "0": texture,
-                "particle": texture
-            },
+            "textures": {"0": texture, "particle": texture},
             "elements": [
                 {
                     "name": "head",
@@ -924,8 +986,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [2, 2, 4.5, 4], "texture": "#0"},
                         "west": {"uv": [0, 2, 2, 4], "texture": "#0"},
                         "up": {"uv": [2, 0, 4.5, 2], "texture": "#0"},
-                        "down": {"uv": [4.5, 2, 7, 0], "texture": "#0"}
-                    }
+                        "down": {"uv": [4.5, 2, 7, 0], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "center nose",
@@ -937,8 +999,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [8, 0.5, 9, 1.5], "texture": "#0"},
                         "west": {"uv": [7.75, 0.5, 8, 1.5], "texture": "#0"},
                         "up": {"uv": [8, 0.25, 9, 0.5], "texture": "#0"},
-                        "down": {"uv": [9, 0.25, 10, 0.5], "texture": "#0"}
-                    }
+                        "down": {"uv": [9, 0.25, 10, 0.5], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right nose",
@@ -950,8 +1012,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [0.75, 0.25, 1, 0.75], "texture": "#0"},
                         "west": {"uv": [0.5, 0.25, 0.75, 0.75], "texture": "#0"},
                         "up": {"uv": [0.75, 0, 1, 0.25], "texture": "#0"},
-                        "down": {"uv": [1, 0, 1.25, 0.25], "texture": "#0"}
-                    }
+                        "down": {"uv": [1, 0, 1.25, 0.25], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left nose",
@@ -963,8 +1025,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [0.75, 1.25, 1, 1.75], "texture": "#0"},
                         "west": {"uv": [0.5, 1.25, 0.75, 1.75], "texture": "#0"},
                         "up": {"uv": [0.75, 1, 1, 1.25], "texture": "#0"},
-                        "down": {"uv": [1, 1, 1.25, 1.25], "texture": "#0"}
-                    }
+                        "down": {"uv": [1, 1, 1.25, 1.25], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right ear",
@@ -977,8 +1039,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [10.75, 2.5, 11, 3.75], "texture": "#0"},
                         "west": {"uv": [9.75, 2.5, 10.75, 3.75], "texture": "#0"},
                         "up": {"uv": [10.75, 1.5, 11, 2.5], "texture": "#0"},
-                        "down": {"uv": [11, 1.5, 11.25, 2.5], "texture": "#0"}
-                    }
+                        "down": {"uv": [11, 1.5, 11.25, 2.5], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left ear",
@@ -991,20 +1053,19 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [13.75, 2.5, 14, 3.75], "texture": "#0"},
                         "west": {"uv": [12.75, 2.5, 13.75, 3.75], "texture": "#0"},
                         "up": {"uv": [13.75, 1.5, 14, 2.5], "texture": "#0"},
-                        "down": {"uv": [14, 1.5, 14.25, 2.5], "texture": "#0"}
-                    }
-                }
-            ]
+                        "down": {"uv": [14, 1.5, 14.25, 2.5], "texture": "#0"},
+                    },
+                },
+            ],
         }
         return model
-            
-    def get_model_zombie(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+
+    def get_model_zombie(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
         model = {
-            "textures": {
-                "1": texture,
-                "particle": texture
-            },
+            "textures": {"1": texture, "particle": texture},
             "elements": [
                 {
                     "from": [4, 4, 4],
@@ -1016,19 +1077,18 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [2, 2, 4, 4], "texture": "#1"},
                         "west": {"uv": [0, 2, 2, 4], "texture": "#1"},
                         "up": {"uv": [2, 0, 4, 2], "rotation": 180, "texture": "#1"},
-                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"}
-                    }
+                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"},
+                    },
                 }
-            ]
+            ],
         }
         return model
-    
-    def get_generic_mob_head(self, ctx: Context, vanilla: Vanilla, item: Item, texture: str) -> dict[str, Any]:
+
+    def get_generic_mob_head(
+        self, ctx: Context, vanilla: Vanilla, item: Item, texture: str
+    ) -> dict[str, Any]:
         model = {
-            "textures": {
-                "0": texture,
-                "particle": texture
-            },
+            "textures": {"0": texture, "particle": texture},
             "elements": [
                 {
                     "from": [4, 0, 4],
@@ -1039,20 +1099,19 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [2, 4, 4, 8], "texture": "#0"},
                         "west": {"uv": [0, 4, 2, 8], "texture": "#0"},
                         "up": {"uv": [2, 0, 4, 4], "texture": "#0"},
-                        "down": {"uv": [4, 0, 6, 4], "texture": "#0"}
-                    }
+                        "down": {"uv": [4, 0, 6, 4], "texture": "#0"},
+                    },
                 }
-            ]
+            ],
         }
         return model
 
-    def get_model_player(self, ctx: Context, vanilla: Vanilla, item: Item) -> dict[str, Any]:
+    def get_model_player(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> dict[str, Any]:
         texture = self.get_player_texture(ctx, vanilla, item)
         model = {
-            "textures": {
-                "1": texture,
-                "particle": texture
-            },
+            "textures": {"1": texture, "particle": texture},
             "elements": [
                 {
                     "from": [4, 4, 4],
@@ -1064,8 +1123,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [2, 2, 4, 4], "texture": "#1"},
                         "west": {"uv": [0, 2, 2, 4], "texture": "#1"},
                         "up": {"uv": [2, 0, 4, 2], "rotation": 180, "texture": "#1"},
-                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"}
-                    }
+                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"},
+                    },
                 },
                 {
                     "from": [3.75, 3.75, 3.75],
@@ -1077,14 +1136,20 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [10, 2, 12, 4], "texture": "#1"},
                         "west": {"uv": [8, 2, 10, 4], "texture": "#1"},
                         "up": {"uv": [10, 0, 12, 2], "rotation": 180, "texture": "#1"},
-                        "down": {"uv": [12, 0, 14, 2], "rotation": 180, "texture": "#1"}
-                    }
-                }
-            ]
+                        "down": {
+                            "uv": [12, 0, 14, 2],
+                            "rotation": 180,
+                            "texture": "#1",
+                        },
+                    },
+                },
+            ],
         }
         return model
-    
-    def get_player_texture(self, ctx: Context, vanilla: Vanilla, item: Item) -> str | Image.Image:
+
+    def get_player_texture(
+        self, ctx: Context, vanilla: Vanilla, item: Item
+    ) -> str | Image.Image:
         DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
         if self.texture:
             return self.texture
@@ -1094,10 +1159,12 @@ class SpecialModelHead(SpecialModelBase):
             return DEFAULT_TEXTURE
         cache = ctx.cache["model_resolver"]
         if not isinstance(item.components["minecraft:profile"], str):
-            profile = ProfileComponent.model_validate(item.components["minecraft:profile"])
+            profile = ProfileComponent.model_validate(
+                item.components["minecraft:profile"]
+            )
         else:
             profile = ProfileComponent(name=item.components["minecraft:profile"])
-        
+
         if profile.id or profile.name:
             if profile.name:
                 url = "https://api.mojang.com/users/profiles/minecraft/" + profile.name
@@ -1113,7 +1180,7 @@ class SpecialModelHead(SpecialModelBase):
                 for i, signed in enumerate(profile.id):
                     # signed is a 32 bit signed integer
                     unsigned = signed & 0xFFFFFFFF
-                    id += unsigned * 2**(32*(3-i))
+                    id += unsigned * 2 ** (32 * (3 - i))
                 uuid = UUID(int=id)
             url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
             path = cache.download(url)
@@ -1210,15 +1277,16 @@ class ItemModelSpecial(ItemModelBase):
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, ctx, vanilla)
         return MinecraftModel.model_validate(merged).bake()
-    
+
     def resolve(
         self, ctx: Context, vanilla: Vanilla, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
-    
+
     @property
     def tints(self) -> list[TintSource]:
         return []
+
 
 class ItemModelEmpty(ItemModelBase):
     type: Literal["minecraft:empty", "empty"]

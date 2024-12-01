@@ -2,11 +2,6 @@ from beet import Context
 from model_resolver import Render
 
 
-
-
-
-
-
 def render_all_context(ctx: Context):
     render = Render(ctx)
     for model in ctx.assets.models:
@@ -18,7 +13,6 @@ def render_all_context(ctx: Context):
     render.run()
 
 
-
 def render_all_vanilla(ctx: Context):
     render = Render(ctx)
     for model in render.vanilla.assets.models:
@@ -28,4 +22,3 @@ def render_all_vanilla(ctx: Context):
             path_ctx=f"{namespace}:render/{path}",
         )
     render.run()
-    

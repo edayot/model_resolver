@@ -12,6 +12,7 @@ from typing import Generator
 from PIL import Image
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
+from rich import print # noqa
 
 
 @dataclass(kw_only=True)
@@ -83,7 +84,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 for key, value in model_def.textures.items():
                     if isinstance(value, Image.Image):
                         raise RenderError(f"WTF is going on")
-                    if resolve_key(value) in images:
+                    if resolve_key(value) in [resolve_key(x) for x in images.keys()]:
                         textures[key] = images[value]
                     else:
                         textures[key] = value

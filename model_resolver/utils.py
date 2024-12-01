@@ -6,7 +6,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-DEFAULT_RENDER_SIZE = 128
+DEFAULT_RENDER_SIZE = 256
 
 
 def resolve_key(key: str) -> str:

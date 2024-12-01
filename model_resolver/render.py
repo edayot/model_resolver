@@ -1,6 +1,7 @@
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
+from model_resolver.my_glut_init import glutInit
 
 from beet import Context, Atlas
 from dataclasses import dataclass, field

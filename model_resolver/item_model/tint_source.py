@@ -20,6 +20,14 @@ def to_rgb(color: Color) -> tuple[int, int, int]:
 
 class TintSourceBase(BaseModel):
     type: Literal[
+        "constant",
+        "dye",
+        "grass",
+        "firework",
+        "potion",
+        "map_color",
+        "custom_model_data",
+        "team",
         "minecraft:constant",
         "minecraft:dye",
         "minecraft:grass",
@@ -37,7 +45,7 @@ class TintSourceBase(BaseModel):
 
 
 class TintSourceConstant(TintSourceBase):
-    type: Literal["minecraft:constant"]
+    type: Literal["constant", "minecraft:constant"]
     value: Color
 
     def resolve(
@@ -47,7 +55,7 @@ class TintSourceConstant(TintSourceBase):
 
 
 class TintSourceDye(TintSourceBase):
-    type: Literal["minecraft:dye"]
+    type: Literal["dye", "minecraft:dye"]
     default: Color
 
     def resolve(
@@ -59,7 +67,7 @@ class TintSourceDye(TintSourceBase):
 
 
 class TintSourceGrass(TintSourceBase):
-    type: Literal["minecraft:grass"]
+    type: Literal["grass", "minecraft:grass"]
     temperature: float
     downfall: float
 
@@ -90,7 +98,7 @@ class TintSourceGrass(TintSourceBase):
 
 
 class TintSourceFirework(TintSourceBase):
-    type: Literal["minecraft:firework"]
+    type: Literal["firework", "minecraft:firework"]
     default: Color
 
     def resolve(
@@ -110,7 +118,7 @@ class TintSourceFirework(TintSourceBase):
 
 
 class TintSourcePotion(TintSourceBase):
-    type: Literal["minecraft:potion"]
+    type: Literal["potion", "minecraft:potion"]
     default: Color
 
     def resolve(
@@ -128,7 +136,7 @@ class TintSourcePotion(TintSourceBase):
 
 
 class TintSourceMap(TintSourceBase):
-    type: Literal["minecraft:map_color"]
+    type: Literal["map_color", "minecraft:map_color"]
     default: Color
 
     def resolve(
@@ -142,7 +150,7 @@ class TintSourceMap(TintSourceBase):
 
 
 class TintSourceCustomModelData(TintSourceBase):
-    type: Literal["minecraft:custom_model_data"]
+    type: Literal["custom_model_data", "minecraft:custom_model_data"]
     index: Optional[int] = 0
 
     def resolve(
@@ -160,7 +168,7 @@ class TintSourceCustomModelData(TintSourceBase):
 
 
 class TintSourceTeam(TintSourceBase):
-    type: Literal["minecraft:team"]
+    type: Literal["team", "minecraft:team"]
     default: Color
 
     def resolve(

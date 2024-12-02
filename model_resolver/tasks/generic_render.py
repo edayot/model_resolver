@@ -2,7 +2,7 @@ from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
-from beet import Texture
+from beet import Texture, TextureMcmeta
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -68,22 +68,13 @@ class GenericModelRenderTask(Task):
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
     def get_texture(self, key: str) -> Texture | None:
-        key = resolve_key(key)
-        if key in self.ctx.assets.textures:
-            return self.ctx.assets.textures[key]
-        if key in self.vanilla.assets.textures:
-            return self.vanilla.assets.textures[key]
-        return None
+        return self.assets[Texture, key]
 
     def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
-        key = resolve_key(texture_key)
-        if key in self.ctx.assets.textures_mcmeta:
-            mcmeta = self.ctx.assets.textures_mcmeta[key]
-        elif key in self.vanilla.assets.textures_mcmeta:
-            mcmeta = self.vanilla.assets.textures_mcmeta[key]
-        else:
+        texturemcmeta = self.assets[TextureMcmeta, texture_key]
+        if not texturemcmeta:
             return None
-        return TextureMcMetaModel.model_validate(mcmeta.data)
+        return TextureMcMetaModel.model_validate(texturemcmeta.data)
 
     def get_texture_path_to_frames(self, model: MinecraftModel) -> dict[str, list[int]]:
         texture_path_to_frames = {}

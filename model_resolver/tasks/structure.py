@@ -1,11 +1,14 @@
+import re
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
 from dataclasses import dataclass, field
-from model_resolver.utils import resolve_key
+from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
+from model_resolver.utils import ModelResolverOptions, resolve_key
 from model_resolver.minecraft_model import (
     DisplayOptionModel,
+    ItemModelNamespace,
     RotationModel,
 )
 from typing import Optional, Any, TypedDict, Union
@@ -15,6 +18,7 @@ from functools import cached_property
 import random
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.model import ModelPathRenderTask
+from beet import Blockstate as BeetBlockstate, Structure as BeetStructure
 
 
 class PaletteModel(BaseModel):
@@ -112,14 +116,10 @@ class StructureRenderTask(Task):
 
     @cached_property
     def structure(self):
-        key = resolve_key(self.structure_key)
-        if key in self.ctx.data.structures:
-            data = self.ctx.data.structures[key].data
-        elif key in self.vanilla.data.structures:
-            data = self.vanilla.data.structures[key].data
-        else:
-            raise RenderError(f"Structure {key} not found")
-        return StructureDataModel.model_validate(data)
+        structure = self.data[BeetStructure, self.structure_key]
+        if structure is None:
+            raise RenderError(f"Structure {self.structure_key} not found")
+        return StructureDataModel.model_validate(structure.data)
 
     def rotate_camera(self):
         if not self.do_rotate_camera:
@@ -147,14 +147,11 @@ class StructureRenderTask(Task):
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
 
-        if palleted.Name in self.ctx.assets.blockstates:
-            block_state = self.ctx.assets.blockstates[palleted.Name].data
-        elif palleted.Name in self.vanilla.assets.blockstates:
-            block_state = self.vanilla.assets.blockstates[palleted.Name].data
-        else:
+        block_state = self.assets[BeetBlockstate, palleted.Name]
+        if block_state is None:
             raise RenderError(f"Blockstate {palleted.Name} not found")
 
-        block_state = BlockState.model_validate(block_state)
+        block_state = BlockState.model_validate(block_state.data)
         if block_state.variants:
             if "" in block_state.variants:
                 variant = block_state.variants[""]
@@ -213,6 +210,7 @@ class StructureRenderTask(Task):
                 origin=(8, 8, 8), axis="y", angle=-resolved_variant.y, rescale=False
             ),
         ]
+        tints = self.get_tints(resolved_variant.model, palleted)
         task = ModelPathRenderTask(
             ctx=self.ctx,
             vanilla=self.vanilla,
@@ -223,5 +221,61 @@ class StructureRenderTask(Task):
             additional_rotations=rots,
             offset=(block.pos[0] * 16, block.pos[1] * 16, block.pos[2] * 16),
             center_offset=center,
+            tints=tints,
         )
         task.run()
+    
+
+    def get_tints(self, model: str, palleted) -> list[TintSource]:
+        opts = self.ctx.validate("model_resolver", ModelResolverOptions)
+        if not opts.colorize_blocks:
+            return []
+        
+        # Check item model for tints
+        namespace, path = resolve_key(model).split(":")
+        path = path.removeprefix("block/")
+        item_model_key = f"{namespace}:{path}"
+        item_model = self.assets[ItemModelNamespace, item_model_key]
+        if item_model is not None:
+            for _, data in traverse_all(item_model.data):
+                if "tints" in data:
+                    return TempTintSource.model_validate({
+                        "tints": data["tints"]
+                    }).tints
+        
+        # Check for redstone dust
+        if resolve_key(model).startswith("minecraft:block/redstone_dust"):
+            power = palleted.Properties.get("power", 0)
+            a = int(power) / 15
+            r = a * 0.6 + (0.4 if a > 0 else 0.3)
+            g = min(max(a * a * 0.7 - 0.5, 0), 1)
+            b = min(max(a * a * 0.6 - 0.7, 0), 1)
+            r = int(r * 255)
+            g = int(g * 255)
+            b = int(b * 255)
+            tint = TintSourceConstant(type="minecraft:constant", value=(r, g, b))
+            return [tint]
+            
+        return []
+            
+        
+
+
+
+NestedDictList = Union[dict[str, Any], list[Any]]
+def traverse_all(data: NestedDictList, key: str = "model"):
+    if isinstance(data, dict):
+        if key in data.keys() and isinstance(data[key], str):
+            yield data[key], data
+        for x in data.values():
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x)
+    if isinstance(data, list):
+        for x in data:
+            if not (isinstance(x, dict) or isinstance(x, list)):
+                continue
+            yield from traverse_all(x, key)
+
+class TempTintSource(BaseModel):
+    tints: list[TintSource]

@@ -12,6 +12,7 @@ from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.item_model.tint_source import TintSource
 from PIL import Image
+from beet import Model as BeetModel
 
 
 @dataclass(kw_only=True)
@@ -40,15 +41,11 @@ class ModelPathRenderTask(GenericModelRenderTask):
         self.render_model(model, self.tints)
 
     def get_parsed_model(self) -> MinecraftModel:
-        key = resolve_key(self.model)
-        if key in self.ctx.assets.models:
-            data = self.ctx.assets.models[key].data
-        elif key in self.vanilla.assets.models:
-            data = self.vanilla.assets.models[key].data
-        else:
-            raise RenderError(f"Model {key} not found")
+        model = self.assets[BeetModel, self.model]
+        if not model:
+            raise RenderError(f"Model {self.model} not found")
         return MinecraftModel.model_validate(
-            resolve_model(data, self.ctx, self.vanilla)
+            resolve_model(model.data, self.ctx, self.vanilla)
         ).bake()
 
     def resolve(self) -> Generator[Task, None, None]:

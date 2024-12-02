@@ -1,3 +1,4 @@
+from functools import cached_property
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
@@ -6,6 +7,7 @@ from beet import Context, Texture
 from dataclasses import dataclass, field
 from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
+    PackGetter,
 )
 from model_resolver.vanilla import Vanilla
 from typing import Optional, Generator
@@ -54,3 +56,20 @@ class Task:
             self.ctx.assets.textures[self.path_ctx] = Texture(img)
         elif self.path_save:
             img.save(self.path_save)
+
+
+    @property
+    def assets(self):
+        return PackGetter(
+            self.vanilla.assets,
+            self.ctx.assets,
+            []
+        )
+    
+    @property
+    def data(self):
+        return PackGetter(
+            self.vanilla.data,
+            self.ctx.data,
+            []
+        )

@@ -68,10 +68,10 @@ class GenericModelRenderTask(Task):
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
     def get_texture(self, key: str) -> Texture | None:
-        return self.assets[Texture, key]
+        return self.getter.assets.textures[key] if key in self.getter.assets.textures else None
 
     def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
-        texturemcmeta = self.assets[TextureMcmeta, texture_key]
+        texturemcmeta = self.getter.assets.textures_mcmeta.get(texture_key)
         if not texturemcmeta:
             return None
         return TextureMcMetaModel.model_validate(texturemcmeta.data)
@@ -162,10 +162,8 @@ class GenericModelRenderTask(Task):
                 res[key] = (value, "dynamic")
             else:
                 path = f"minecraft:{value}" if ":" not in value else value
-                if path in self.ctx.assets.textures:
-                    texture = self.ctx.assets.textures[path]
-                elif path in self.vanilla.assets.textures:
-                    texture = self.vanilla.assets.textures[path]
+                if path in self.getter.assets.textures:
+                    texture = self.getter.assets.textures[path]
                 elif path in self.dynamic_textures:
                     texture = Texture(self.dynamic_textures[path])
                 else:
@@ -451,7 +449,7 @@ class GenericModelRenderTask(Task):
         color = (1.0, 1.0, 1.0)
         if len(tints) > data.tintindex and data.tintindex >= 0 and self.item:
             tint = tints[data.tintindex]
-            color = tint.resolve(self.ctx, self.vanilla, item=self.item)
+            color = tint.resolve(self.getter, item=self.item)
             color = (color[0] / 255, color[1] / 255, color[2] / 255)
         for i, (uv0, uv1) in enumerate(texcoords):
             glColor3f(*color)

@@ -12,6 +12,7 @@ from model_resolver.tasks.structure import StructureRenderTask
 from model_resolver.utils import (
     LightOptions,
     ModelResolverOptions,
+    PackGetterV2,
     resolve_key,
     DEFAULT_RENDER_SIZE,
 )
@@ -46,12 +47,8 @@ class Render:
     default_render_size: int = DEFAULT_RENDER_SIZE
 
     def __post_init__(self):
-        opts = self.ctx.validate("model_resolver", ModelResolverOptions)
-        self.vanilla = Vanilla(
-            self.ctx,
-            extend_namespace=([], [ItemModelNamespace]),
-            minecraft_version=opts.minecraft_version,
-        )
+        self.getter = PackGetterV2.from_context(self.ctx)
+        
 
     def __repr__(self):
         return f"<Render of {len(self.tasks)} tasks>"
@@ -72,8 +69,7 @@ class Render:
             render_size = self.default_render_size
         self.tasks.append(
             ItemRenderTask(
-                ctx=self.ctx,
-                vanilla=self.vanilla,
+                getter=self.getter,
                 item=item.fill(self.ctx),
                 path_ctx=path_ctx,
                 path_save=path_save,
@@ -93,8 +89,7 @@ class Render:
             render_size = self.default_render_size
         self.tasks.append(
             ModelPathRenderTask(
-                ctx=self.ctx,
-                vanilla=self.vanilla,
+                getter=self.getter,
                 model=model,
                 path_ctx=path_ctx,
                 path_save=path_save,
@@ -114,8 +109,7 @@ class Render:
             render_size = self.default_render_size
         self.tasks.append(
             StructureRenderTask(
-                ctx=self.ctx,
-                vanilla=self.vanilla,
+                getter=self.getter,
                 structure_key=structure,
                 path_ctx=path_ctx,
                 path_save=path_save,
@@ -134,8 +128,7 @@ class Render:
             return
         # construct the dynamic textures
         atlases = {
-            **{key: value for key, value in self.vanilla.assets.atlases.items()},
-            **{key: value for key, value in self.ctx.assets.atlases.items()},
+            **{key: value for key, value in self.getter.assets.atlases.items()},
         }
         for key, atlas in atlases.items():
             self.resolve_altas(key, atlas)
@@ -198,30 +191,24 @@ class Render:
         new_texture_path = resolve_key(new_texture_path)
 
         palette_key = resolve_key(source["palette_key"])
-        if palette_key in self.ctx.assets.textures:
-            palette = self.ctx.assets.textures[palette_key].image
-        elif palette_key in self.vanilla.assets.textures:
-            palette = self.vanilla.assets.textures[palette_key].image
+        if palette_key in self.getter.assets.textures:
+            palette = self.getter.assets.textures[palette_key].image
         else:
             raise RenderError(f"Palette {palette_key} not found")
 
         color_palette_key = resolve_key(color_palette_path)
-        if color_palette_key in self.ctx.assets.textures:
-            color_palette: Image.Image = self.ctx.assets.textures[
-                color_palette_key
-            ].image
-        elif color_palette_key in self.vanilla.assets.textures:
-            color_palette: Image.Image = self.vanilla.assets.textures[
+        if color_palette_key in self.getter.assets.textures:
+            color_palette: Image.Image = self.getter.assets.textures[
                 color_palette_key
             ].image
         else:
             raise RenderError(f"Color palette {color_palette_key} not found")
 
         grayscale_key = resolve_key(texture)
-        if grayscale_key in self.ctx.assets.textures:
-            grayscale = self.ctx.assets.textures[grayscale_key].image
-        elif grayscale_key in self.vanilla.assets.textures:
-            grayscale = self.vanilla.assets.textures[grayscale_key].image
+        if grayscale_key in self.getter.assets.textures:
+            grayscale = self.getter.assets.textures[grayscale_key].image
+        else:
+            raise RenderError(f"Grayscale {grayscale_key} not found")
 
         img = self.apply_palette(grayscale, palette, color_palette)
 

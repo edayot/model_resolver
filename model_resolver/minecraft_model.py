@@ -1,6 +1,6 @@
 from beet import Context, NamespaceFileScope, JsonFile
 from typing import ClassVar, Any
-from model_resolver.utils import resolve_key
+from model_resolver.utils import PackGetterV2, resolve_key
 from model_resolver.vanilla import Vanilla
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
@@ -133,7 +133,7 @@ class MinecraftModel(BaseModel):
 
 
 def resolve_model(
-    data: dict[str, Any], ctx: Context, vanilla: Vanilla
+    data: dict[str, Any], getter: PackGetterV2,
 ) -> dict[str, Any]:
     if not "parent" in data:
         return data
@@ -143,13 +143,11 @@ def resolve_model(
         "minecraft:builtin/entity",
     ]:
         return data
-    if parent_key in ctx.assets.models:
-        parent = ctx.assets.models[parent_key].data
-    elif parent_key in vanilla.assets.models:
-        parent = vanilla.assets.models[parent_key].data
+    if parent_key in getter.assets.models:
+        parent = getter.assets.models[parent_key].data
     else:
         raise ValueError(f"{parent_key} not in Context or Vanilla")
-    resolved_parent = resolve_model(parent, ctx, vanilla)
+    resolved_parent = resolve_model(parent, getter)
     return merge_parent(resolved_parent, data)
 
 

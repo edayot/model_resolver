@@ -1,11 +1,14 @@
 from dataclasses import dataclass
-from beet import Pack, NamespaceFile
+from beet import Context, DataPack, Pack, NamespaceFile, ResourcePack
 from pydantic import BaseModel
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Any, Self, Type
 from collections.abc import MappingView
+from beet import Context
 
 from pydantic import BaseModel
 import logging
+
+from model_resolver.vanilla import Vanilla
 
 log = logging.getLogger(__name__)
 
@@ -47,26 +50,29 @@ class ModelResolverOptions(BaseModel):
 
 
 @dataclass
-class PackGetter[T: Pack]:
-    vanilla_pack: T
-    ctx_pack: T
-    extra_packs: list[T]
+class PackGetterV2[T: Pack]:
+    assets: ResourcePack
+    data: DataPack
+    _ctx: Context
 
-    def get[Return: NamespaceFile](self, namespace: Type[Return], key: str) -> Return | None:
-        key = resolve_key(key)
-        for pack in [self.vanilla_pack, self.ctx_pack, *self.extra_packs]:
-            if key in pack[namespace]:
-                return pack[namespace][key]
-        return None
-    
-    def __getitem__[Return: NamespaceFile](self, args: tuple[Type[Return], str]) -> Return | None:
-        if not isinstance(args, tuple):
-            raise TypeError("Must provide a tuple of (namespace, key)")
-        if len(args) != 2:
-            raise ValueError("Must provide a tuple of (namespace, key)")
-        return self.get(namespace=args[0], key=args[1])
-    
-    
+    @classmethod
+    def from_context(cls, ctx: Context) -> Self:
+        from model_resolver.minecraft_model import ItemModelNamespace
+        opts = ctx.validate("model_resolver", ModelResolverOptions)
+        vanilla = Vanilla(
+            ctx,
+            extend_namespace=([], [ItemModelNamespace]),
+            minecraft_version=opts.minecraft_version,
+        )
+        assets = ResourcePack()
+        assets.merge(vanilla.assets)
+        assets.merge(ctx.assets)
+
+        data = DataPack()
+        data.merge(vanilla.data)
+        data.merge(ctx.data)
+
+        return cls(assets=assets, data=data, _ctx=ctx)
 
 
 

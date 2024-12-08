@@ -41,11 +41,11 @@ class ModelPathRenderTask(GenericModelRenderTask):
         self.render_model(model, self.tints)
 
     def get_parsed_model(self) -> MinecraftModel:
-        model = self.assets[BeetModel, self.model]
+        model = self.getter.assets.models.get(self.model)
         if not model:
             raise RenderError(f"Model {self.model} not found")
         return MinecraftModel.model_validate(
-            resolve_model(model.data, self.ctx, self.vanilla)
+            resolve_model(model.data, self.getter)
         ).bake()
 
     def resolve(self) -> Generator[Task, None, None]:
@@ -91,8 +91,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             else:
                 new_path_ctx = None
             yield ModelRenderTask(
-                ctx=self.ctx,
-                vanilla=self.vanilla,
+                getter=self.getter,
                 model=new_model,
                 tints=self.tints,
                 item=self.item,

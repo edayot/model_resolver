@@ -38,28 +38,26 @@ class ItemRenderTask(GenericModelRenderTask):
         item_model_key = self.item.components["minecraft:item_model"]
         if not item_model_key:
             raise RenderError(f"Item {self.item} does not have a model")
-        if item_model_key in self.ctx.assets[ItemModelNamespace]:
-            item_model = self.ctx.assets[ItemModelNamespace][item_model_key]
-        elif item_model_key in self.vanilla.assets[ItemModelNamespace]:
-            item_model = self.vanilla.assets[ItemModelNamespace][item_model_key]
+        if item_model_key in self.getter.assets[ItemModelNamespace]:
+            item_model = self.getter.assets[ItemModelNamespace][item_model_key]
         else:
             raise RenderError(f"Item model {item_model_key} not found")
         return ItemModel.model_validate(item_model.data)
 
     def run(self):
         parsed_item_model = self.get_parsed_item_model()
-        for model in parsed_item_model.resolve(self.ctx, self.vanilla, self.item):
-            model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
+        for model in parsed_item_model.resolve(self.getter, self.item):
+            model_def = model.get_model(self.getter, self.item).bake()
             self.render_model(model_def, model.tints)
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
         item_model_models = list(
-            parsed_item_model.resolve(self.ctx, self.vanilla, self.item)
+            parsed_item_model.resolve(self.getter, self.item)
         )
         texture_path_to_frames = {}
         for model in item_model_models:
-            model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
+            model_def = model.get_model(self.getter, self.item).bake()
             texture_path_to_frames.update(self.get_texture_path_to_frames(model_def))
         if len(texture_path_to_frames) == 0:
             yield self
@@ -81,7 +79,7 @@ class ItemRenderTask(GenericModelRenderTask):
 
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
-                model_def = model.get_model(self.ctx, self.vanilla, self.item).bake()
+                model_def = model.get_model(self.getter, self.item).bake()
                 model_def = model_def.model_copy()
                 textures = {}
                 for key, value in model_def.textures.items():
@@ -103,8 +101,7 @@ class ItemRenderTask(GenericModelRenderTask):
             else:
                 new_path_ctx = None
             yield ItemModelModelRenderTask(
-                ctx=self.ctx,
-                vanilla=self.vanilla,
+                getter=self.getter,
                 models=models,
                 item=self.item,
                 do_rotate_camera=self.do_rotate_camera,

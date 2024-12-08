@@ -116,7 +116,7 @@ class StructureRenderTask(Task):
 
     @cached_property
     def structure(self):
-        structure = self.data[BeetStructure, self.structure_key]
+        structure = self.getter.data.structures.get(self.structure_key)
         if structure is None:
             raise RenderError(f"Structure {self.structure_key} not found")
         return StructureDataModel.model_validate(structure.data)
@@ -147,7 +147,7 @@ class StructureRenderTask(Task):
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
 
-        block_state = self.assets[BeetBlockstate, palleted.Name]
+        block_state = self.getter.assets.blockstates.get(palleted.Name)
         if block_state is None:
             raise RenderError(f"Blockstate {palleted.Name} not found")
 
@@ -212,8 +212,7 @@ class StructureRenderTask(Task):
         ]
         tints = self.get_tints(resolved_variant.model, palleted)
         task = ModelPathRenderTask(
-            ctx=self.ctx,
-            vanilla=self.vanilla,
+            getter=self.getter,
             render_size=self.render_size,
             model=resolved_variant.model,
             dynamic_textures=self.dynamic_textures,
@@ -227,7 +226,7 @@ class StructureRenderTask(Task):
     
 
     def get_tints(self, model: str, palleted) -> list[TintSource]:
-        opts = self.ctx.validate("model_resolver", ModelResolverOptions)
+        opts = self.getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.colorize_blocks:
             return []
         
@@ -235,7 +234,7 @@ class StructureRenderTask(Task):
         namespace, path = resolve_key(model).split(":")
         path = path.removeprefix("block/")
         item_model_key = f"{namespace}:{path}"
-        item_model = self.assets[ItemModelNamespace, item_model_key]
+        item_model = self.getter.assets[ItemModelNamespace].get(item_model_key)
         if item_model is not None:
             for _, data in traverse_all(item_model.data):
                 if "tints" in data:

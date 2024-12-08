@@ -5,6 +5,7 @@ from model_resolver.vanilla import Vanilla
 from model_resolver.utils import clamp
 from PIL import Image
 from model_resolver.item_model.item import Item
+from model_resolver.utils import PackGetterV2
 
 type Color = int | tuple[int, int, int]
 
@@ -39,7 +40,7 @@ class TintSourceBase(BaseModel):
     ]
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         raise NotImplementedError()
 
@@ -49,7 +50,7 @@ class TintSourceConstant(TintSourceBase):
     value: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         return to_rgb(self.value)
 
@@ -59,7 +60,7 @@ class TintSourceDye(TintSourceBase):
     default: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         if item.components and "minecraft:dyed_color" in item.components:
             return to_rgb(item.components["minecraft:dyed_color"])
@@ -72,13 +73,11 @@ class TintSourceGrass(TintSourceBase):
     downfall: float
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         texture_key = "minecraft:colormap/grass"
-        if texture_key in ctx.assets.textures:
-            texture = ctx.assets.textures[texture_key]
-        elif texture_key in vanilla.assets.textures:
-            texture = vanilla.assets.textures[texture_key]
+        if texture_key in getter.assets.textures:
+            texture = getter.assets.textures[texture_key]
         else:
             raise ValueError(f"{texture_key} not found in Context or Vanilla")
         img: Image.Image = texture.image
@@ -102,7 +101,7 @@ class TintSourceFirework(TintSourceBase):
     default: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         if item.components and "minecraft:firework_color" in item.components:
             colors = [
@@ -122,7 +121,7 @@ class TintSourcePotion(TintSourceBase):
     default: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(self.default)
@@ -140,7 +139,7 @@ class TintSourceMap(TintSourceBase):
     default: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(self.default)
@@ -154,7 +153,7 @@ class TintSourceCustomModelData(TintSourceBase):
     index: Optional[int] = 0
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(0)
@@ -172,7 +171,7 @@ class TintSourceTeam(TintSourceBase):
     default: Color
 
     def resolve(
-        self, ctx: Context, vanilla: Vanilla, item: Item
+        self, getter: PackGetterV2, item: Item
     ) -> tuple[int, int, int]:
         return to_rgb(self.default)
 

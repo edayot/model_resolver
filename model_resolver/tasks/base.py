@@ -7,7 +7,7 @@ from beet import Context, Texture
 from dataclasses import dataclass, field
 from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
-    PackGetter,
+    PackGetterV2,
 )
 from model_resolver.vanilla import Vanilla
 from typing import Optional, Generator
@@ -21,8 +21,7 @@ class RenderError(Exception):
 
 @dataclass(kw_only=True)
 class Task:
-    ctx: Context
-    vanilla: Vanilla
+    getter: PackGetterV2
     path_ctx: Optional[str] = None
     path_save: Optional[Path] = None
     render_size: int = DEFAULT_RENDER_SIZE
@@ -53,23 +52,6 @@ class Task:
 
     def save(self, img: Image.Image):
         if self.path_ctx:
-            self.ctx.assets.textures[self.path_ctx] = Texture(img)
+            self.getter._ctx.assets.textures[self.path_ctx] = Texture(img)
         elif self.path_save:
             img.save(self.path_save)
-
-
-    @property
-    def assets(self):
-        return PackGetter(
-            self.vanilla.assets,
-            self.ctx.assets,
-            []
-        )
-    
-    @property
-    def data(self):
-        return PackGetter(
-            self.vanilla.data,
-            self.ctx.data,
-            []
-        )

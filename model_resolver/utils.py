@@ -54,6 +54,7 @@ class PackGetterV2[T: Pack]:
     assets: ResourcePack
     data: DataPack
     _ctx: Context
+    _vanilla: Vanilla
 
     @classmethod
     def from_context(cls, ctx: Context) -> Self:
@@ -72,7 +73,7 @@ class PackGetterV2[T: Pack]:
         data.merge(vanilla.data)
         data.merge(ctx.data)
 
-        return cls(assets=assets, data=data, _ctx=ctx)
+        return cls(assets=assets, data=data, _ctx=ctx, _vanilla=vanilla)
 
 
 

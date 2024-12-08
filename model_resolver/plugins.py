@@ -18,7 +18,7 @@ def render_all_context(ctx: Context):
 
 def render_all_vanilla(ctx: Context):
     render = Render(ctx)
-    for model in render.vanilla.assets.models:
+    for model in render.getter._vanilla.assets.models:
         namespace, path = model.split(":")
         render.add_model_task(
             model,

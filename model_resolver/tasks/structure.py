@@ -8,7 +8,6 @@ from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
 from model_resolver.utils import ModelResolverOptions, resolve_key
 from model_resolver.minecraft_model import (
     DisplayOptionModel,
-    ItemModelNamespace,
     RotationModel,
 )
 from typing import Optional, Any, TypedDict, Union
@@ -223,25 +222,22 @@ class StructureRenderTask(Task):
             tints=tints,
         )
         task.run()
-    
 
     def get_tints(self, model: str, palleted) -> list[TintSource]:
         opts = self.getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.colorize_blocks:
             return []
-        
+
         # Check item model for tints
         namespace, path = resolve_key(model).split(":")
         path = path.removeprefix("block/")
         item_model_key = f"{namespace}:{path}"
-        item_model = self.getter.assets[ItemModelNamespace].get(item_model_key)
+        item_model = self.getter.assets.item_models.get(item_model_key)
         if item_model is not None:
             for _, data in traverse_all(item_model.data):
                 if "tints" in data:
-                    return TempTintSource.model_validate({
-                        "tints": data["tints"]
-                    }).tints
-        
+                    return TempTintSource.model_validate({"tints": data["tints"]}).tints
+
         # Check for redstone dust
         if resolve_key(model).startswith("minecraft:block/redstone_dust"):
             power = palleted.Properties.get("power", 0)
@@ -254,14 +250,13 @@ class StructureRenderTask(Task):
             b = int(b * 255)
             tint = TintSourceConstant(type="minecraft:constant", value=(r, g, b))
             return [tint]
-            
-        return []
-            
-        
 
+        return []
 
 
 NestedDictList = Union[dict[str, Any], list[Any]]
+
+
 def traverse_all(data: NestedDictList, key: str = "model"):
     if isinstance(data, dict):
         if key in data.keys() and isinstance(data[key], str):
@@ -275,6 +270,7 @@ def traverse_all(data: NestedDictList, key: str = "model"):
             if not (isinstance(x, dict) or isinstance(x, list)):
                 continue
             yield from traverse_all(x, key)
+
 
 class TempTintSource(BaseModel):
     tints: list[TintSource]

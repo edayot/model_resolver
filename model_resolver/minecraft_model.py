@@ -1,22 +1,11 @@
 from beet import Context, NamespaceFileScope, JsonFile
 from typing import ClassVar, Any
 from model_resolver.utils import PackGetterV2, resolve_key
-from model_resolver.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from typing import Annotated, Literal, Optional
 from PIL import Image
-
-
-class ItemModelNamespace(JsonFile):
-    """Class representing a model."""
-
-    scope: ClassVar[NamespaceFileScope] = ("items",)
-    extension: ClassVar[str] = ".json"
-
-
-def beet_default(ctx: Context):
-    ctx.assets.extend_namespace.extend([ItemModelNamespace])
 
 
 faces_keys = Literal["north", "south", "east", "west", "up", "down"]
@@ -133,7 +122,8 @@ class MinecraftModel(BaseModel):
 
 
 def resolve_model(
-    data: dict[str, Any], getter: PackGetterV2,
+    data: dict[str, Any],
+    getter: PackGetterV2,
 ) -> dict[str, Any]:
     if not "parent" in data:
         return data

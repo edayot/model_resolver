@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from model_resolver.item_model.tint_source import TintSource
 from typing import Optional, Literal, ClassVar, Generator, Union, Any
 from beet import Context
-from model_resolver.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla
 from model_resolver.item_model.item import Item
 from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
@@ -282,9 +282,7 @@ class ItemModelSelectBase(ItemModelBase):
     fallback: "ItemModelAll"
     possible_values: ClassVar[list[str]] = []
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         # Not possible to implement
         return self.fallback
 
@@ -313,9 +311,7 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
     property: Literal["minecraft:charge_type", "charge_type"]
     possible_values: ClassVar[list[str]] = ["none", "rocket", "arrow"]
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         if not item.components:
             return self.resolve_case("none")
         if not "minecraft:charge_type" in item.components:
@@ -337,9 +333,7 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
     time_zone: Optional[str] = None
     pattern: str
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         # Not possible to implement
         return self.fallback
 
@@ -347,18 +341,14 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
 class ItemModelSelectContextEntityType(ItemModelSelectBase):
     property: Literal["minecraft:context_entity_type", "context_entity_type"]
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         return self.resolve_case("minecraft:player")
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
     property: Literal["minecraft:trim_material", "trim_material"]
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         if not item.components:
             return self.fallback
         if not "minecraft:trim" in item.components:
@@ -372,9 +362,7 @@ class ItemModelSelectBlockState(ItemModelSelectBase):
     property: Literal["minecraft:block_state", "block_state"]
     block_state_property: str
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         if not item.components:
             return self.fallback
         if not "minecraft:block_state" in item.components:
@@ -400,9 +388,7 @@ class ItemModelSelectDisplayContext(ItemModelSelectBase):
         "fixed",
     ]
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         return self.resolve_case("gui")
 
 
@@ -410,9 +396,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         if not item.components:
             return self.fallback
         if not "minecraft:custom_model_data" in item.components:
@@ -430,9 +414,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
 class ItemModelSelectContextDimension(ItemModelSelectBase):
     property: Literal["minecraft:context_dimension", "context_dimension"]
 
-    def resolve_select(
-        self, getter: PackGetterV2, item: Item
-    ) -> "ItemModelAll":
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         return self.resolve_case("minecraft:overworld")
 
 
@@ -482,9 +464,7 @@ class ItemModelRangeDispatchBase(ItemModelBase):
     entries: list[RangeDispatchEntry] = Field(default_factory=list)
     fallback: Optional["ItemModelAll"] = None
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         return 0.0
 
     def resolve(
@@ -503,9 +483,7 @@ class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:custom_model_data" in item.components:
@@ -521,9 +499,7 @@ class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchBundleFullness(ItemModelRangeDispatchBase):
     property: Literal["minecraft:bundle/fullness", "bundle/fullness"]
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not implemented for now
         # need to calculate the fullness of the bundle
         return 0.0
@@ -533,9 +509,7 @@ class ItemModelRangeDispatchDamage(ItemModelRangeDispatchBase):
     property: Literal["minecraft:damage", "damage"]
     normalize: Optional[bool] = True
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:damage" in item.components:
@@ -553,9 +527,7 @@ class ItemModelRangeDispatchCount(ItemModelRangeDispatchBase):
     property: Literal["minecraft:count", "count"]
     normalize: Optional[bool] = True
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:max_stack_size" in item.components:
@@ -570,9 +542,7 @@ class ItemModelRangeDispatchCount(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchCooldown(ItemModelRangeDispatchBase):
     property: Literal["minecraft:cooldown", "cooldown"]
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -583,9 +553,7 @@ class ItemModelRangeDispatchTime(ItemModelRangeDispatchBase):
     source: Literal["daytime", "moon_phase", "random"]
     # natural_only: Optional[bool] = True
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -595,9 +563,7 @@ class ItemModelRangeDispatchCompass(ItemModelRangeDispatchBase):
     wobble: Optional[bool] = True
     target: Literal["spawn", "lodestone", "recovery", "none"]
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -605,9 +571,7 @@ class ItemModelRangeDispatchCompass(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchCrossbowPull(ItemModelRangeDispatchBase):
     property: Literal["minecraft:crossbow/pull", "crossbow/pull"]
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -616,9 +580,7 @@ class ItemModelRangeDispatchUseDuration(ItemModelRangeDispatchBase):
     property: Literal["minecraft:use_duration", "use_duration"]
     remaining: Optional[bool] = False
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -627,9 +589,7 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
     property: Literal["minecraft:use_cycle", "use_cycle"]
     period: float = 1.0
 
-    def resolve_range_dispatch(
-        self, getter: PackGetterV2, item: Item
-    ) -> float:
+    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -857,9 +817,7 @@ class SpecialModelHead(SpecialModelBase):
             case _:
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
 
-    def get_dragon_head(
-        self, getter: PackGetterV2, item: Item
-    ) -> dict[str, Any]:
+    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/enderdragon/dragon"
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -966,9 +924,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_piglin_head(
-        self, getter: PackGetterV2, item: Item
-    ) -> dict[str, Any]:
+    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/piglin/piglin"
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -1057,9 +1013,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_model_zombie(
-        self, getter: PackGetterV2, item: Item
-    ) -> dict[str, Any]:
+    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -1103,9 +1057,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_model_player(
-        self, getter: PackGetterV2, item: Item
-    ) -> dict[str, Any]:
+    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.get_player_texture(getter, item)
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -1144,9 +1096,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_player_texture(
-        self, getter: PackGetterV2, item: Item
-    ) -> str | Image.Image:
+    def get_player_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
         DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
         if self.texture:
             return self.texture

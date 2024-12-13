@@ -9,7 +9,7 @@ from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
     PackGetterV2,
 )
-from model_resolver.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla
 from typing import Optional, Generator
 from pathlib import Path
 from PIL import Image

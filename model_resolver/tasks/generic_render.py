@@ -68,7 +68,11 @@ class GenericModelRenderTask(Task):
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
     def get_texture(self, key: str) -> Texture | None:
-        return self.getter.assets.textures[key] if key in self.getter.assets.textures else None
+        return (
+            self.getter.assets.textures[key]
+            if key in self.getter.assets.textures
+            else None
+        )
 
     def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
         texturemcmeta = self.getter.assets.textures_mcmeta.get(texture_key)

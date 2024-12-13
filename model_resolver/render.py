@@ -16,10 +16,7 @@ from model_resolver.utils import (
     resolve_key,
     DEFAULT_RENDER_SIZE,
 )
-from model_resolver.vanilla import Vanilla
-from model_resolver.minecraft_model import (
-    ItemModelNamespace,
-)
+from beet.contrib.vanilla import Vanilla
 from typing import Optional, TypedDict
 from pathlib import Path
 import logging
@@ -48,7 +45,6 @@ class Render:
 
     def __post_init__(self):
         self.getter = PackGetterV2.from_context(self.ctx)
-        
 
     def __repr__(self):
         return f"<Render of {len(self.tasks)} tasks>"

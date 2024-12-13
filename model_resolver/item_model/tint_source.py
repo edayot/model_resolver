@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Union
 from beet import Context
-from model_resolver.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla
 from model_resolver.utils import clamp
 from PIL import Image
 from model_resolver.item_model.item import Item
@@ -39,9 +39,7 @@ class TintSourceBase(BaseModel):
         "minecraft:team",
     ]
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         raise NotImplementedError()
 
 
@@ -49,9 +47,7 @@ class TintSourceConstant(TintSourceBase):
     type: Literal["constant", "minecraft:constant"]
     value: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         return to_rgb(self.value)
 
 
@@ -59,9 +55,7 @@ class TintSourceDye(TintSourceBase):
     type: Literal["dye", "minecraft:dye"]
     default: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         if item.components and "minecraft:dyed_color" in item.components:
             return to_rgb(item.components["minecraft:dyed_color"])
         return to_rgb(self.default)
@@ -72,9 +66,7 @@ class TintSourceGrass(TintSourceBase):
     temperature: float
     downfall: float
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         texture_key = "minecraft:colormap/grass"
         if texture_key in getter.assets.textures:
             texture = getter.assets.textures[texture_key]
@@ -100,9 +92,7 @@ class TintSourceFirework(TintSourceBase):
     type: Literal["firework", "minecraft:firework"]
     default: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         if item.components and "minecraft:firework_color" in item.components:
             colors = [
                 to_rgb(color)
@@ -120,9 +110,7 @@ class TintSourcePotion(TintSourceBase):
     type: Literal["potion", "minecraft:potion"]
     default: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(self.default)
         if not "minecraft:potion_contents" in item.components:
@@ -138,9 +126,7 @@ class TintSourceMap(TintSourceBase):
     type: Literal["map_color", "minecraft:map_color"]
     default: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(self.default)
         if not "minecraft:map_color" in item.components:
@@ -152,9 +138,7 @@ class TintSourceCustomModelData(TintSourceBase):
     type: Literal["custom_model_data", "minecraft:custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         if not item.components:
             return to_rgb(0)
         if not "minecraft:custom_model_data" in item.components:
@@ -170,9 +154,7 @@ class TintSourceTeam(TintSourceBase):
     type: Literal["team", "minecraft:team"]
     default: Color
 
-    def resolve(
-        self, getter: PackGetterV2, item: Item
-    ) -> tuple[int, int, int]:
+    def resolve(self, getter: PackGetterV2, item: Item) -> tuple[int, int, int]:
         return to_rgb(self.default)
 
 

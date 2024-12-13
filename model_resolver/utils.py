@@ -8,7 +8,7 @@ from beet import Context
 from pydantic import BaseModel
 import logging
 
-from model_resolver.vanilla import Vanilla
+from beet.contrib.vanilla import Vanilla
 
 log = logging.getLogger(__name__)
 
@@ -58,11 +58,9 @@ class PackGetterV2[T: Pack]:
 
     @classmethod
     def from_context(cls, ctx: Context) -> Self:
-        from model_resolver.minecraft_model import ItemModelNamespace
         opts = ctx.validate("model_resolver", ModelResolverOptions)
         vanilla = Vanilla(
             ctx,
-            extend_namespace=([], [ItemModelNamespace]),
             minecraft_version=opts.minecraft_version,
         )
         assets = ResourcePack()
@@ -74,7 +72,3 @@ class PackGetterV2[T: Pack]:
         data.merge(ctx.data)
 
         return cls(assets=assets, data=data, _ctx=ctx, _vanilla=vanilla)
-
-
-
-

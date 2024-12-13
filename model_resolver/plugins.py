@@ -41,6 +41,7 @@ def render_all_items(ctx: Context):
         components = json.load(file)
     for item in components:
         namespace, path = resolve_key(item).split(":")
-        render.add_item_task(Item(id=f"{namespace}:{path}"), path_ctx=f"{namespace}:render/items/{path}")
+        render.add_item_task(
+            Item(id=f"{namespace}:{path}"), path_ctx=f"{namespace}:render/items/{path}"
+        )
     render.run()
-

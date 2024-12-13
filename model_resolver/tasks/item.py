@@ -3,7 +3,6 @@ from model_resolver.utils import (
     resolve_key,
 )
 from model_resolver.minecraft_model import (
-    ItemModelNamespace,
     MinecraftModel,
 )
 from model_resolver.item_model.model import ItemModel
@@ -12,7 +11,7 @@ from typing import Generator
 from PIL import Image
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
-from rich import print # noqa
+from rich import print  # noqa
 
 
 @dataclass(kw_only=True)
@@ -34,12 +33,14 @@ class ItemRenderTask(GenericModelRenderTask):
         assert self.item
         assert self.item.__resolved__, f"Item {self.item.id} is not resolved"
         assert self.item.components, f"Item {self.item.id} has no components"
-        assert "minecraft:item_model" in self.item.components, f"Item {self.item.id} has no item model"
+        assert (
+            "minecraft:item_model" in self.item.components
+        ), f"Item {self.item.id} has no item model"
         item_model_key = self.item.components["minecraft:item_model"]
         if not item_model_key:
             raise RenderError(f"Item {self.item} does not have a model")
-        if item_model_key in self.getter.assets[ItemModelNamespace]:
-            item_model = self.getter.assets[ItemModelNamespace][item_model_key]
+        if item_model_key in self.getter.assets.item_models:
+            item_model = self.getter.assets.item_models[item_model_key]
         else:
             raise RenderError(f"Item model {item_model_key} not found")
         return ItemModel.model_validate(item_model.data)
@@ -52,9 +53,7 @@ class ItemRenderTask(GenericModelRenderTask):
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
-        item_model_models = list(
-            parsed_item_model.resolve(self.getter, self.item)
-        )
+        item_model_models = list(parsed_item_model.resolve(self.getter, self.item))
         texture_path_to_frames = {}
         for model in item_model_models:
             model_def = model.get_model(self.getter, self.item).bake()

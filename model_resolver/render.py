@@ -101,6 +101,10 @@ class Render:
         path_save: Optional[Path] = None,
         render_size: Optional[int] = None,
     ):
+        """
+        Structure rendering is still experimental and don't work with
+        animated textures.
+        """
         if render_size is None:
             render_size = self.default_render_size
         self.tasks.append(

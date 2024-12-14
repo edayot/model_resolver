@@ -64,6 +64,7 @@ jobs:
         run: |
 
           export LIBGL_ALWAYS_SOFTWARE=1
+          export MODEL_RESOLVER_TEST_BUILD=1
 
           COMMAND="poetry run pytest -vvv"
           /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND

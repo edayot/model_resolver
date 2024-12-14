@@ -12,5 +12,5 @@ EXAMPLES = [f for f in os.listdir("examples") if not f.startswith("nosnap_")]
 def test_build(snapshot: SnapshotFixture, directory: str):
     with run_beet(directory=f"examples/{directory}") as ctx:
         pass
-        # assert snapshot("data_pack") == ctx.data
-        # assert snapshot("resource_pack") == ctx.assets
+        assert snapshot("data_pack") == ctx.data
+        assert snapshot("resource_pack") == ctx.assets

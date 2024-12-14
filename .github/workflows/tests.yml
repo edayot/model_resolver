@@ -23,6 +23,31 @@ jobs:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
+      - name: Apt update
+        run: | 
+          sudo apt-get update -qq -y
+          export DEBIAN_FRONTEND=noninteractive
+      - name: Setup OpenGl
+        run: | 
+          sudo apt-get -y install \
+            freeglut3-dev \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libpulse-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxv-dev \
+            mesa-utils \
+            libgl1-mesa-glx \
+            mesa-common-dev \
+            libglapi-mesa \
+            libgbm1 \
+            libgl1-mesa-dri \
+            libsdl1.2-dev \
+            libfreetype6-dev \
+            xvfb \
+            x11-utils
+
       - name: Setup cache for dependencies
         id: cached-poetry-dependencies
         uses: actions/cache@v2
@@ -32,9 +57,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
-      - name: Setup OpenGL
-        run: | 
-          sudo apt-get install xvfb
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -42,5 +64,6 @@ jobs:
         run: |
 
           COMMAND="poetry run pytest -vv"
-          xvfb-run --auto-servernum $COMMAND
+          /usr/bin/xvfb-run -s "-screen 0 2560x1440x8 +extension GLX +extension RENDER" $COMMAND
+          # Only commit and push if new files were added
           

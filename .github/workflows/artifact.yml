@@ -139,7 +139,6 @@ jobs:
         run: |
           brew install xorg-server
           export DISPLAY=:99
-          /usr/bin/Xvfb :99 -screen 0 2560x1440x24 +extension GLX +extension RENDER &
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,7 +146,9 @@ jobs:
         run: |
           export MODEL_RESOLVER_TEST_BUILD=1
           export LIBGL_ALWAYS_SOFTWARE=1
-          poetry run beet
+
+          COMMAND="poetry run beet"
+          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

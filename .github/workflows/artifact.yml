@@ -146,7 +146,8 @@ jobs:
           brew link --force freeglut
           echo "OpenGL version:"
           sudo port install glxinfo
-          glxinfo | grep "OpenGL version"
+          ls /opt/local/bin
+          /opt/local/bin/glxinfo | grep "OpenGL version"
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

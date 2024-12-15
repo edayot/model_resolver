@@ -142,7 +142,7 @@ jobs:
           export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
       - name: Verify GLUT installation
         run: |
-          ls -la /usr/local/lib | grep glut
+          ls -la /opt/homebrew/lib | grep glut
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:

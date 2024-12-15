@@ -47,6 +47,9 @@ jobs:
             libfreetype6-dev \
             xvfb \
             x11-utils
+      - name: Verify GLUT installation
+        run: |
+          dpkg -l | grep freeglut3-dev
 
       - name: Setup cache for dependencies
         id: cached-poetry-dependencies
@@ -137,8 +140,9 @@ jobs:
           brew link --overwrite mesa
           brew link --force mesa
           export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
-          # otool -L /usr/local/lib/libglut.dylib
-          # ls -la /usr/local/lib | grep glut
+      - name: Verify GLUT installation
+        run: |
+          ls -la /usr/local/lib | grep glut
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:

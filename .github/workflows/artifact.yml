@@ -103,7 +103,9 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         run: |
           set MODEL_RESOLVER_TEST_BUILD=1
-          C:\Users\runneradmin\.local\bin\poetry run pytest -vvv
+          cd examples/load_vanilla
+          C:\Users\runneradmin\.local\bin\poetry run beet
+          cd ../..
 
       - name: Upload dist folder
         run: tar -czvf dist-windows.tar.gz dist/

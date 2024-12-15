@@ -69,10 +69,12 @@ jobs:
           COMMAND="poetry run pytest -vvv"
           /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
       - name: Upload dist folder
+        run: tar -czvf dist-ubuntu.tar.gz dist/
+      - name: Upload compressed dist folder
         uses: actions/upload-artifact@v3
         with:
           name: dist-ubuntu
-          path: dist/
+          path: dist-ubuntu.tar.gz
 
   windows-tests:
     runs-on: windows-latest
@@ -104,7 +106,9 @@ jobs:
           C:\Users\runneradmin\.local\bin\poetry run pytest -vvv
 
       - name: Upload dist folder
+        run: tar -czvf dist-windows.tar.gz dist/
+      - name: Upload compressed dist folder
         uses: actions/upload-artifact@v3
         with:
           name: dist-windows
-          path: dist/
+          path: dist-windows.tar.gz

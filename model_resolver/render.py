@@ -63,6 +63,8 @@ class Render:
     ):
         if render_size is None:
             render_size = self.default_render_size
+        if isinstance(path_save, str):
+            path_save = Path(path_save)
         self.tasks.append(
             ItemRenderTask(
                 getter=self.getter,
@@ -78,11 +80,13 @@ class Render:
         model: str,
         *,
         path_ctx: Optional[str] = None,
-        path_save: Optional[Path] = None,
+        path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
     ):
         if render_size is None:
             render_size = self.default_render_size
+        if isinstance(path_save, str):
+            path_save = Path(path_save)
         self.tasks.append(
             ModelPathRenderTask(
                 getter=self.getter,
@@ -98,7 +102,7 @@ class Render:
         structure: str,
         *,
         path_ctx: Optional[str] = None,
-        path_save: Optional[Path] = None,
+        path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
     ):
         """
@@ -107,6 +111,8 @@ class Render:
         """
         if render_size is None:
             render_size = self.default_render_size
+        if isinstance(path_save, str):
+            path_save = Path(path_save)
         self.tasks.append(
             StructureRenderTask(
                 getter=self.getter,

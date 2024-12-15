@@ -139,7 +139,8 @@ class StructureRenderTask(Task):
     def run(self):
         self.rotate_camera()
         sx, sy, sz = self.structure.size
-        center = (-sx / 2, -sy / 2, -sz / 2)
+        center = (sx / 2, sy / 2, sz / 2)
+        center = (16 * center[0], 16 * center[1], 16 * center[2])
         for block in self.structure.blocks:
             self.render_block(block, center)
 

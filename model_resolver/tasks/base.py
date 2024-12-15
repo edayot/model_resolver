@@ -54,4 +54,5 @@ class Task:
         if self.path_ctx:
             self.getter._ctx.assets.textures[self.path_ctx] = Texture(img)
         elif self.path_save:
+            os.makedirs(self.path_save.parent, exist_ok=True)
             img.save(self.path_save)

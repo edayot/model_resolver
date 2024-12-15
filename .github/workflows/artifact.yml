@@ -146,7 +146,8 @@ jobs:
           brew link --force freeglut
           echo "OpenGL version:"
           sudo port install glxinfo
-          ls /opt/local/bin
+          var=$(ls /opt/local/bin)
+          echo $var
           /opt/local/bin/glxinfo | grep "OpenGL version"
       - name: Run tests
         env:

@@ -135,6 +135,8 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: poetry install
+      - name: Setup MacPorts
+        uses: melusina-org/setup-macports@v1.1.4
       - name: Setup OpenGl
         run: |
           brew install --cask xquartz
@@ -143,6 +145,7 @@ jobs:
           brew link --overwrite freeglut
           brew link --force freeglut
           echo "OpenGL version:"
+          sudo port install glxinfo
           glxinfo | grep "OpenGL version"
       - name: Run tests
         env:

@@ -6,7 +6,7 @@ resource_pack:
 pipeline:
   - model_resolver.plugins.render_all_context
 
-output: dist
+output: ../../dist
 
 meta:
   model_resolver:

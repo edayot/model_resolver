@@ -140,6 +140,10 @@ jobs:
           brew install --cask xquartz
           brew install freeglut
           brew install mesa
+          brew link --overwrite freeglut
+          brew link --force freeglut
+          echo "OpenGL version:"
+          glxinfo | grep "OpenGL version"
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,6 +151,7 @@ jobs:
         run: |
           export MODEL_RESOLVER_TEST_BUILD=1
           export LIBGL_ALWAYS_SOFTWARE=1
+          export DISPLAY=:99
 
           poetry run beet
       - name: Upload dist folder

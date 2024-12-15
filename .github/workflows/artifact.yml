@@ -135,8 +135,6 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: poetry install
-      - name: Setup MacPorts
-        uses: melusina-org/setup-macports@v1.1.4
       - name: Setup OpenGl
         run: |
           brew install --cask xquartz

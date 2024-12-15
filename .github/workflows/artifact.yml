@@ -137,7 +137,7 @@ jobs:
         run: poetry install
       - name: Setup `xvfb` for OpenGL support
         run: |
-          brew install xorg
+          brew install xorg-server
           export DISPLAY=:99
           /usr/bin/Xvfb :99 -screen 0 2560x1440x24 +extension GLX +extension RENDER &
       - name: Run tests

@@ -2,6 +2,75 @@
 
 
 
+## v1.0.0 (2024-12-15)
+
+### Chore
+
+* chore: major on zero ([`7eccca2`](https://github.com/edayot/model_resolver/commit/7eccca2bdaec6bfaaa5c511edc9e5c3290018853))
+
+* chore: test build ([`7e8b8c8`](https://github.com/edayot/model_resolver/commit/7e8b8c8c57baa7c31fb930e92bb026ac44a5da84))
+
+* chore: test are working ([`7f15c46`](https://github.com/edayot/model_resolver/commit/7f15c464300ec33ff5d840b3b1e543560422680f))
+
+* chore: update python ([`c74a097`](https://github.com/edayot/model_resolver/commit/c74a0975d0911f06e3bc6795983a4aea3121509c))
+
+* chore: test testing ([`24d8409`](https://github.com/edayot/model_resolver/commit/24d840935fdd96e585c3c58e356c297d4862bd0a))
+
+* chore: update beet ([`2c18a87`](https://github.com/edayot/model_resolver/commit/2c18a87542c2dac28b82fc3f0553de9baea22a93))
+
+* chore: update test case ([`70b31f4`](https://github.com/edayot/model_resolver/commit/70b31f4924b24aeca69c73dc1512c312ff674c23))
+
+* chore: update pyopengl ([`6caf215`](https://github.com/edayot/model_resolver/commit/6caf215f986a9b490159773284cc3fd7efa4abd6))
+
+* chore: format script ([`0625860`](https://github.com/edayot/model_resolver/commit/06258600558350f6bdb6b49da94c14ddf2984228))
+
+### Feature
+
+* feat: updated packgetter ([`d6717de`](https://github.com/edayot/model_resolver/commit/d6717de3f8389061f73746fc7c5a90dbaa13556e))
+
+* feat: globalization of PackGetter ([`c3d1fd8`](https://github.com/edayot/model_resolver/commit/c3d1fd8586ad259d60118fffd04d0d4f941a516b))
+
+* feat: structure rendering ([`71636c2`](https://github.com/edayot/model_resolver/commit/71636c2c35ff6571e98facd09fd251b31d39c83c))
+
+* feat: render multipart working FINE ([`85b3c7a`](https://github.com/edayot/model_resolver/commit/85b3c7a075158742c76c36f2dfd6f7f8e99f10e2))
+
+* feat: new test model ([`1fd05e2`](https://github.com/edayot/model_resolver/commit/1fd05e29854657d075396fbfc1bd27aaa5980489))
+
+* feat: opts for disabling special rendering + render_size from Render object ([`91f3232`](https://github.com/edayot/model_resolver/commit/91f3232ec38ef0ea7b88ef11a78965cbe5baeaa1))
+
+* feat: update to 1.21.4-pre1 ([`edbb984`](https://github.com/edayot/model_resolver/commit/edbb984c849fce719f4dab8356fa4514628f2e89))
+
+* feat: 95% on heads ([`bccc63d`](https://github.com/edayot/model_resolver/commit/bccc63d13a7b88935bc0850d1411126519a912d8))
+
+### Fix
+
+* fix: center structure ([`225f411`](https://github.com/edayot/model_resolver/commit/225f4118ca9d61796a9d5a257563c10959fa687f))
+
+* fix: structure render ([`1ce4b65`](https://github.com/edayot/model_resolver/commit/1ce4b65e75d25dffdf80f39d26dc5859979b4c03))
+
+* fix: test case ([`acaeb96`](https://github.com/edayot/model_resolver/commit/acaeb960d429982793a8ee591ea596ec3c1fd68d))
+
+* fix: tint_source now accept non prefixed minecraft: values ([`be52fc4`](https://github.com/edayot/model_resolver/commit/be52fc41a51b69e26787fcbf87521a5952b7ff35))
+
+* fix: parsing ([`faa6ef3`](https://github.com/edayot/model_resolver/commit/faa6ef318a6348af53ee27a165c12859371a0d0f))
+
+* fix: animation not always showing ([`20e3fa6`](https://github.com/edayot/model_resolver/commit/20e3fa61c735ed2d5fde546c7b34c383719c95c6))
+
+### Refactor
+
+* refactor: organize into different files ([`cacc159`](https://github.com/edayot/model_resolver/commit/cacc1592af5f967c9d16856c86e18d48c8407eea))
+
+### Style
+
+* style: remove unused import ([`469726f`](https://github.com/edayot/model_resolver/commit/469726f9fd1a0bf26160d1347ffef0cc26a1831d))
+
+### Unknown
+
+* biblop ([`b62cf89`](https://github.com/edayot/model_resolver/commit/b62cf89de8f2a4d166226e3fb244632dc9b17f12))
+
+* ptdr ([`cfc13db`](https://github.com/edayot/model_resolver/commit/cfc13dba1e6c3691eb47c7bebfaaa4f547186be7))
+
+
 ## v0.16.1 (2024-11-16)
 
 ### Chore

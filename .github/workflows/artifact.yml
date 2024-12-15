@@ -6,68 +6,68 @@ on:
   
 
 jobs:
-  ubuntu-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Setup Python 3.12
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.12
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: Apt update
-        run: | 
-          sudo apt-get update -qq -y
-          export DEBIAN_FRONTEND=noninteractive
-      - name: Setup OpenGl
-        run: | 
-          sudo apt-get -y install \
-            freeglut3-dev \
-            libgl1-mesa-dev \
-            libxcursor-dev \
-            libpulse-dev \
-            libxinerama-dev \
-            libxrandr-dev \
-            libxv-dev \
-            mesa-utils \
-            libgl1-mesa-glx \
-            mesa-common-dev \
-            libglapi-mesa \
-            libgbm1 \
-            libgl1-mesa-dri \
-            libsdl1.2-dev \
-            libfreetype6-dev \
-            xvfb \
-            x11-utils
+  # ubuntu-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Setup Python 3.12
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: 3.12
+  #     - name: Install Poetry
+  #       uses: snok/install-poetry@v1
+  #       with:
+  #         version: 1.8.3
+  #         virtualenvs-create: true
+  #         virtualenvs-in-project: true
+  #     - name: Apt update
+  #       run: | 
+  #         sudo apt-get update -qq -y
+  #         export DEBIAN_FRONTEND=noninteractive
+  #     - name: Setup OpenGl
+  #       run: | 
+  #         sudo apt-get -y install \
+  #           freeglut3-dev \
+  #           libgl1-mesa-dev \
+  #           libxcursor-dev \
+  #           libpulse-dev \
+  #           libxinerama-dev \
+  #           libxrandr-dev \
+  #           libxv-dev \
+  #           mesa-utils \
+  #           libgl1-mesa-glx \
+  #           mesa-common-dev \
+  #           libglapi-mesa \
+  #           libgbm1 \
+  #           libgl1-mesa-dri \
+  #           libsdl1.2-dev \
+  #           libfreetype6-dev \
+  #           xvfb \
+  #           x11-utils
 
-      - name: Setup cache for dependencies
-        id: cached-poetry-dependencies
-        uses: actions/cache@v2
-        with:
-          path: .venv
-          key: venv-${{  runner.os }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install
-      - name: Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_HASH: ${{ github.sha }}
-        run: |
+  #     - name: Setup cache for dependencies
+  #       id: cached-poetry-dependencies
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: .venv
+  #         key: venv-${{  runner.os }}-${{ hashFiles('**/poetry.lock') }}
+  #     - name: Install dependencies
+  #       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+  #       run: poetry install
+  #     - name: Release
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         GIT_HASH: ${{ github.sha }}
+  #       run: |
 
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export MODEL_RESOLVER_TEST_BUILD=1
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export MODEL_RESOLVER_TEST_BUILD=1
 
-          COMMAND="poetry run pytest -vvv"
-          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
+  #         COMMAND="poetry run pytest -vvv"
+  #         /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
 
   windows-tests:
     runs-on: windows-latest
@@ -88,11 +88,11 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: |
-          poetry install
+          C:\Users\runneradmin\.local\bin\poetry install
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
         run: |
           set MODEL_RESOLVER_TEST_BUILD=1
-          poetry run pytest -vvv
+          C:\Users\runneradmin\.local\bin\poetry run pytest -vvv

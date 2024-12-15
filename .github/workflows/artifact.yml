@@ -135,6 +135,11 @@ jobs:
           virtualenvs-in-project: true
       - name: Install dependencies
         run: poetry install
+      - name: Setup `xvfb` for OpenGL support
+        run: |
+          brew install xorg
+          export DISPLAY=:99
+          /usr/bin/Xvfb :99 -screen 0 2560x1440x24 +extension GLX +extension RENDER &
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,7 +147,6 @@ jobs:
         run: |
           export MODEL_RESOLVER_TEST_BUILD=1
           export LIBGL_ALWAYS_SOFTWARE=1
-
           poetry run beet
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
@@ -151,3 +155,4 @@ jobs:
         with:
           name: dist-macos
           path: dist-macos.tar.gz
+

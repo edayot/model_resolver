@@ -2,6 +2,13 @@
 
 
 
+## v1.0.2 (2024-12-15)
+
+### Fix
+
+* fix: resolve_key ([`f56b7b5`](https://github.com/edayot/model_resolver/commit/f56b7b58da6c80b736235c5d1b8adf2454f1a20e))
+
+
 ## v1.0.1 (2024-12-15)
 
 ### Fix

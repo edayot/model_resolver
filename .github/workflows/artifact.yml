@@ -137,8 +137,7 @@ jobs:
         run: poetry install
       - name: Setup `xvfb` for OpenGL support
         run: |
-          brew install xorg-server
-          export DISPLAY=:99
+          brew install mesa
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -147,8 +146,7 @@ jobs:
           export MODEL_RESOLVER_TEST_BUILD=1
           export LIBGL_ALWAYS_SOFTWARE=1
 
-          COMMAND="poetry run beet"
-          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
+          poetry run beet
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

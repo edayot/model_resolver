@@ -144,9 +144,8 @@ jobs:
           brew install mesa
           brew link --overwrite freeglut
           brew link --force freeglut
-          source ~/.zshrc
-          VAR=$(glxinfo | grep "OpenGL version")
-          echo $VAR
+          brew link --overwrite mesa
+          brew link --force mesa
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

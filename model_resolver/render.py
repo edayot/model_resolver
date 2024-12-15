@@ -42,6 +42,7 @@ class Render:
     light: LightOptions = field(default_factory=LightOptions)
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
     default_render_size: int = DEFAULT_RENDER_SIZE
+    random_seed: int = 143221
 
     def __post_init__(self):
         self.getter = PackGetterV2.from_context(self.ctx)
@@ -120,6 +121,7 @@ class Render:
                 path_ctx=path_ctx,
                 path_save=path_save,
                 render_size=render_size,
+                random_seed=self.random_seed,
             )
         )
 

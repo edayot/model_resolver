@@ -112,6 +112,7 @@ class StructureRenderTask(Task):
     )
     zoom: int = 128
     do_rotate_camera: bool = True
+    random_seed: int = 143221
 
     @cached_property
     def structure(self):
@@ -137,12 +138,14 @@ class StructureRenderTask(Task):
         glScalef(scale[0], scale[1], scale[2])
 
     def run(self):
+        random.seed(self.random_seed)
         self.rotate_camera()
         sx, sy, sz = self.structure.size
         center = (sx / 2, sy / 2, sz / 2)
         center = (16 * center[0], 16 * center[1], 16 * center[2])
         for block in self.structure.blocks:
             self.render_block(block, center)
+        random.seed()
 
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]

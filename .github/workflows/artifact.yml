@@ -160,7 +160,8 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           export DISPLAY=:99
 
-          poetry run beet
+          COMMAND="poetry run beet"
+          echo $COMMAND | bash
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

@@ -144,11 +144,9 @@ jobs:
           brew install mesa
           brew link --overwrite freeglut
           brew link --force freeglut
-          echo "OpenGL version:"
-          sudo port install glxinfo
-          var=$(ls /opt/local/bin)
-          echo $var
-          /opt/local/bin/glxinfo | grep "OpenGL version"
+          source ~/.zshrc
+          VAR=$(glxinfo | grep "OpenGL version")
+          echo $VAR
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

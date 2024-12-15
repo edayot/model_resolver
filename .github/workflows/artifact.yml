@@ -138,6 +138,7 @@ jobs:
       - name: Setup `xvfb` for OpenGL support
         run: |
           brew install --cask xquartz
+          brew install freeglut
       - name: Run tests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

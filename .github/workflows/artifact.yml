@@ -108,9 +108,9 @@ jobs:
           C:\Users\runneradmin\.local\bin\poetry run beet
 
       - name: Upload dist folder
-        run: tar -czvf dist-windows.tar.gz dist/
+        run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
       - name: Upload compressed dist folder
         uses: actions/upload-artifact@v3
         with:
           name: dist-windows
-          path: dist-windows.tar.gz
+          path: dist-windows.zip

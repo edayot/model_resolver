@@ -2,6 +2,13 @@
 
 
 
+## v1.0.1 (2024-12-15)
+
+### Fix
+
+* fix: latest ([`e7bf6b5`](https://github.com/edayot/model_resolver/commit/e7bf6b5143a2a7eb951a9fcbb9480844b90edce8))
+
+
 ## v1.0.0 (2024-12-15)
 
 ### Chore

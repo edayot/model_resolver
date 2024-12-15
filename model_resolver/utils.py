@@ -3,7 +3,7 @@ from beet import Context, DataPack, Pack, NamespaceFile, ResourcePack
 from pydantic import BaseModel
 from typing import TYPE_CHECKING, Any, Self, Type
 from collections.abc import MappingView
-from beet import Context
+from beet import Context, LATEST_MINECRAFT_VERSION
 
 from pydantic import BaseModel
 import logging
@@ -61,7 +61,7 @@ class PackGetterV2[T: Pack]:
         opts = ctx.validate("model_resolver", ModelResolverOptions)
         vanilla = Vanilla(
             ctx,
-            minecraft_version=opts.minecraft_version,
+            minecraft_version=opts.minecraft_version if opts.minecraft_version != "latest" else LATEST_MINECRAFT_VERSION,
         )
         assets = ResourcePack()
         assets.merge(vanilla.assets)

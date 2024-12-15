@@ -1,0 +1,4 @@
+broadcast: examples/*
+extend: beet.yaml
+
+output: ../../dist

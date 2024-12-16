@@ -142,7 +142,7 @@ jobs:
           export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
           # echo the command "ls -la /usr/local/bin"
           ls -la /opt/X11/bin/
-          sudo Xvfb :99 -ac -screen 0 1024x768x24 &
+          sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 1024x768x24 &
 
       - name: Verify GLUT installation
         run: |

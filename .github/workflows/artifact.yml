@@ -69,8 +69,8 @@ jobs:
   #         export LIBGL_ALWAYS_SOFTWARE=1
   #         export MODEL_RESOLVER_TEST_BUILD=1
 
-  #         COMMAND="poetry run beet"
-  #         /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
+          COMMAND="poetry run beet"
+          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
   #     - name: Upload dist folder
   #       run: tar -czvf dist-ubuntu.tar.gz dist/
   #     - name: Upload compressed dist folder
@@ -151,9 +151,23 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           export DISPLAY=:99
 
-          sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 2560x1440x24 +extension GLX +extension RENDER &
-          COMMAND="poetry run beet"
-          echo $COMMAND | bash
+          # Set the display number
+          DISPLAY=:99
+
+          # Start Xvfb on the chosen display number
+          /usr/bin/Xvfb $DISPLAY -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+
+          # Save the process ID of Xvfb
+          XVFB_PID=$!
+
+          # Export the DISPLAY environment variable
+          export DISPLAY=$DISPLAY
+
+          # Run the command
+          poetry run beet
+
+          # Kill the Xvfb process after the command completes
+          kill $XVFB_PID
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

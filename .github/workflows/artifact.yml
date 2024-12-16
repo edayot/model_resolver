@@ -133,16 +133,7 @@ jobs:
       - name: Setup OpenGl
         run: |
           brew install --cask xquartz
-          brew install freeglut
-          brew install mesa
-          brew link --overwrite freeglut
-          brew link --force freeglut
-          brew link --overwrite mesa
-          brew link --force mesa
-          export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
-          # echo the command "ls -la /usr/local/bin"
           ls -la /opt/X11/bin/
-          sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 1024x768x24 &
 
       - name: Verify GLUT installation
         run: |
@@ -164,6 +155,7 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           export DISPLAY=:99
 
+          sudo /opt/X11/bin/Xvfb :99 -ac -screen 0 2560x1440x24 +extension GLX +extension RENDER &
           COMMAND="poetry run beet"
           echo $COMMAND | bash
       - name: Upload dist folder

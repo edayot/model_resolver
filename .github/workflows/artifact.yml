@@ -141,7 +141,7 @@ jobs:
           brew link --force mesa
           export DYLD_LIBRARY_PATH=/usr/local/lib:$DYLD_LIBRARY_PATH
           # echo the command "ls -la /usr/local/bin"
-          brew sh
+          ls -la ~
           sudo Xvfb :99 -ac -screen 0 1024x768x24 &
 
       - name: Verify GLUT installation

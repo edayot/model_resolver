@@ -134,6 +134,7 @@ jobs:
         run: |
           brew install --cask xquartz
           ls -la /opt/X11/bin/
+          /opt/X11/bin/xvinfo
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:

@@ -36,10 +36,9 @@ class AtlasDict(TypedDict):
 class AutoIncrement:
     value: ClassVar[int] = 0
 
-    @classmethod
-    def __call__(cls):
-        cls.value += 1
-        return cls.value
+    def __call__(self):
+        self.__class__.value += 1
+        return self.__class__.value
 
 
 @dataclass
@@ -240,6 +239,7 @@ class Render:
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
         glutHideWindow()
+        print("Rendering...", AutoIncrement())
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         print("Rendering...", AutoIncrement())
         glClearColor(0.0, 0.0, 0.0, 0.0)

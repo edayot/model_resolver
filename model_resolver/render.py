@@ -245,7 +245,8 @@ class Render:
         print("Rendering...", AutoIncrement()())
         # glutHideWindow()
         print("Rendering...", AutoIncrement()())
-        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
+        if bool(glutSetOption):
+            glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         print("Rendering...", AutoIncrement()())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -257,7 +258,7 @@ class Render:
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
 
-        print("Rendering...", AutoIncrement())
+        print("Rendering...", AutoIncrement()())
         new_tasks = []
         for task in self.tasks:
             new_tasks.extend(task.resolve())

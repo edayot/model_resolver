@@ -236,9 +236,13 @@ class Render:
         glutInit()
         print("Rendering...", AutoIncrement()())
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
+        print("Rendering...", AutoIncrement()())
         glutInitWindowSize(512, 512)
+        print("Rendering...", AutoIncrement()())
         glutInitWindowPosition(100, 100)
+        print("Rendering...", AutoIncrement()())
         glutCreateWindow(b"Isometric View")
+        print("Rendering...", AutoIncrement()())
         glutHideWindow()
         print("Rendering...", AutoIncrement()())
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)

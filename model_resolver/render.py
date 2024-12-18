@@ -232,16 +232,17 @@ class Render:
 
     def run(self):
         self.resolve_dynamic_textures()
-        print("Rendering...", AutoIncrement())
+        print("Rendering...", AutoIncrement()())
         glutInit()
+        print("Rendering...", AutoIncrement()())
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
         glutInitWindowSize(512, 512)
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Isometric View")
         glutHideWindow()
-        print("Rendering...", AutoIncrement())
+        print("Rendering...", AutoIncrement()())
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
-        print("Rendering...", AutoIncrement())
+        print("Rendering...", AutoIncrement()())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting

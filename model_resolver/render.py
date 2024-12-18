@@ -243,7 +243,7 @@ class Render:
         print("Rendering...", AutoIncrement()())
         glutCreateWindow(b"Isometric View")
         print("Rendering...", AutoIncrement()())
-        glutHideWindow()
+        # glutHideWindow()
         print("Rendering...", AutoIncrement()())
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         print("Rendering...", AutoIncrement()())

@@ -240,6 +240,8 @@ class Render:
         glutInitWindowSize(512, 512)
         print("Rendering...", AutoIncrement()())
         glutInitWindowPosition(100, 100)
+        glutInitContextVersion(3, 2)  # Request OpenGL 3.2
+        glutInitContextProfile(GLUT_CORE_PROFILE)  # Use core profile
         print("Rendering...", AutoIncrement()())
         glutCreateWindow(b"Isometric View")
         print("Rendering...", AutoIncrement()())

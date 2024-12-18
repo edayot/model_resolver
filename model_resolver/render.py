@@ -17,7 +17,7 @@ from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
 )
 from beet.contrib.vanilla import Vanilla
-from typing import Optional, TypedDict
+from typing import ClassVar, Optional, TypedDict
 from pathlib import Path
 import logging
 from PIL import Image
@@ -31,6 +31,15 @@ class AtlasDict(TypedDict):
     textures: list[str]
     palette_key: str
     permutations: dict[str, str]
+
+
+class AutoIncrement:
+    value: ClassVar[int] = 0
+
+    @classmethod
+    def __call__(cls):
+        cls.value += 1
+        return cls.value
 
 
 @dataclass
@@ -224,6 +233,7 @@ class Render:
 
     def run(self):
         self.resolve_dynamic_textures()
+        print("Rendering...", AutoIncrement())
         glutInit()
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
         glutInitWindowSize(512, 512)
@@ -231,6 +241,7 @@ class Render:
         glutCreateWindow(b"Isometric View")
         glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
+        print("Rendering...", AutoIncrement())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
@@ -241,6 +252,7 @@ class Render:
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
 
+        print("Rendering...", AutoIncrement())
         new_tasks = []
         for task in self.tasks:
             new_tasks.extend(task.resolve())

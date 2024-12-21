@@ -461,8 +461,8 @@ class SpecialModelHead(SpecialModelBase):
             "textures": {"1": texture, "particle": texture},
             "elements": [
                 {
-                    "from": [4, 4, 4],
-                    "to": [12, 12, 12],
+                    "from": [4, 0, 4],
+                    "to": [12, 8, 12],
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [6, 2, 8, 4], "texture": "#1"},
@@ -505,8 +505,8 @@ class SpecialModelHead(SpecialModelBase):
             "textures": {"1": texture, "particle": texture},
             "elements": [
                 {
-                    "from": [4, 4, 4],
-                    "to": [12, 12, 12],
+                    "from": [4, 0, 4],
+                    "to": [12, 8, 12],
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [6, 2, 8, 4], "texture": "#1"},
@@ -518,8 +518,8 @@ class SpecialModelHead(SpecialModelBase):
                     },
                 },
                 {
-                    "from": [3.75, 3.75, 3.75],
-                    "to": [12.25, 12.25, 12.25],
+                    "from": [3.75, -0.25, 3.75],
+                    "to": [12.25, 8.25, 12.25],
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [14, 2, 16, 4], "texture": "#1"},
@@ -597,6 +597,141 @@ class SpecialModelShulkerBox(SpecialModelBase):
     openness: float = 0.0
     orientation: Literal["down", "east", "north", "south", "up", "west"] = "up"
 
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+        namespace, path = resolve_key(self.texture).split(":")
+        texture = f"{namespace}:entity/shulker/{path}"
+        x = clamp(0, self.openness * 8, 8)
+        rotation = - clamp(0, self.openness * 90*3, 90*3)
+        model: dict[str, Any] = {
+            "credit": "Made with Blockbench",
+            "textures": {
+                "0": texture,
+            },
+            "elements": [
+                {
+                    "name": "down_down",
+                    "from": [0, 0, 0],
+                    "to": [16, 0, 16],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "up": {"uv": [8, 7, 12, 11], "texture": "#0"},
+                        "down": {"uv": [8, 7, 12, 11], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "down_north",
+                    "from": [0, 0, 0],
+                    "to": [16, 8, 0],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [8, 11, 12, 13], "texture": "#0"},
+                        "south": {"uv": [8, 11, 12, 13], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "down_south",
+                    "from": [0, 0, 16],
+                    "to": [16, 8, 16],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [0, 11, 4, 13], "texture": "#0"},
+                        "south": {"uv": [0, 11, 4, 13], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "down_east",
+                    "from": [16, 0, 0],
+                    "to": [16, 8, 16],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "east": {"uv": [4, 11, 8, 13], "texture": "#0"},
+                        "west": {"uv": [4, 11, 8, 13], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "down_west",
+                    "from": [0, 0, 0],
+                    "to": [0, 8, 16],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "east": {"uv": [12, 11, 16, 13], "texture": "#0"},
+                        "west": {"uv": [12, 11, 16, 13], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "down_up",
+                    "from": [0, 8, 0],
+                    "to": [16, 8, 16],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "up": {"uv": [4, 7, 8, 11], "texture": "#0"},
+                        "down": {"uv": [4, 7, 8, 11], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_north",
+                    "from": [0, 4+x, 0],
+                    "to": [16, 16+x, 0],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [8, 4, 12, 7], "texture": "#0"},
+                        "south": {"uv": [8, 4, 12, 7], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_south",
+                    "from": [0, 4+x, 16],
+                    "to": [16, 16+x, 16],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [0, 4, 4, 7], "texture": "#0"},
+                        "south": {"uv": [0, 4, 4, 7], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_west",
+                    "from": [0, 4+x, 0],
+                    "to": [0, 16+x, 16],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "east": {"uv": [12, 4, 16, 7], "texture": "#0"},
+                        "west": {"uv": [12, 4, 16, 7], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_east",
+                    "from": [16, 4+x, 0],
+                    "to": [16, 16+x, 16],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "east": {"uv": [4, 4, 8, 7], "texture": "#0"},
+                        "west": {"uv": [4, 4, 8, 7], "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_up",
+                    "from": [0, 16+x, 0],
+                    "to": [16, 16+x, 16],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
+                        "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"}
+                    }
+                },
+                {
+                    "name": "up_down",
+                    "from": [0, 4+x, 0],
+                    "to": [16, 4+x, 16],
+                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "up": {"uv": [8, 0, 12, 4], "texture": "#0"},
+                        "down": {"uv": [8, 0, 12, 4], "texture": "#0"}
+                    }
+                }
+            ]
+        }
+
+        return model
 
 class SpecialModelShield(SpecialModelBase):
     type: Literal["minecraft:shield", "shield"]

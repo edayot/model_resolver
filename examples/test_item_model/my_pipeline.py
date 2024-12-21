@@ -54,5 +54,7 @@ def beet_default(ctx: Context):
     # render.add_item_task(Item(id="minecraft:diamond"), path_ctx="test:render/diamond", render_size=512)
 
 
+    render.add_model_task("test:item/conduit", path_ctx="test:render/conduit", render_size=512)
+
 
     render.run()

@@ -1,3 +1,5 @@
+import math
+from turtle import left
 from pydantic import BaseModel, Field
 from model_resolver.item_model.tint_source import TintSource
 from typing import Optional, Literal, ClassVar, Generator, Union, Any
@@ -38,7 +40,7 @@ class SpecialModelBase(BaseModel):
         "hanging_sign",
     ]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         return {}
 
 
@@ -61,11 +63,11 @@ class SpecialModelChest(SpecialModelBase):
     texture: str
     openness: float = 0.0
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         openness = clamp(0.0, self.openness, 1.0)
         angle = openness * 90
         namespace, path = resolve_key(self.texture).split(":")
-        model: dict[str, Any] = {
+        model: dict[str, Any] | tuple[dict[str, Any], float] = {
             "elements": [
                 {
                     "from": [1, 0, 1],
@@ -195,7 +197,7 @@ class SpecialModelHead(SpecialModelBase):
     texture: Optional[str] = None
     animation: float = 0.0
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         match self.kind:
             case "player":
                 return self.get_model_player(getter, item)
@@ -217,115 +219,123 @@ class SpecialModelHead(SpecialModelBase):
             case _:
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
 
-    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         texture = self.texture or "minecraft:entity/enderdragon/dragon"
         model = {
             "textures": {"0": texture, "particle": texture},
             "elements": [
                 {
                     "name": "head",
-                    "from": [0, 0, -6],
-                    "to": [16, 16, 10],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, -3]},
+                    "from": [0, -2, 2],
+                    "to": [16, 14, 18],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [2, -2, 5]},
                     "faces": {
                         "north": {"uv": [10, 2.875, 11, 3.875], "texture": "#0"},
                         "east": {"uv": [9, 2.875, 10, 3.875], "texture": "#0"},
                         "south": {"uv": [8, 2.875, 9, 3.875], "texture": "#0"},
                         "west": {"uv": [7, 2.875, 8, 3.875], "texture": "#0"},
                         "up": {"uv": [8, 1.875, 9, 2.875], "texture": "#0"},
-                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"},
-                    },
+                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"}
+                    }
                 },
                 {
                     "name": "right ear",
-                    "from": [3, 16, -2],
-                    "to": [5, 20, 4],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [3, 16, -2]},
+                    "from": [3, 14, 6],
+                    "to": [5, 18, 12],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [3, 14, 6]},
                     "faces": {
                         "north": {"uv": [0.875, 0.375, 1, 0.625], "texture": "#0"},
                         "east": {"uv": [0.375, 0.375, 0, 0.625], "texture": "#0"},
                         "south": {"uv": [0.375, 0.375, 0.5, 0.625], "texture": "#0"},
                         "west": {"uv": [0.875, 0.375, 0.5, 0.625], "texture": "#0"},
                         "up": {"uv": [0.375, 0, 0.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"},
-                    },
+                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"}
+                    }
                 },
                 {
                     "name": "left ear",
-                    "from": [11, 16, -2],
-                    "to": [13, 20, 4],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [11, 16, -2]},
+                    "from": [11, 14, 6],
+                    "to": [13, 18, 12],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [11, 14, 6]},
                     "faces": {
                         "north": {"uv": [3.875, 0.375, 4, 0.625], "texture": "#0"},
                         "east": {"uv": [3.375, 0.375, 3, 0.625], "texture": "#0"},
                         "south": {"uv": [3.375, 0.375, 3.5, 0.625], "texture": "#0"},
                         "west": {"uv": [3.875, 0.375, 3.5, 0.625], "texture": "#0"},
                         "up": {"uv": [3.375, 0, 3.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"},
-                    },
+                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"}
+                    }
                 },
                 {
-                    "name": "up mouse",
-                    "from": [2, 4, 8],
-                    "to": [14, 9, 24],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 4, 8]},
+                    "name": "up mouth",
+                    "from": [2, 2, 16],
+                    "to": [14, 7, 32],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 2, 16]},
                     "faces": {
                         "north": {"uv": [13.75, 3.75, 14.5, 4.75], "texture": "#0"},
                         "east": {"uv": [12.75, 3.75, 13.75, 4.0625], "texture": "#0"},
                         "south": {"uv": [12, 3.75, 12.75, 4.0625], "texture": "#0"},
                         "west": {"uv": [11, 3.75, 12, 4.0625], "texture": "#0"},
                         "up": {"uv": [12, 2.75, 12.75, 3.75], "texture": "#0"},
-                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"},
-                    },
+                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"}
+                    }
                 },
                 {
-                    "name": "down mouse",
-                    "from": [2, 0, 8],
-                    "to": [14, 4, 24],
-                    "rotation": {"angle": 22.5, "axis": "x", "origin": [8, 4, 8]},
+                    "name": "down mouth",
+                    "from": [2, -2, 16],
+                    "to": [14, 2, 32],
+                    "rotation": {"angle": self.get_dragon_angle(), "axis": "x", "origin": [8, 2, 16]},
                     "faces": {
                         "north": {"uv": [13.75, 5.0625, 14.5, 5.3125], "texture": "#0"},
                         "east": {"uv": [12.75, 5.0625, 13.75, 5.3125], "texture": "#0"},
                         "south": {"uv": [12, 5.0625, 12.75, 5.3125], "texture": "#0"},
                         "west": {"uv": [11, 5.0625, 12, 5.3125], "texture": "#0"},
                         "up": {"uv": [12, 4.0625, 12.75, 5.0625], "texture": "#0"},
-                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"},
-                    },
+                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"}
+                    }
                 },
                 {
                     "name": "right nose",
-                    "from": [3, 9, 18],
-                    "to": [5, 11, 22],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [3, 9, 18]},
+                    "from": [3, 7, 26],
+                    "to": [5, 9, 30],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [3, 7, 26]},
                     "faces": {
                         "north": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "east": {"uv": [7, 0.25, 7.25, 0.375], "texture": "#0"},
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
-                    },
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
+                    }
                 },
                 {
                     "name": "left nose",
-                    "from": [11, 9, 18],
-                    "to": [13, 11, 22],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [11, 9, 18]},
+                    "from": [11, 7, 26],
+                    "to": [13, 9, 30],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [11, 7, 26]},
                     "faces": {
                         "north": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "east": {"uv": [7, 0.25, 7.25, 0.375], "texture": "#0"},
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
-                    },
-                },
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
+                    }
+                }
             ],
         }
-        return model
+        return model, 0.75
+    
+    def get_dragon_angle(self) -> float:
+        f = self.animation
+        jaw = (math.sin(f * math.pi * 0.2) + 1.0) * 0.2
+        # convert to degrees
+        jaw = math.degrees(jaw)
+        return jaw
 
-    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         texture = self.texture or "minecraft:entity/piglin/piglin"
+        left_ear, right_ear = self.get_piglin_angles()
         model = {
             "textures": {"0": texture, "particle": texture},
             "elements": [
@@ -385,7 +395,7 @@ class SpecialModelHead(SpecialModelBase):
                     "name": "right ear",
                     "from": [1, 1, 5],
                     "to": [2, 7, 10],
-                    "rotation": {"angle": -30, "axis": "z", "origin": [1.5, 4, 7.5]},
+                    "rotation": {"angle": left_ear, "axis": "z", "origin": [1.5, 4, 7.5]},
                     "faces": {
                         "north": {"uv": [12, 2.5, 12.25, 3.75], "texture": "#0"},
                         "east": {"uv": [11, 2.5, 12, 3.75], "texture": "#0"},
@@ -399,7 +409,7 @@ class SpecialModelHead(SpecialModelBase):
                     "name": "left ear",
                     "from": [14, 1, 5],
                     "to": [15, 7, 10],
-                    "rotation": {"angle": 30, "axis": "z", "origin": [14.5, 4, 7.5]},
+                    "rotation": {"angle": right_ear, "axis": "z", "origin": [14.5, 4, 7.5]},
                     "faces": {
                         "north": {"uv": [15, 2.5, 15.25, 3.75], "texture": "#0"},
                         "east": {"uv": [14, 2.5, 15, 3.75], "texture": "#0"},
@@ -412,8 +422,18 @@ class SpecialModelHead(SpecialModelBase):
             ],
         }
         return model
+    
+    def get_piglin_angles(self) -> tuple[float, float]:
+        f = self.animation
+        left_ear = -(math.cos(f * math.pi * 0.2 * 1.2) + 2.5) * 0.2
+        right_ear = (math.cos(f * math.pi * 0.2) + 2.5) * 0.2
+        # convert to degrees
+        left_ear = math.degrees(left_ear)
+        right_ear = math.degrees(right_ear)
+        return left_ear, right_ear
+        
 
-    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -437,7 +457,7 @@ class SpecialModelHead(SpecialModelBase):
 
     def get_generic_mob_head(
         self, getter: PackGetterV2, item: Item, texture: str
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | tuple[dict[str, Any], float]:
         model = {
             "textures": {"0": texture, "particle": texture},
             "elements": [
@@ -457,7 +477,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
         texture = self.get_player_texture(getter, item)
         model = {
             "textures": {"1": texture, "particle": texture},

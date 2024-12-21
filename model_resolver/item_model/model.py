@@ -622,10 +622,19 @@ class ItemModelSpecial(ItemModelBase):
         opts = getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.special_rendering:
             return MinecraftModel()
-        child = self.model.get_model(getter, item)
+        model = self.model.get_model(getter, item)
+        if isinstance(model, tuple):
+            child, scale = model
+        else:
+            child = model
+            scale = 1.0
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, getter)
-        return MinecraftModel.model_validate(merged).bake()
+        res = MinecraftModel.model_validate(merged).bake()
+        init_scale = res.display.gui.scale
+        res.display.gui.scale = (init_scale[0] * scale, init_scale[1] * scale, init_scale[2] * scale)
+        return res
+
 
     def resolve(
         self, getter: PackGetterV2, item: Item

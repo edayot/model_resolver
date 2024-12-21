@@ -31,8 +31,15 @@ def beet_default(ctx: Context):
         "minecraft:item_model": "test:piglin"
     }), path_ctx="test:render/piglin", render_size=512)
     render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:real_piglin"
+    }), path_ctx="test:render/real_piglin", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond", components={
         "minecraft:item_model": "test:dragon"
     }), path_ctx="test:render/dragon", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:real_dragon"
+    }), path_ctx="test:render/real_dragon", render_size=80)
+
     render.add_item_task(Item(id="minecraft:diamond", components={
         "minecraft:item_model": "test:dragon_scales"
     }), path_ctx="test:render/dragon_scales", render_size=512)

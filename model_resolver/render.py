@@ -248,8 +248,7 @@ class Render:
         print("Rendering...", AutoIncrement()())
         # glutHideWindow()
         print("Rendering...", AutoIncrement()())
-        if bool(glutSetOption):
-            glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
+        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         print("Rendering...", AutoIncrement()())
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -293,6 +292,7 @@ class Render:
         
 
     def display(self):
+        print("Rendering...", AutoIncrement()())
         if self.tasks_index >= len(self.tasks):
             self.leave()
         try:

@@ -22,6 +22,9 @@ from pathlib import Path
 import logging
 from PIL import Image
 from rich import print  # noqa
+import os
+import sys
+import psutil
 
 from model_resolver.tasks.base import Task, RenderError
 
@@ -277,29 +280,29 @@ class Render:
         glOrtho(zoom, -zoom, -zoom, zoom, 512, -512)
         glMatrixMode(GL_MODELVIEW)
 
-    def display(self):
-        from sys import _exit as exit # type: ignore
-        if self.tasks_index >= len(self.tasks):
-            if bool(glutLeaveMainLoop):
-                glutLeaveMainLoop()
-            else:
-                exit("WTFFFFF1")
-                
+    def leave(self):
+        if bool(glutLeaveMainLoop):
+            glutLeaveMainLoop()
             return
+        pid = os.getpid()
+        current_process = psutil.Process(pid)
+        childs = current_process.children(recursive=True)
+        print(f"{pid=} {current_process=} {childs=}")
+
+        glutDisplayFunc(lambda: None)
+        
+
+    def display(self):
+        if self.tasks_index >= len(self.tasks):
+            self.leave()
         try:
             x = self.real_display()
         except:
-            if bool(glutLeaveMainLoop):
-                glutLeaveMainLoop()
-            else:
-                exit("WTFFFFF2")
+            self.leave()
             raise
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
-            if bool(glutLeaveMainLoop):
-                glutLeaveMainLoop()
-            else:
-                exit("WTFFFFF3")
+            self.leave()
             return
         logging.debug(
             f"Rendering task {self.current_task}... ({self.tasks_index}/{len(self.tasks)})"

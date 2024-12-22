@@ -240,8 +240,6 @@ class Render:
         glutInitWindowSize(512, 512)
         print("Rendering...", AutoIncrement()())
         glutInitWindowPosition(100, 100)
-        glutInitContextVersion(3, 2)  # Request OpenGL 3.2
-        glutInitContextProfile(GLUT_CORE_PROFILE)  # Use core profile
         print("Rendering...", AutoIncrement()())
         glutCreateWindow(b"Isometric View")
         print("Rendering...", AutoIncrement()())
@@ -281,16 +279,26 @@ class Render:
 
     def display(self):
         if self.tasks_index >= len(self.tasks):
-            glutLeaveMainLoop()
+            if bool(glutLeaveMainLoop):
+                glutLeaveMainLoop()
+            else:
+                exit("WTFFFFF1")
+                
             return
         try:
             x = self.real_display()
         except:
-            glutLeaveMainLoop()
+            if bool(glutLeaveMainLoop):
+                glutLeaveMainLoop()
+            else:
+                exit("WTFFFFF2")
             raise
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
-            glutLeaveMainLoop()
+            if bool(glutLeaveMainLoop):
+                glutLeaveMainLoop()
+            else:
+                exit("WTFFFFF3")
             return
         logging.debug(
             f"Rendering task {self.current_task}... ({self.tasks_index}/{len(self.tasks)})"

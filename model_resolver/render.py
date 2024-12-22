@@ -278,7 +278,7 @@ class Render:
         glMatrixMode(GL_MODELVIEW)
 
     def display(self):
-        from sys import exit
+        from sys import _exit as exit # type: ignore
         if self.tasks_index >= len(self.tasks):
             if bool(glutLeaveMainLoop):
                 glutLeaveMainLoop()

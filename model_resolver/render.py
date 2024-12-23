@@ -265,12 +265,17 @@ class Render:
         for task in self.tasks:
             new_tasks.extend(task.resolve())
         self.tasks = new_tasks
+        print("Rendering...", AutoIncrement()())
 
         glutDisplayFunc(self.display)
+        print("Rendering...", AutoIncrement()())
         glutIdleFunc(self.display)
+        print("Rendering...", AutoIncrement()())
         glutReshapeFunc(self.reshape)
+        print("Rendering...", AutoIncrement()())
 
         glutMainLoop()
+        print("Rendering...", AutoIncrement()())
 
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)

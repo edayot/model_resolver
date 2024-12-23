@@ -297,7 +297,7 @@ class Render:
         
 
     def display(self):
-        print("Rendering...", AutoIncrement()())
+        print("Display ! ", AutoIncrement()())
         if self.tasks_index >= len(self.tasks):
             self.leave()
         try:

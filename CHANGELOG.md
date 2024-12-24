@@ -2,6 +2,123 @@
 
 
 
+## v1.1.0 (2024-12-24)
+
+### Chore
+
+* chore: resume normal testing ([`655928c`](https://github.com/edayot/model_resolver/commit/655928cd35387f712cac30a7716838a5368447db))
+
+* chore: wip ([`ec2f610`](https://github.com/edayot/model_resolver/commit/ec2f6108c94663b54e451941c5e21ed8719bd2d1))
+
+* chore: wip ([`3b9c49f`](https://github.com/edayot/model_resolver/commit/3b9c49f5d354e598ca8a73a82c240d626d685d99))
+
+* chore: wip ([`8f2d887`](https://github.com/edayot/model_resolver/commit/8f2d88753c3453aa28a13813a601e546372944ee))
+
+* chore: wip ([`ca1a55d`](https://github.com/edayot/model_resolver/commit/ca1a55d38d19d2904eb0a87c53932cd9a6dc0d69))
+
+* chore: wip ([`94a0def`](https://github.com/edayot/model_resolver/commit/94a0def08197754760d109ebdfda76696332814a))
+
+* chore: wip ([`a214047`](https://github.com/edayot/model_resolver/commit/a214047cb21b15edb6d7b81a3162e61d2de9778e))
+
+* chore: wip ([`0e34643`](https://github.com/edayot/model_resolver/commit/0e346431a6f8e03dac43e2bc1b253c4e5c07abee))
+
+* chore: wip ([`55b2aa1`](https://github.com/edayot/model_resolver/commit/55b2aa17f2e8b778e8a0af3138d636448331285a))
+
+* chore: wip ([`f0af3e2`](https://github.com/edayot/model_resolver/commit/f0af3e2fe0a4e7c8c198f2d3f9733aba9461964b))
+
+* chore: wip ([`b69cea1`](https://github.com/edayot/model_resolver/commit/b69cea1ac328d44dcb6cad6c3fac01e4e267eec8))
+
+* chore: try run on macos latest ([`3fc3e76`](https://github.com/edayot/model_resolver/commit/3fc3e76df85dacfbaf4bf4073c06ccfcb432c889))
+
+* chore: different zip compressing ([`ced3699`](https://github.com/edayot/model_resolver/commit/ced3699bd4afd0c203a81426e01d140306582b3a))
+
+* chore: only building ([`4eb27f9`](https://github.com/edayot/model_resolver/commit/4eb27f9bb6c70eee51ee2640cb063a7765f58696))
+
+* chore: test only one rendering method ([`5b22fa4`](https://github.com/edayot/model_resolver/commit/5b22fa4b5734ae7dbb05a105fb2d5f927814192b))
+
+* chore: compression ([`309d68f`](https://github.com/edayot/model_resolver/commit/309d68f917b3f051e2fc4f1cb295dfd664c05878))
+
+* chore: upload artifact ([`7f6fe62`](https://github.com/edayot/model_resolver/commit/7f6fe6289bbbc4d2d09f4ed7debedf1753f58e65))
+
+* chore: setup mesa3d ([`5b012c0`](https://github.com/edayot/model_resolver/commit/5b012c079bc707c872d4fc5968aeea5997d9c7eb))
+
+* chore: wip ([`4b9ade5`](https://github.com/edayot/model_resolver/commit/4b9ade5d1d8b708f482672f5dbb80bb384574735))
+
+* chore: try update ([`729e0d6`](https://github.com/edayot/model_resolver/commit/729e0d67a2942eba63e4da44ec74974fc17b2e21))
+
+* chore: add a windows test case ([`ffb454e`](https://github.com/edayot/model_resolver/commit/ffb454e82a80bd0ffe048c6c696c894b8a2396bb))
+
+* chore: test case ([`679a62d`](https://github.com/edayot/model_resolver/commit/679a62d678434fbf3d0eebda8a2f9e4cd606d99f))
+
+### Feature
+
+* feat: shulker additionnal rotations ([`a9ff671`](https://github.com/edayot/model_resolver/commit/a9ff671764e04806e6a473a69cfab5322d2c01e6))
+
+* feat: shulker box rendering #12 ([`3418552`](https://github.com/edayot/model_resolver/commit/3418552cea9702f2557256557e66245e67af5311))
+
+* feat: add special `minecraft:conduit` #12 ([`4817521`](https://github.com/edayot/model_resolver/commit/4817521673ff5ab086b8f9e2ccb088745a20459e))
+
+* feat: animation working + fix #11 ([`32a70b4`](https://github.com/edayot/model_resolver/commit/32a70b4b410faf99e42205d000673a2c05e61ae4))
+
+* feat: move to a dedicated file #12 ([`36b88d5`](https://github.com/edayot/model_resolver/commit/36b88d53835ed633fed7c7c478437874ac809f46))
+
+### Fix
+
+* fix: random not so random for structures ([`db238c4`](https://github.com/edayot/model_resolver/commit/db238c451bed070cf16dea3e62f9b3499b893495))
+
+### Unknown
+
+* m ([`0f203db`](https://github.com/edayot/model_resolver/commit/0f203db0df57b514c4d4e966fa873b8695ab40d3))
+
+* n ([`a431217`](https://github.com/edayot/model_resolver/commit/a431217e1e36e5c7b240a8094258e0e0835bfdb6))
+
+* m ([`6d6b4e3`](https://github.com/edayot/model_resolver/commit/6d6b4e338e1950deee1ae69eeb5c3a519c67ed6b))
+
+* l ([`b8a4c25`](https://github.com/edayot/model_resolver/commit/b8a4c25b206bb855eb284de1d02dda4eae65d3e3))
+
+* k ([`d64861f`](https://github.com/edayot/model_resolver/commit/d64861f2ca0501af2c174a0fd87ff2dd5481c4cf))
+
+* j ([`60e33fb`](https://github.com/edayot/model_resolver/commit/60e33fb1964b33f0224c6d745cc0480df55b52f9))
+
+* i ([`2551dcc`](https://github.com/edayot/model_resolver/commit/2551dcc7309a983041617035c079584aaee1a1e1))
+
+* h ([`a72a130`](https://github.com/edayot/model_resolver/commit/a72a13078074eb39d5714663a47316c2b31e0741))
+
+* g ([`5f13716`](https://github.com/edayot/model_resolver/commit/5f1371680093c79522389e6e393a212ac083d5d5))
+
+* f ([`c009292`](https://github.com/edayot/model_resolver/commit/c0092922089e952dac5f024e3d28a2fd140d6cb1))
+
+* e ([`f0eca20`](https://github.com/edayot/model_resolver/commit/f0eca207e3690363d76b074f3a53be504e27ff91))
+
+* d ([`248790d`](https://github.com/edayot/model_resolver/commit/248790d071b9f179f4432ec38e3e6bb1158dc11e))
+
+* c ([`c6a923c`](https://github.com/edayot/model_resolver/commit/c6a923cee3bc1666f29dea7f369b6c35a48bd03f))
+
+* b ([`4d0b316`](https://github.com/edayot/model_resolver/commit/4d0b316dba2e347828b4381949980838cd2086af))
+
+* a ([`dc546c9`](https://github.com/edayot/model_resolver/commit/dc546c9a2cce7f887bc4b71e95de4ecae1a0f85a))
+
+* x ([`cb01d6f`](https://github.com/edayot/model_resolver/commit/cb01d6f0ed36a7ef02f691b85f3374af82193059))
+
+* q ([`e799ae6`](https://github.com/edayot/model_resolver/commit/e799ae64cc0a6398ac163c909516b5efbaf422a9))
+
+* v ([`e01b800`](https://github.com/edayot/model_resolver/commit/e01b8006d4c7a46d83f10af5a26e04f26e86b3a9))
+
+* u ([`7e1f26c`](https://github.com/edayot/model_resolver/commit/7e1f26c1ccad7e5bf06bfc4c5d0e0b0f06a95295))
+
+* t ([`64112cc`](https://github.com/edayot/model_resolver/commit/64112cc9d2495b08c595424b9ec760628aa62295))
+
+* r ([`33c3cab`](https://github.com/edayot/model_resolver/commit/33c3cab8c2e6377aaf6953f2fabe75a32f6837d5))
+
+* q ([`c861721`](https://github.com/edayot/model_resolver/commit/c8617214b5ae8d9403b3a06d5d1907a56536b296))
+
+* p ([`2087e2f`](https://github.com/edayot/model_resolver/commit/2087e2ff33572ea4165f289598245b3f8cfd0e04))
+
+* o ([`adc5072`](https://github.com/edayot/model_resolver/commit/adc5072d76555b75c6ac7e7b77fc214a10770263))
+
+* k ([`91c724f`](https://github.com/edayot/model_resolver/commit/91c724f722f35b91c4ab33af0d8c3a34c0f9eac0))
+
+
 ## v1.0.2 (2024-12-15)
 
 ### Fix

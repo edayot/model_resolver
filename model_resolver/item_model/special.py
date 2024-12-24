@@ -40,8 +40,14 @@ class SpecialModelBase(BaseModel):
         "hanging_sign",
     ]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         return {}
+    
+    def get_scale(self) -> float:
+        return 1.0
+    
+    def get_additional_rotations(self) -> tuple[float, float, float] | None:
+        return None
 
 
 class SpecialModelBed(SpecialModelBase):
@@ -57,7 +63,7 @@ class SpecialModelBanner(SpecialModelBase):
 class SpecialModelConduit(SpecialModelBase):
     type: Literal["minecraft:conduit", "conduit"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         model: dict[str, Any] = {
             "textures": {
                 "0": "entity/conduit/base",
@@ -85,11 +91,11 @@ class SpecialModelChest(SpecialModelBase):
     texture: str
     openness: float = 0.0
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         openness = clamp(0.0, self.openness, 1.0)
         angle = openness * 90
         namespace, path = resolve_key(self.texture).split(":")
-        model: dict[str, Any] | tuple[dict[str, Any], float] = {
+        model: dict[str, Any] = {
             "elements": [
                 {
                     "from": [1, 0, 1],
@@ -197,6 +203,9 @@ class SpecialModelChest(SpecialModelBase):
             "textures": {"0": f"{namespace}:entity/chest/{path}"},
         }
         return model
+    
+    def get_scale(self) -> float:
+        return 0.75
 
 
 class PropertiesModel(BaseModel):
@@ -219,7 +228,7 @@ class SpecialModelHead(SpecialModelBase):
     texture: Optional[str] = None
     animation: float = 0.0
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         match self.kind:
             case "player":
                 return self.get_model_player(getter, item)
@@ -241,7 +250,7 @@ class SpecialModelHead(SpecialModelBase):
             case _:
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
 
-    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/enderdragon/dragon"
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -346,7 +355,7 @@ class SpecialModelHead(SpecialModelBase):
                 }
             ],
         }
-        return model, 0.75
+        return model
     
     def get_dragon_angle(self) -> float:
         f = self.animation
@@ -355,7 +364,7 @@ class SpecialModelHead(SpecialModelBase):
         jaw = math.degrees(jaw)
         return jaw
 
-    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/piglin/piglin"
         left_ear, right_ear = self.get_piglin_angles()
         model = {
@@ -455,7 +464,7 @@ class SpecialModelHead(SpecialModelBase):
         return left_ear, right_ear
         
 
-    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -479,7 +488,7 @@ class SpecialModelHead(SpecialModelBase):
 
     def get_generic_mob_head(
         self, getter: PackGetterV2, item: Item, texture: str
-    ) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    ) -> dict[str, Any]:
         model = {
             "textures": {"0": texture, "particle": texture},
             "elements": [
@@ -499,7 +508,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.get_player_texture(getter, item)
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -597,7 +606,7 @@ class SpecialModelShulkerBox(SpecialModelBase):
     openness: float = 0.0
     orientation: Literal["down", "east", "north", "south", "up", "west"] = "up"
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any] | tuple[dict[str, Any], float]:
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
         x = clamp(0, self.openness * 8, 8)
@@ -732,7 +741,24 @@ class SpecialModelShulkerBox(SpecialModelBase):
         }
 
         return model
-
+    
+    def get_additional_rotations(self) -> tuple[float, float, float] | None:
+        match self.orientation:
+            case "up":
+                return (0, -90, 0)
+            case "down":
+                return (0, 90, -180)
+            case "north":
+                return (0, 90, -90)
+            case "south":
+                return (0, -90, -90)
+            case "west":
+                return (0, 180, -90)
+            case "east":
+                return (0, -90, -90)
+            case _:
+                raise ValueError(f"Invalid orientation {self.orientation}")
+            
 class SpecialModelShield(SpecialModelBase):
     type: Literal["minecraft:shield", "shield"]
 

@@ -622,17 +622,22 @@ class ItemModelSpecial(ItemModelBase):
         opts = getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.special_rendering:
             return MinecraftModel()
-        model = self.model.get_model(getter, item)
-        if isinstance(model, tuple):
-            child, scale = model
-        else:
-            child = model
-            scale = 1.0
+        child = self.model.get_model(getter, item)
+        scale = self.model.get_scale()
+        rotations = self.model.get_additional_rotations()
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, getter)
         res = MinecraftModel.model_validate(merged).bake()
         init_scale = res.display.gui.scale
         res.display.gui.scale = (init_scale[0] * scale, init_scale[1] * scale, init_scale[2] * scale)
+
+        init_rotation = res.display.gui.rotation
+        if rotations:
+            res.display.gui.rotation = (
+                init_rotation[0] + rotations[0],
+                init_rotation[1] + rotations[1],
+                init_rotation[2] + rotations[2],
+            )
         return res
 
 

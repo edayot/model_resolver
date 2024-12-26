@@ -102,6 +102,30 @@ class GenericModelRenderTask(Task):
             frames = list(mcmeta.animation.resolve_frames(img.height, img.width))
             texture_path_to_frames[texture_path] = frames
         return texture_path_to_frames
+    
+    def get_images(self, tick: TickGrouped) -> dict[str, Image.Image]:
+        images = {}
+        for texture_path, index in tick["tick"].items():
+            texture = self.get_texture(texture_path)
+            if not texture:
+                raise RenderError(f"WTF")
+            img: Image.Image = texture.image
+            cropped = img.crop(
+                (0, index * img.width, img.width, (index + 1) * img.width)
+            )
+            images[texture_path] = cropped
+        return images
+    
+    def get_textures(self, model: MinecraftModel, images: dict[str, Image.Image]):
+        textures = {}
+        for key, value in model.textures.items():
+            if isinstance(value, Image.Image):
+                raise RenderError(f"WTF is going on")
+            if resolve_key(value) in [resolve_key(k) for k in images.keys()]:
+                textures[key] = images[value]
+            else:
+                textures[key] = value
+        return textures
 
     def get_tick_grouped(
         self, texture_path_to_frames: dict[str, list[int]]

@@ -62,24 +62,8 @@ class ModelPathRenderTask(GenericModelRenderTask):
 
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
-            images = {}
-            for texture_path, index in tick["tick"].items():
-                texture = self.get_texture(texture_path)
-                if not texture:
-                    raise RenderError(f"WTF")
-                img: Image.Image = texture.image
-                cropped = img.crop(
-                    (0, index * img.width, img.width, (index + 1) * img.width)
-                )
-                images[texture_path] = cropped
-            textures = {}
-            for key, value in model.textures.items():
-                if isinstance(value, Image.Image):
-                    raise RenderError(f"WTF is going on")
-                if resolve_key(value) in [resolve_key(k) for k in images.keys()]:
-                    textures[key] = images[value]
-                else:
-                    textures[key] = value
+            images = self.get_images(tick)
+            textures = self.get_textures(model, images)
             new_model = model.model_copy()
             new_model.textures = textures
             if self.path_save:

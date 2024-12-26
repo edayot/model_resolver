@@ -65,29 +65,12 @@ class ItemRenderTask(GenericModelRenderTask):
 
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
-            images = {}
-            for texture_path, index in tick["tick"].items():
-                texture = self.get_texture(texture_path)
-                if not texture:
-                    raise RenderError(f"WTF")
-                img: Image.Image = texture.image
-                cropped = img.crop(
-                    (0, index * img.width, img.width, (index + 1) * img.width)
-                )
-                images[texture_path] = cropped
-
+            images = self.get_images(tick)
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
                 model_def = model.get_model(self.getter, self.item).bake()
                 model_def = model_def.model_copy()
-                textures = {}
-                for key, value in model_def.textures.items():
-                    if isinstance(value, Image.Image):
-                        raise RenderError(f"WTF is going on")
-                    if resolve_key(value) in [resolve_key(x) for x in images.keys()]:
-                        textures[key] = images[value]
-                    else:
-                        textures[key] = value
+                textures = self.get_textures(model_def, images)
                 model_def.textures = textures
                 models.append((model_def, model.tints))
 

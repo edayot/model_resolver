@@ -18,6 +18,15 @@ def to_rgb(color: Color) -> tuple[int, int, int]:
     blue = color & 0xFF
     return (red, green, blue)
 
+def to_argb(color: int) -> tuple[int, int, int, int]:
+    if isinstance(color, tuple):
+        return color
+    alpha = (color >> 24) & 0xFF
+    red = (color >> 16) & 0xFF
+    green = (color >> 8) & 0xFF
+    blue = color & 0xFF
+    return (alpha, red, green, blue)
+
 
 class TintSourceBase(BaseModel):
     type: Literal[

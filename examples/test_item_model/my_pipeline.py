@@ -51,6 +51,26 @@ def beet_default(ctx: Context):
     render.add_item_task(Item(id="minecraft:diamond", components={
         "minecraft:item_model": "test:test_shulker"
     }), path_ctx="test:render/yellow_shulker_box", render_size=512)
+
+    render.add_item_task(
+    Item(
+        id="minecraft:shield", 
+        components={
+            "minecraft:base_color": "white", 
+            "minecraft:banner_patterns": [
+                {"color": "cyan", "pattern": "minecraft:rhombus"}, 
+                {"color": "light_gray", "pattern": "minecraft:stripe_bottom"}, 
+                {"color": "gray", "pattern": "minecraft:stripe_center"}, 
+                {"color": "light_gray", "pattern": "minecraft:border"}, 
+                {"color": "black", "pattern": "minecraft:stripe_middle"}, 
+                {"color": "light_gray", "pattern": "minecraft:half_horizontal"}, 
+                {"color": "light_gray", "pattern": "minecraft:circle"}, 
+                {"color": "black", "pattern": "minecraft:border"}
+            ]
+        }
+    ), 
+    path_ctx="test:render/shield", render_size=512)
+
     # render.add_item_task(Item(id="minecraft:diamond", components={
     #     "minecraft:item_model": "test:zombie"
     # }), path_ctx="test:render/zombie", render_size=512)

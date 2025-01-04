@@ -1,7 +1,8 @@
 import math
-from turtle import left
+from pickle import LIST
+from turtle import color, left
 from pydantic import BaseModel, Field
-from model_resolver.item_model.tint_source import TintSource
+from model_resolver.item_model.tint_source import TintSource, to_argb, TintSourceConstant
 from typing import Optional, Literal, ClassVar, Generator, Union, Any
 from beet import Context
 from beet.contrib.vanilla import Vanilla
@@ -48,6 +49,9 @@ class SpecialModelBase(BaseModel):
     
     def get_additional_rotations(self) -> tuple[float, float, float] | None:
         return None
+
+    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+        return []
 
 
 class SpecialModelBed(SpecialModelBase):
@@ -761,6 +765,109 @@ class SpecialModelShulkerBox(SpecialModelBase):
             
 class SpecialModelShield(SpecialModelBase):
     type: Literal["minecraft:shield", "shield"]
+    COLOR_STRING_TO_ARGB : dict[str, int] = {
+        "white": 16383998,
+        "light_gray": 10329495,
+        "gray": 4673362,
+        "black": 1908001,
+        "brown": 8606770,
+        "red": 11546150,
+        "orange": 16351261,
+        "green": 6192150,
+        "cyan": 1481884,
+        "light_blue": 3847130,
+        "blue": 3949738,
+        "purple": 8991416,
+        "magenta": 13061821,
+        "pink": 15961002,
+    }
+    STEP: float = 0.001
+
+    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+        res: list[TintSource] = []
+        if "minecraft:base_color" in item.components:
+            color = item.components["minecraft:base_color"]
+            color = self.COLOR_STRING_TO_ARGB[color]
+            color = to_argb(color)
+            color = (color[1], color[2], color[3])
+            res.append(TintSourceConstant(type="constant", value=color))
+            for pattern in item.components.get("minecraft:banner_patterns", []):
+                color = pattern["color"]
+                color = self.COLOR_STRING_TO_ARGB[color]
+                color = to_argb(color)
+                color = (color[1], color[2], color[3])
+                res.append(TintSourceConstant(type="constant", value=color))
+        return res
+               
+
+
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        texture = "minecraft:entity/shield_base_nopattern"
+        additionnal_textures = {}
+        additionnal_elements = []
+        if "minecraft:base_color" in item.components:
+            texture = "minecraft:entity/shield_base"
+            additionnal_textures["1"] = "minecraft:entity/shield/base"
+            additionnal_elements.append({
+                "from": [2, 0, 7 - self.STEP],
+                "to": [14, 22, 8 - self.STEP],
+                "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                "faces": {
+                    "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#1", "tintindex": 0},
+                }
+            })
+            for i, pattern in enumerate(item.components.get("minecraft:banner_patterns", [])):
+                pattern_id = resolve_key(pattern["pattern"])
+                namespace, path = pattern_id.split(":")
+                additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
+                step = self.STEP * (i+2)
+                additionnal_elements.append({
+                    "from": [2, 0, 7 - step],
+                    "to": [14, 22, 8 - step],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                    "faces": {
+                        "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": f"#{i+2}", "tintindex": i+1},
+                    }
+                })
+             
+
+        res = {
+            "textures": {
+                "0": texture,
+                **additionnal_textures
+            },
+            "elements": [
+                {
+                    "from": [2, 0, 7],
+                    "to": [14, 22, 8],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                    "faces": {
+                        "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#0"},
+                        "east": {"uv": [0, 0.25, 0.25, 5.75], "texture": "#0"},
+                        "south": {"uv": [3.5, 0.25, 6.5, 5.75], "texture": "#0"},
+                        "west": {"uv": [3.25, 0.25, 3.5, 5.75], "texture": "#0"},
+                        "up": {"uv": [0.25, 0, 3, 0.25], "texture": "#0"},
+                        "down": {"uv": [3.25, 0, 6.25, 0.25], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [7, 9, 8],
+                    "to": [9, 13, 12],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [7, 9, 4]},
+                    "faces": {
+                        "north": {"uv": [8, 1.5, 8.5, 3], "texture": "#0"},
+                        "east": {"uv": [6.5, 1.5, 8, 3], "texture": "#0"},
+                        "south": {"uv": [10, 1.5, 10.5, 3], "texture": "#0"},
+                        "west": {"uv": [8.5, 1.5, 10, 3], "texture": "#0"},
+                        "up": {"uv": [8, 0, 8.5, 1.5], "texture": "#0"},
+                        "down": {"uv": [8.5, 0, 9, 1.5], "texture": "#0"}
+                    }
+                },
+                *additionnal_elements
+            ]
+        }
+        return res
 
 
 class SpecialModelTrident(SpecialModelBase):

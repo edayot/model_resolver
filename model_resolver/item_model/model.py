@@ -57,6 +57,9 @@ class ItemModelModel(ItemModelBase):
         else:
             raise ValueError(f"Model {key} not found")
         return MinecraftModel.model_validate(resolve_model(data, getter)).bake()
+    
+    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+        return self.tints
 
 
 class ItemModelComposite(ItemModelBase):
@@ -646,9 +649,9 @@ class ItemModelSpecial(ItemModelBase):
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
 
-    @property
-    def tints(self) -> list[TintSource]:
-        return []
+    
+    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+        return self.model.get_tints(getter, item)
 
 
 class ItemModelEmpty(ItemModelBase):

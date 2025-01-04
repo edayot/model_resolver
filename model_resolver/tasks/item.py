@@ -49,7 +49,7 @@ class ItemRenderTask(GenericModelRenderTask):
         parsed_item_model = self.get_parsed_item_model()
         for model in parsed_item_model.resolve(self.getter, self.item):
             model_def = model.get_model(self.getter, self.item).bake()
-            self.render_model(model_def, model.tints)
+            self.render_model(model_def, model.get_tints(self.getter, self.item))
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
@@ -72,7 +72,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 model_def = model_def.model_copy()
                 textures = self.get_textures(model_def, images)
                 model_def.textures = textures
-                models.append((model_def, model.tints))
+                models.append((model_def, model.get_tints(self.getter, self.item)))
 
             if self.path_save:
                 new_path_save = self.path_save / f"{i}_{tick['duration']}.png"

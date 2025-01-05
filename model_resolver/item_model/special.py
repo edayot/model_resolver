@@ -781,7 +781,7 @@ class SpecialModelShield(SpecialModelBase):
         "magenta": 13061821,
         "pink": 15961002,
     }
-    STEP: float = 0.001
+    STEP: float = 0.0005
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         res: list[TintSource] = []
@@ -810,11 +810,10 @@ class SpecialModelShield(SpecialModelBase):
             texture = "minecraft:entity/shield_base"
             additionnal_textures["1"] = "minecraft:entity/shield/base"
             additionnal_elements.append({
-                "from": [2, 0, 7 - self.STEP],
-                "to": [14, 22, 8 - self.STEP],
-                "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                "from": [-6, -11, 1 + self.STEP],
+                "to": [6, 11, 2 + self.STEP],
                 "faces": {
-                    "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#1", "tintindex": 0},
+                    "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#1", "tintindex": 0},
                 }
             })
             for i, pattern in enumerate(item.components.get("minecraft:banner_patterns", [])):
@@ -823,11 +822,10 @@ class SpecialModelShield(SpecialModelBase):
                 additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
                 step = self.STEP * (i+2)
                 additionnal_elements.append({
-                    "from": [2, 0, 7 - step],
-                    "to": [14, 22, 8 - step],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                    "from": [-6, -11, 1 + step],
+                    "to": [6, 11, 2 + step],
                     "faces": {
-                        "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": f"#{i+2}", "tintindex": i+1},
+                        "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": f"#{i+2}", "tintindex": i+1},
                     }
                 })
              
@@ -839,34 +837,34 @@ class SpecialModelShield(SpecialModelBase):
             },
             "elements": [
                 {
-                    "from": [2, 0, 7],
-                    "to": [14, 22, 8],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 3]},
+                    "from": [-6, -11, 1],
+                    "to": [6, 11, 2],
                     "faces": {
-                        "north": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#0"},
-                        "east": {"uv": [0, 0.25, 0.25, 5.75], "texture": "#0"},
-                        "south": {"uv": [3.5, 0.25, 6.5, 5.75], "texture": "#0"},
-                        "west": {"uv": [3.25, 0.25, 3.5, 5.75], "texture": "#0"},
-                        "up": {"uv": [0.25, 0, 3, 0.25], "texture": "#0"},
-                        "down": {"uv": [3.25, 0, 6.25, 0.25], "texture": "#0"}
+                        "north": {"uv": [3.5, 0.25, 6.5, 5.75], "texture": "#0"},
+                        "east": {"uv": [3.25, 0.25, 3.5, 5.75], "texture": "#0"},
+                        "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#0"},
+                        "west": {"uv": [0, 0.25, 0.25, 5.75], "texture": "#0"},
+                        "up": {"uv": [0.25, 0, 3, 0.25], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [3.25, 0, 6.25, 0.25], "rotation": 180, "texture": "#0"}
                     }
                 },
                 {
-                    "from": [7, 9, 8],
-                    "to": [9, 13, 12],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [7, 9, 4]},
+                    "from": [-1, -3, -5],
+                    "to": [1, 3, 1],
                     "faces": {
-                        "north": {"uv": [8, 1.5, 8.5, 3], "texture": "#0"},
-                        "east": {"uv": [6.5, 1.5, 8, 3], "texture": "#0"},
-                        "south": {"uv": [10, 1.5, 10.5, 3], "texture": "#0"},
-                        "west": {"uv": [8.5, 1.5, 10, 3], "texture": "#0"},
-                        "up": {"uv": [8, 0, 8.5, 1.5], "texture": "#0"},
-                        "down": {"uv": [8.5, 0, 9, 1.5], "texture": "#0"}
+                        "north": {"uv": [10, 1.5, 10.5, 3], "texture": "#0"},
+                        "east": {"uv": [8.5, 1.5, 10, 3], "texture": "#0"},
+                        "south": {"uv": [8, 1.5, 8.5, 3], "texture": "#0"},
+                        "west": {"uv": [6.5, 1.5, 8, 3], "texture": "#0"},
+                        "up": {"uv": [8, 0, 8.5, 1.5], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [8.5, 0, 9, 1.5], "rotation": 180, "texture": "#0"}
                     }
                 },
                 *additionnal_elements
-            ]
+            ],
+            "gui_light": "front",
         }
+
         return res
 
 

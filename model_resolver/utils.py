@@ -91,7 +91,7 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
         # test if java is available
         try:
             subprocess.run(["java", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except subprocess.SubprocessError:
+        except (subprocess.SubprocessError, FileNotFoundError):
             log.warning("Java not found, falling back to misode/mcmeta")
             prefered = "misode/mcmeta"
     match prefered:

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Self
 from beet import Context, LATEST_MINECRAFT_VERSION
-from model_resolver.utils import ModelResolverOptions
+from model_resolver.utils import ModelResolverOptions, get_default_components, resolve_key
 import json
 
 
@@ -18,18 +18,10 @@ class Item(BaseModel):
     def fill(self, ctx: Context) -> Self:
         if self.__resolved__:
             return self
-        opts = ctx.validate("model_resolver", ModelResolverOptions)
-        version = (
-            opts.minecraft_version
-            if opts.minecraft_version != "latest"
-            else LATEST_MINECRAFT_VERSION
-        )
-        url = f"https://raw.githubusercontent.com/misode/mcmeta/refs/tags/{version}-summary/item_components/data.json"
-        path = ctx.cache["model_resolver"].download(url)
-        with open(path) as file:
-            components = json.load(file)
-        if self.id.removeprefix("minecraft:") in components:
-            self.default_components = components[self.id.removeprefix("minecraft:")]
+        components = get_default_components(ctx)
+        real_id = resolve_key(self.id)
+        if real_id in components:
+            self.default_components = components[real_id]
         self.__resolved__ = True
         return self
 

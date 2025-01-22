@@ -1,9 +1,14 @@
 from dataclasses import dataclass
+import json
+import os
+from platform import release
+import subprocess
 from beet import Context, DataPack, Pack, NamespaceFile, ResourcePack
 from pydantic import BaseModel
-from typing import TYPE_CHECKING, Any, Self, Type
+from typing import TYPE_CHECKING, Any, Literal, Self, Type
 from collections.abc import MappingView
 from beet import Context, LATEST_MINECRAFT_VERSION
+from functools import lru_cache
 
 from pydantic import BaseModel
 import logging
@@ -47,6 +52,7 @@ class ModelResolverOptions(BaseModel):
     minecraft_version: str = "latest"
     special_rendering: bool = False
     colorize_blocks: bool = True
+    preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "java"
 
 
 @dataclass
@@ -72,3 +78,49 @@ class PackGetterV2[T: Pack]:
         data.merge(ctx.data)
 
         return cls(assets=assets, data=data, _ctx=ctx, _vanilla=vanilla)
+
+
+@lru_cache
+def get_default_components(ctx: Context) -> dict[str, Any]:
+    getter = PackGetterV2.from_context(ctx)
+    version = getter._vanilla.minecraft_version
+    opts = ctx.validate("model_resolver", ModelResolverOptions)
+    prefered = opts.preferred_minecraft_generated
+    # TODO: if java is not found, fallback to misode/mcmeta
+    if prefered == "java":
+        # test if java is available
+        try:
+            subprocess.run(["java", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except subprocess.SubprocessError:
+            log.warning("Java not found, falling back to misode/mcmeta")
+            prefered = "misode/mcmeta"
+    match prefered:
+        case "misode/mcmeta":
+            url = f"https://raw.githubusercontent.com/misode/mcmeta/refs/tags/{version}-summary/item_components/data.json"
+            path = ctx.cache["model_resolver"].download(url)
+            with open(path) as file:
+                components = json.load(file)
+            return {
+                resolve_key(key): value for key, value in components.items()
+            }
+        case "java":
+            release = getter._vanilla.releases[version]
+            jar = release.cache.download(release.info.data["downloads"]["server"]["url"])
+            cache = ctx.cache["model_resolver"]
+            path = cache.get_path("minecraft_reports")
+            if not path.is_dir():
+                os.makedirs(path, exist_ok=True)
+                subprocess.run([
+                    "java",
+                    "-DbundlerMainClass=net.minecraft.data.Main",
+                    "-jar",
+                    jar,
+                    "--reports",
+                ], cwd=path, check=True)
+            with open(path / "generated" / "reports" / "items.json") as file:
+                components = json.load(file)
+            return {
+                resolve_key(key): value["components"] for key, value in components.items()
+            }
+        case _:
+            raise ValueError(f"Unknown preferred_minecraft_generated: {prefered}")

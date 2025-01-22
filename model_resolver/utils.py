@@ -52,7 +52,7 @@ class ModelResolverOptions(BaseModel):
     minecraft_version: str = "latest"
     special_rendering: bool = False
     colorize_blocks: bool = True
-    preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "java"
+    preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "misode/mcmeta"
 
 
 @dataclass

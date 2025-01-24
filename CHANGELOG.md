@@ -2,6 +2,13 @@
 
 
 
+## v1.2.1 (2025-01-24)
+
+### Fix
+
+* fix: paletted_permutations is a namespace id ([`fc478b5`](https://github.com/edayot/model_resolver/commit/fc478b5f98e579742cf5fc8c10493cebc045ccf4))
+
+
 ## v1.2.0 (2025-01-24)
 
 ### Chore

@@ -2,6 +2,33 @@
 
 
 
+## v1.2.0 (2025-01-24)
+
+### Chore
+
+* chore: fix ([`41a4220`](https://github.com/edayot/model_resolver/commit/41a4220057641aa57d167bdf16eacb25a3701fe2))
+
+* chore: update workflow ([`bb36baa`](https://github.com/edayot/model_resolver/commit/bb36baa94c3b666f3ddcd871d2ffe7b9df53cba1))
+
+* chore: update tests ([`8b6724b`](https://github.com/edayot/model_resolver/commit/8b6724b186fd97e42f761c23d48f8a72facfbe84))
+
+### Feature
+
+* feat: centralized and locally minecraft generated data ([`4818a4d`](https://github.com/edayot/model_resolver/commit/4818a4dc0dac18e38f0f798deb232c9446adfe6a))
+
+* feat: shield working #12 ([`da15391`](https://github.com/edayot/model_resolver/commit/da15391c8c397cd7b6072969c5a23260e8496073))
+
+### Fix
+
+* fix: default ([`94453cc`](https://github.com/edayot/model_resolver/commit/94453ccb3988d9c4306962e5ac5ee38e370e3e49))
+
+* fix: animated textures are globalized ([`5fd016b`](https://github.com/edayot/model_resolver/commit/5fd016b238000fcf986f4fcc11ff0920bed5b9bf))
+
+### Unknown
+
+* wip shield ([`dc6c27c`](https://github.com/edayot/model_resolver/commit/dc6c27ca54c23b3baa3e7ec075556753abd48ef3))
+
+
 ## v1.1.0 (2024-12-24)
 
 ### Chore

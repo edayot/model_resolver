@@ -183,7 +183,7 @@ class Render:
 
     def resolve_altas(self, key: str, atlas: Atlas):
         for source in atlas.data["sources"]:
-            if source["type"] != "paletted_permutations":
+            if resolve_key(source["type"]) != "minecraft:paletted_permutations":
                 continue
             source: AtlasDict
             for texture in source["textures"]:

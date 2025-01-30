@@ -53,6 +53,46 @@ def beet_default(ctx: Context):
     }), path_ctx="test:render/yellow_shulker_box", render_size=512)
 
     render.add_item_task(
+        Item(
+            id="minecraft:diamond", 
+            components={
+                "minecraft:item_model": "test:component_select"
+            }
+        ), 
+        path_ctx="test:render/component_select", render_size=512)
+    render.add_item_task(
+        Item(
+            id="minecraft:diamond", 
+            components={
+                "minecraft:item_model": "test:component_select",
+                "minecraft:glider": {}
+            }
+        ), 
+        path_ctx="test:render/component_select2", render_size=512)
+    
+    render.add_item_task(
+        Item(
+            id="minecraft:diamond", 
+            components={
+                "minecraft:item_model": "test:component_condition",
+                "minecraft:custom_data": {}
+            }
+        ), 
+        path_ctx="test:render/component_condition_on_false", render_size=512)
+    render.add_item_task(
+        Item(
+            id="minecraft:diamond", 
+            components={
+                "minecraft:item_model": "test:component_condition",
+                "minecraft:custom_data": {
+                    "test": "airdox_"
+                }
+            }
+        ), 
+        path_ctx="test:render/component_condition_on_true", render_size=512)
+
+
+    render.add_item_task(
     Item(
         id="minecraft:shield", 
         components={

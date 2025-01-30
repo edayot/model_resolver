@@ -141,6 +141,22 @@ class ItemModelConditionBroken(ItemModelConditionBase):
         return remaining <= 1
 
 
+def resolve_compare(predicate_value: Any, component_value: Any) -> bool:
+    # TODO: Implement more complex comparisons
+    return False
+class ItemModelConditionComponent(ItemModelConditionBase):
+    property: Literal["minecraft:component", "component"]
+    predicate: str
+    value: Any
+
+    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+        none_object = object()
+        component = item.components.get(resolve_key(self.predicate), none_object)
+        if component is not none_object:
+            return resolve_compare(self.value, component)
+        return False
+
+
 class ItemModelConditionDamaged(ItemModelConditionBase):
     property: Literal["minecraft:damaged", "damaged"]
 
@@ -243,6 +259,7 @@ class ItemModelConditionViewEntity(ItemModelConditionBase):
 type ItemModelCondition = Union[
     ItemModelConditionUsingItem,
     ItemModelConditionBroken,
+    ItemModelConditionComponent,
     ItemModelConditionDamaged,
     ItemModelConditionHasComponent,
     ItemModelConditionFishingRodCast,
@@ -256,7 +273,7 @@ type ItemModelCondition = Union[
 
 
 class SelectCase(BaseModel):
-    when: str | list[str]
+    when: Any | list[Any]
     model: "ItemModelAll"
 
 
@@ -267,6 +284,8 @@ class ItemModelSelectBase(ItemModelBase):
         "main_hand",
         "minecraft:charge_type",
         "charge_type",
+        "minecraft:component",
+        "component",
         "minecraft:trim_material",
         "trim_material",
         "minecraft:block_state",
@@ -287,15 +306,14 @@ class ItemModelSelectBase(ItemModelBase):
     possible_values: ClassVar[list[str]] = []
 
     def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
-        # Not possible to implement
         return self.fallback
 
-    def resolve_case(self, value: str) -> "ItemModelAll":
+    def resolve_case(self, value: Any) -> "ItemModelAll":
         for case in self.cases:
             if isinstance(case.when, list):
                 if value in case.when:
                     return case.model
-            elif isinstance(case.when, str):
+            else:
                 if case.when == value:
                     return case.model
         return self.fallback
@@ -329,6 +347,17 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
         if charge_type == "none" and len(items) > 0:
             charge_type = "arrow"
         return self.resolve_case(charge_type)
+
+class ItemModelSelectComponent(ItemModelSelectBase):
+    property: Literal["minecraft:component", "component"]
+    component: str
+
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
+        component = item.components.get(resolve_key(self.component))
+        print(component)
+        if component is not None:
+            return self.resolve_case(component)
+        return self.fallback
 
 
 class ItemModelSelectLocalTime(ItemModelSelectBase):
@@ -425,6 +454,7 @@ class ItemModelSelectContextDimension(ItemModelSelectBase):
 type ItemModelSelect = Union[
     ItemModelSelectMainHand,
     ItemModelSelectChargeType,
+    ItemModelSelectComponent,
     ItemModelSelectTrimMaterial,
     ItemModelSelectBlockState,
     ItemModelSelectDisplayContext,

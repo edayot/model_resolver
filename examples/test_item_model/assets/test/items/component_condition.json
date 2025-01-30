@@ -1,0 +1,18 @@
+{
+    "model": {
+      "type": "minecraft:condition",
+      "property": "component",
+      "predicate": "custom_data",
+      "value": {
+        "test": "airdox_"
+      },
+      "on_true": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/goat_horn"
+      },
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/axolotl_bucket"
+    }
+    }
+}

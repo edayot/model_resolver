@@ -49,7 +49,7 @@ jobs:
       - name: Upload dist folder
         run: tar -czvf dist-ubuntu.tar.gz dist/
       - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-ubuntu
           path: dist-ubuntu.tar.gz
@@ -87,7 +87,7 @@ jobs:
       - name: Upload dist folder
         run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
       - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-windows
           path: dist-windows.zip

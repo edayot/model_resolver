@@ -27,34 +27,6 @@ jobs:
           version: 1.8.3
           virtualenvs-create: true
           virtualenvs-in-project: true
-      - name: Apt update
-        run: | 
-          sudo apt-get update -qq -y
-          export DEBIAN_FRONTEND=noninteractive
-      - name: Setup OpenGl
-        run: | 
-          sudo apt-get -y install \
-            freeglut3-dev \
-            libgl1-mesa-dev \
-            libxcursor-dev \
-            libpulse-dev \
-            libxinerama-dev \
-            libxrandr-dev \
-            libxv-dev \
-            mesa-utils \
-            libgl1 \
-            libglx-mesa0 \
-            mesa-common-dev \
-            libglapi-mesa \
-            libgbm1 \
-            libgl1-mesa-dri \
-            libsdl1.2-dev \
-            libfreetype6-dev \
-            xvfb \
-            x11-utils
-      - name: Verify GLUT installation
-        run: |
-          dpkg -l | grep freeglut3-dev
 
       - name: Setup cache for dependencies
         id: cached-poetry-dependencies
@@ -65,17 +37,15 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
-      - name: Release
+      - name: Setup OpenGL and Run Tests
+        uses: edayot/model_resolver@master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
-        run: |
+        with:
+          commands: |
+            poetry run beet
 
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export MODEL_RESOLVER_TEST_BUILD=1
-
-          COMMAND="poetry run beet"
-          /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMAND
       - name: Upload dist folder
         run: tar -czvf dist-ubuntu.tar.gz dist/
       - name: Upload compressed dist folder
@@ -105,15 +75,14 @@ jobs:
         run: |
           C:\Users\runneradmin\.local\bin\poetry install
       - uses: ssciwr/setup-mesa-dist-win@v2
-      - name: Run tests
+      - name: Setup OpenGL and Run Tests
+        uses: edayot/model_resolver@master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
-        run: |
-          set MODEL_RESOLVER_TEST_BUILD=1
-          set LIBGL_ALWAYS_SOFTWARE=1
-
-          C:\Users\runneradmin\.local\bin\poetry run beet
+        with:
+          commands: |
+            C:\Users\runneradmin\.local\bin\poetry run beet
 
       - name: Upload dist folder
         run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip

@@ -1,0 +1,54 @@
+name: 'Setup OpenGL and Run Commands'
+description: 'Installs OpenGL and runs the specified command(s)'
+author: 'Your Name'
+inputs:
+  commands:
+    description: 'Command(s) to execute after OpenGL setup'
+    required: true
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup OpenGL (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update -qq -y
+        export DEBIAN_FRONTEND=noninteractive
+        sudo apt-get -y install \
+          freeglut3-dev \
+          libgl1-mesa-dev \
+          libxcursor-dev \
+          libpulse-dev \
+          libxinerama-dev \
+          libxrandr-dev \
+          libxv-dev \
+          mesa-utils \
+          libgl1 \
+          libglx-mesa0 \
+          mesa-common-dev \
+          libglapi-mesa \
+          libgbm1 \
+          libgl1-mesa-dri \
+          libsdl1.2-dev \
+          libfreetype6-dev \
+          xvfb \
+          x11-utils
+      shell: bash
+
+    - name: Setup OpenGL (Windows)
+      if: runner.os == 'Windows'
+      uses: ssciwr/setup-mesa-dist-win@v2
+
+    - name: Execute Commands
+      run: |
+        export LIBGL_ALWAYS_SOFTWARE=1
+        /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" ${{ inputs.commands }}
+      shell: bash
+      if: runner.os == 'Linux'
+
+    - name: Execute Commands (Windows)
+      run: |
+        set LIBGL_ALWAYS_SOFTWARE=1
+        ${{ inputs.commands }}
+      shell: cmd
+      if: runner.os == 'Windows'

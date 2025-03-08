@@ -66,5 +66,6 @@ runs:
       if: runner.os == 'macOS'
       run: |
         # OpenGL is natively supported on macOS; no virtual framebuffer needed.
+        export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
         ${{ inputs.commands }}
       shell: bash

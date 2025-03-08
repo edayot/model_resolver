@@ -133,7 +133,7 @@ jobs:
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist-macos
           path: dist-macos.tar.gz

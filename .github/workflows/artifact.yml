@@ -93,61 +93,48 @@ jobs:
           path: dist-windows.zip
 
 
-  # macos-tests:
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-  #     - name: Setup Python 3.12
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: 3.12
-  #     - name: Setup OpenGl
-  #       run: |
-  #         brew install --cask xquartz
-  #         ls -la /opt/X11/bin/
-  #         /opt/X11/bin/xvinfo
-  #     - name: Install Poetry
-  #       uses: snok/install-poetry@v1
-  #       with:
-  #         version: 1.8.3
-  #         virtualenvs-create: true
-  #         virtualenvs-in-project: true
-  #     - name: Install dependencies
-  #       run: poetry install
-  #     - name: Run tests
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         GIT_HASH: ${{ github.sha }}
-  #       run: |
-  #         export MODEL_RESOLVER_TEST_BUILD=1
-  #         export LIBGL_ALWAYS_SOFTWARE=1
-  #         export DISPLAY=:99
+  macos-tests:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
+      - name: Setup OpenGl
+        run: |
+          brew install freeglut
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install dependencies
+        run: poetry install
+      - name: Run tests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_HASH: ${{ github.sha }}
+        run: |
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export DISPLAY=:99
 
-  #         # Set the display number
-  #         DISPLAY=:99
+          DISPLAY=:99
 
-  #         # Start Xvfb on the chosen display number
-  #         /usr/bin/Xvfb $DISPLAY -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+          # Start Xvfb on the chosen display number
+          /usr/bin/Xvfb $DISPLAY -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+          # Run the command
+          poetry run beet
 
-  #         # Save the process ID of Xvfb
-  #         XVFB_PID=$!
-
-  #         # Export the DISPLAY environment variable
-  #         export DISPLAY=$DISPLAY
-
-  #         # Run the command
-  #         poetry run beet
-
-  #         # Kill the Xvfb process after the command completes
-  #         kill $XVFB_PID
-  #     - name: Upload dist folder
-  #       run: tar -czvf dist-macos.tar.gz dist/
-  #     - name: Upload compressed dist folder
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: dist-macos
-  #         path: dist-macos.tar.gz
+      - name: Upload dist folder
+        run: tar -czvf dist-macos.tar.gz dist/
+      - name: Upload compressed dist folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist-macos
+          path: dist-macos.tar.gz
 

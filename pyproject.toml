@@ -12,7 +12,7 @@ beet = ">=0.104.1"
 tqdm = "^4.66.2"
 rich = "^13.7.1"
 pillow = "^10.3.0"
-pyopenglalwaysworking = "3.1.100"
+pyopengl = "^3.1.9"
 
 [tool.poetry.dev-dependencies]
 pytest-insta = "^0.3.0"

@@ -39,16 +39,32 @@ runs:
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
 
-    - name: Execute Commands
+    - name: Setup OpenGL (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        # macOS comes with OpenGL support built-in.
+        # Optionally install freeglut if your project requires it.
+        brew update
+        brew install freeglut || echo "freeglut already installed"
+      shell: bash
+
+    - name: Execute Commands (Linux)
+      if: runner.os == 'Linux'
       run: |
         export LIBGL_ALWAYS_SOFTWARE=1
         /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" ${{ inputs.commands }}
       shell: bash
-      if: runner.os == 'Linux'
 
     - name: Execute Commands (Windows)
+      if: runner.os == 'Windows'
       run: |
         set LIBGL_ALWAYS_SOFTWARE=1
         ${{ inputs.commands }}
       shell: cmd
-      if: runner.os == 'Windows'
+
+    - name: Execute Commands (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        # OpenGL is natively supported on macOS; no virtual framebuffer needed.
+        ${{ inputs.commands }}
+      shell: bash

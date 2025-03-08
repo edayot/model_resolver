@@ -46,6 +46,13 @@ runs:
         # Optionally install freeglut if your project requires it.
         brew update
         brew install freeglut || echo "freeglut already installed"
+        brew install --cask xquartz
+        export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
+        open -a XQuartz
+        sleep 2
+        export DISPLAY=:0
+        export LIBGL_ALWAYS_SOFTWARE=1
+
       shell: bash
 
     - name: Execute Commands (Linux)
@@ -66,6 +73,5 @@ runs:
       if: runner.os == 'macOS'
       run: |
         # OpenGL is natively supported on macOS; no virtual framebuffer needed.
-        export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
         ${{ inputs.commands }}
       shell: bash

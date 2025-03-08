@@ -106,7 +106,9 @@ jobs:
           python-version: 3.12
       - name: Setup OpenGl
         run: |
-          brew install freeglut
+          brew install --cask xquartz
+          ls -la /opt/X11/bin/
+          /opt/X11/bin/xvinfo
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -120,16 +122,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
         run: |
+          export MODEL_RESOLVER_TEST_BUILD=1
           export LIBGL_ALWAYS_SOFTWARE=1
           export DISPLAY=:99
 
+          # Set the display number
           DISPLAY=:99
 
           # Start Xvfb on the chosen display number
           /usr/bin/Xvfb $DISPLAY -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+
+          # Save the process ID of Xvfb
+          XVFB_PID=$!
+
+          # Export the DISPLAY environment variable
+          export DISPLAY=$DISPLAY
+
           # Run the command
           poetry run beet
 
+          # Kill the Xvfb process after the command completes
+          kill $XVFB_PID
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

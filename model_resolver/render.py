@@ -224,6 +224,7 @@ class Render:
 
     def run(self):
         self.resolve_dynamic_textures()
+        print("AAAAA")
         glutInit()
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
         glutInitWindowSize(512, 512)

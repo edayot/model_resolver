@@ -123,7 +123,6 @@ jobs:
           brew install freeglut
           brew install --cask xquartz
           export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
-          open -a XQuartz
           sleep 2
           export DISPLAY=:0
           export LIBGL_ALWAYS_SOFTWARE=1

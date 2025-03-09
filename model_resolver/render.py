@@ -1,3 +1,4 @@
+import subprocess
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
@@ -251,6 +252,10 @@ class Render:
         glutReshapeFunc(self.reshape)
 
         glutMainLoop()
+        # if macOS
+        if "Darwin" in os.uname().sysname:
+            print("MACOS")
+            subprocess.run(["pkill", "-9", "X11"])
 
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)

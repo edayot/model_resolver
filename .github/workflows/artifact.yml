@@ -114,14 +114,25 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
-      - name: Setup OpenGL and Run Tests
-        uses: edayot/model_resolver@master
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_HASH: ${{ github.sha }}
-        with:
-          commands: |
-            poetry run beet
+      - name: Setup OpenGL (macOS)
+        run: |
+          # macOS comes with OpenGL support built-in.
+          # Optionally install freeglut if your project requires it.
+          brew update
+
+          brew install freeglut
+          brew install --cask xquartz
+          export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
+          open -a XQuartz
+          sleep 2
+          export DISPLAY=:0
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export SDL_VIDEODRIVER=1
+
+          poetry run beet
+
+
+
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
       - name: Upload compressed dist folder

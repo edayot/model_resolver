@@ -354,7 +354,6 @@ class ItemModelSelectComponent(ItemModelSelectBase):
 
     def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelAll":
         component = item.components.get(resolve_key(self.component))
-        print(component)
         if component is not None:
             return self.resolve_case(component)
         return self.fallback

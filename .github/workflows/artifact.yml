@@ -126,7 +126,7 @@ jobs:
           sleep 2
           export DISPLAY=:0
           export LIBGL_ALWAYS_SOFTWARE=1
-          export SDL_VIDEODRIVER=1
+          export SDL_VIDEODRIVER=dummy
 
           cd examples/all_white
 

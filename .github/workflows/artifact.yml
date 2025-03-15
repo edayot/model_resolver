@@ -5,96 +5,17 @@ on:
       - master
 
 jobs:
-  # ubuntu-tests:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-  #     - uses: actions/setup-java@v2
-  #       with:
-  #         distribution: 'temurin'
-  #         java-version: '21'
-  #     - name: Setup Python 3.12
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: 3.12
-  #     - name: Install Poetry
-  #       uses: snok/install-poetry@v1
-  #       with:
-  #         version: 1.8.3
-  #         virtualenvs-create: true
-  #         virtualenvs-in-project: true
-  #     - name: Setup cache for dependencies
-  #       id: cached-poetry-dependencies
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: .venv
-  #         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-  #     - name: Install dependencies
-  #       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-  #       run: poetry install
-  #     - name: Setup OpenGL and Run Tests
-  #       uses: edayot/model_resolver@master
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         GIT_HASH: ${{ github.sha }}
-  #       with:
-  #         commands: |
-  #           poetry run beet
-  #     - name: Upload dist folder
-  #       run: tar -czvf dist-ubuntu.tar.gz dist/
-  #     - name: Upload compressed dist folder
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: dist-ubuntu
-  #         path: dist-ubuntu.tar.gz
-
-  # windows-tests:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-  #     - name: Setup Python 3.12
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: 3.12
-  #     - name: Install Poetry
-  #       uses: snok/install-poetry@v1
-  #       with:
-  #         version: 1.8.3
-  #         virtualenvs-create: true
-  #         virtualenvs-in-project: true
-  #     - name: Install dependencies
-  #       run: |
-  #         C:\Users\runneradmin\.local\bin\poetry install
-  #     - uses: ssciwr/setup-mesa-dist-win@v2
-  #     - name: Setup OpenGL and Run Tests
-  #       uses: edayot/model_resolver@master
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         GIT_HASH: ${{ github.sha }}
-  #       with:
-  #         commands: |
-  #           C:\Users\runneradmin\.local\bin\poetry run beet
-  #     - name: Upload dist folder
-  #       run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
-  #     - name: Upload compressed dist folder
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: dist-windows
-  #         path: dist-windows.zip
-
-  macos-tests:
-    runs-on: macos-latest
+  ubuntu-tests:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '21'
       - name: Setup Python 3.12
         uses: actions/setup-python@v2
         with:
@@ -114,32 +35,111 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
-      - name: Setup OpenGL (macOS)
-        run: |
-          # macOS comes with OpenGL support built-in.
-          # Optionally install freeglut if your project requires it.
-          brew update
-
-          brew install freeglut
-          brew install --cask xquartz
-          export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
-          sleep 2
-          export DISPLAY=:0
-          export LIBGL_ALWAYS_SOFTWARE=1
-          export SDL_VIDEODRIVER=dummy
-
-          cd examples/all_white
-
-          poetry run beet
-
-          cd ../..
-
-
-
+      - name: Setup OpenGL and Run Tests
+        uses: edayot/model_resolver@master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_HASH: ${{ github.sha }}
+        with:
+          commands: |
+            poetry run beet
       - name: Upload dist folder
-        run: tar -czvf dist-macos.tar.gz dist/
+        run: tar -czvf dist-ubuntu.tar.gz dist/
       - name: Upload compressed dist folder
         uses: actions/upload-artifact@v4
         with:
-          name: dist-macos
-          path: dist-macos.tar.gz
+          name: dist-ubuntu
+          path: dist-ubuntu.tar.gz
+
+  windows-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install dependencies
+        run: |
+          C:\Users\runneradmin\.local\bin\poetry install
+      - uses: ssciwr/setup-mesa-dist-win@v2
+      - name: Setup OpenGL and Run Tests
+        uses: edayot/model_resolver@master
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_HASH: ${{ github.sha }}
+        with:
+          commands: |
+            C:\Users\runneradmin\.local\bin\poetry run beet
+      - name: Upload dist folder
+        run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
+      - name: Upload compressed dist folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows
+          path: dist-windows.zip
+
+  # macos-tests:
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Setup Python 3.12
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: 3.12
+  #     - name: Install Poetry
+  #       uses: snok/install-poetry@v1
+  #       with:
+  #         version: 1.8.3
+  #         virtualenvs-create: true
+  #         virtualenvs-in-project: true
+  #     - name: Setup cache for dependencies
+  #       id: cached-poetry-dependencies
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: .venv
+  #         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+  #     - name: Install dependencies
+  #       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+  #       run: poetry install
+  #     - name: Setup OpenGL (macOS)
+  #       run: |
+  #         # macOS comes with OpenGL support built-in.
+  #         # Optionally install freeglut if your project requires it.
+  #         brew update
+
+  #         brew install freeglut
+  #         brew install --cask xquartz
+  #         export DYLD_LIBRARY_PATH="$(brew --prefix freeglut)/lib:$DYLD_LIBRARY_PATH"
+  #         sleep 2
+  #         export DISPLAY=:0
+  #         export LIBGL_ALWAYS_SOFTWARE=1
+  #         export SDL_VIDEODRIVER=dummy
+
+  #         cd examples/all_white
+
+  #         poetry run beet
+
+  #         cd ../..
+
+
+
+  #     - name: Upload dist folder
+  #       run: tar -czvf dist-macos.tar.gz dist/
+  #     - name: Upload compressed dist folder
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: dist-macos
+  #         path: dist-macos.tar.gz

@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
+from model_resolver.item_model.data_component_predicate import DataComponent, DataComponentBase
 from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
-from typing import Optional, Literal, ClassVar, Generator, Union, Any
+from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
 from beet import Context
 from beet.contrib.vanilla import Vanilla
 from model_resolver.item_model.item import Item
@@ -141,20 +142,19 @@ class ItemModelConditionBroken(ItemModelConditionBase):
         return remaining <= 1
 
 
-def resolve_compare(predicate_value: Any, component_value: Any) -> bool:
-    # TODO: Implement more complex comparisons
-    return False
+
 class ItemModelConditionComponent(ItemModelConditionBase):
     property: Literal["minecraft:component", "component"]
     predicate: str
     value: Any
 
     def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
-        none_object = object()
-        component = item.components.get(resolve_key(self.predicate), none_object)
-        if component is not none_object:
-            return resolve_compare(self.value, component)
-        return False
+        data_component = DataComponent.model_validate({
+            self.predicate: self.value
+        })
+        return data_component.is_valid(getter, item) or False
+        
+        
 
 
 class ItemModelConditionDamaged(ItemModelConditionBase):

@@ -2,6 +2,61 @@
 
 
 
+## v1.3.0 (2025-03-15)
+
+### Chore
+
+* chore: fix cache in release workflow ([`cb99d30`](https://github.com/edayot/model_resolver/commit/cb99d308cda2f2a9bd72836e0ebb0210169a74b1))
+
+* chore: articfact ([`e3ebf9d`](https://github.com/edayot/model_resolver/commit/e3ebf9d064992f4e5402fa538cec23bb1df56051))
+
+* chore: try macos ([`756c311`](https://github.com/edayot/model_resolver/commit/756c3111473be04a57ef7b8e1686f03073e5d420))
+
+* chore: fix workflow ([`71e8a57`](https://github.com/edayot/model_resolver/commit/71e8a57b37348af1045b9620ec47e00a0f9bfec6))
+
+* chore: try upgrade pyopengl ([`381682b`](https://github.com/edayot/model_resolver/commit/381682be5bdaaa1c6a4b62b114c4c75960de114c))
+
+* chore: global and reusable action workflow ([`54effc0`](https://github.com/edayot/model_resolver/commit/54effc0f4176ee2f9c873ff42b512cec9c193968))
+
+### Feature
+
+* feat: wip on component matching ([`800f404`](https://github.com/edayot/model_resolver/commit/800f404845b58afc21df29cd2850966b975d2395))
+
+### Fix
+
+* fix: print ([`d1475dc`](https://github.com/edayot/model_resolver/commit/d1475dcbe9499bacef8ae08e3973e4cb81c272c6))
+
+* fix: revert print ([`686d355`](https://github.com/edayot/model_resolver/commit/686d355b7a10965c0ac07b7db82e0ae318b0d82f))
+
+* fix: temp ([`d13908b`](https://github.com/edayot/model_resolver/commit/d13908ba4c787afeae263ed0b46b6a5e81883190))
+
+### Unknown
+
+* fds ([`f5e4159`](https://github.com/edayot/model_resolver/commit/f5e4159530c46ed95dd16699335e97c95623c2f9))
+
+* qdqs ([`ecc6272`](https://github.com/edayot/model_resolver/commit/ecc62725570c9a5726c2209583b6aad8979b99b1))
+
+* dssd ([`b2a5e4f`](https://github.com/edayot/model_resolver/commit/b2a5e4fc294d97d6c2a107a59ad1dd85a38eeb39))
+
+* dd ([`7312fa3`](https://github.com/edayot/model_resolver/commit/7312fa30fa3bb8959cf2ddd464b3cac2ef9638fa))
+
+* minimal test ([`01861f8`](https://github.com/edayot/model_resolver/commit/01861f859a2948b7505f94e2b80add27637727ee))
+
+* aaa ([`72e1926`](https://github.com/edayot/model_resolver/commit/72e1926be9d865ae0fa2f05fe67c06505002e857))
+
+* eee ([`555eb87`](https://github.com/edayot/model_resolver/commit/555eb87a8575b8e3ce6e8da1345dc0f7a5fa6a22))
+
+* rrr ([`88f7087`](https://github.com/edayot/model_resolver/commit/88f7087cf4fab9fc36ee8fe08b2134a494e2ab8c))
+
+* mmh ([`010758c`](https://github.com/edayot/model_resolver/commit/010758c4c3744236eea2360e1017818b41f48679))
+
+* bbbb ([`3769749`](https://github.com/edayot/model_resolver/commit/376974952b9d3b0c16e51414829baab229ccb44c))
+
+* aaa ([`cdd18e4`](https://github.com/edayot/model_resolver/commit/cdd18e4373cb65ee74fa2d89acffc9e436e6d999))
+
+* blabla ([`65fae15`](https://github.com/edayot/model_resolver/commit/65fae15a946c923e2ff69944b0c39886b97e1fbc))
+
+
 ## v1.2.1 (2025-01-24)
 
 ### Fix

@@ -1,17 +1,14 @@
 
 
 
-from typing import Any, Generator, Literal, Type, Union, Protocol
+from typing import Any, ClassVar, Generator, Literal, Union
+from beet import NamespaceFile, NamespaceProxy, TagFile
 from git import Optional
 from pydantic import AliasChoices, Field, RootModel, BaseModel
 
 from model_resolver.item_model.item import Item
 from model_resolver.utils import PackGetterV2, resolve_key
 
-class DataComponentBase(BaseModel):
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool | None: 
-        return False
-    
 class MinMax(BaseModel):
     min: float
     max: float
@@ -25,6 +22,43 @@ def compare_range(predicate: NumberOrRange, value: Any) -> bool:
     if isinstance(predicate, MinMax):
         return predicate.min <= value <= predicate.max
     return False
+
+
+
+
+def iter_tagged_id[T: NamespaceFile](value: TaggedID, proxy: NamespaceProxy[T] | None = None) -> Generator[str, None, None]:
+    """
+    A generator that yields all the ids in a tagged id.
+    If # prefixed value is encountered, it will resolve the tag
+    according to the provided proxy (optional).
+    """
+    if isinstance(value, str):
+        if value.startswith("#"):
+            if proxy is None:
+                raise ValueError(f"There is no {value} tag in minecraft")
+            tag = proxy.get(resolve_key(value[1:]))
+            if tag is None:
+                raise ValueError(f"Tag {value} not found")
+            if not isinstance(tag, TagFile):
+                raise TypeError(f"Invalid tag type {tag}")
+            for item in tag.data["values"]:
+                yield from iter_tagged_id(item, proxy)
+        else:
+            yield resolve_key(value)
+    elif isinstance(value, list):
+        for item in value:
+            yield from iter_tagged_id(item, proxy)
+    elif value is None: 
+        ...
+    else:
+        raise TypeError(f"Invalid tagged id type {value}")
+
+class DataComponentBase(BaseModel):
+
+    def is_valid(self, getter: PackGetterV2, item: Item) -> bool | None: 
+        return False
+
+
 
 class AttributeModifier(BaseModel):
     attribute: TaggedID = None
@@ -89,12 +123,8 @@ class CustomDataDataComponent(RootModel, DataComponentBase):
     root: dict[str, Any]
 
     def is_valid(self, getter: PackGetterV2, item: Item):
-        none_obj = object()
-        custom_data = item.components.get(
-            "minecraft:custom_data", 
-            item.components.get("custom_data", none_obj)
-        )
-        if custom_data is none_obj:
+        custom_data = item.get("custom_data")
+        if custom_data is None:
             return False
         if not isinstance(custom_data, dict): 
             return False
@@ -110,17 +140,12 @@ class DamageDataComponent(DataComponentBase):
     durability: NumberOrRange = None
 
     def is_valid(self, getter: PackGetterV2, item: Item):
-        none_obj = object()
-        damage = item.components.get(
-            "minecraft:damage", 
-            item.components.get("damage", none_obj)
-        )
-        max_damage = item.components.get(
-            "minecraft:max_damage", 
-            item.components.get("max_damage", none_obj)
-        )
-        if damage is none_obj or max_damage is none_obj:
+        damage = item.get("damage")
+        max_damage = item.get("max_damage")
+        if max_damage is None:
             return False
+        if damage is None:
+            damage = 0
         durability = max_damage - damage
         return compare_range(self.durability, durability) and compare_range(self.damage, damage)
     
@@ -129,34 +154,12 @@ class Enchantment(BaseModel):
     enchantments: TaggedID = None
     levels: NumberOrRange = None
 
-    def iter_enchantments_tags(self, value: str, getter: PackGetterV2) -> Generator[str, None, None]:
-        tag = getter.data.enchantment_tags.get(resolve_key(value))
-        if tag is None:
-            raise ValueError(f"Enchantment tag {tag} not found")
-        for enchantment in tag.data["values"]:
-            if enchantment.startswith("#"):
-                yield from self.iter_enchantments_tags(enchantment[1:], getter)
-            else:
-                yield enchantment
-    def iter_enchantments(self, getter: PackGetterV2) -> Generator[str, None, None]:
-        if isinstance(self.enchantments, str):
-            if self.enchantments.startswith("#"):
-                yield from self.iter_enchantments_tags(self.enchantments[1:], getter)
-            else:
-                yield self.enchantments
-        elif isinstance(self.enchantments, list):
-            for value in self.enchantments:
-                if value.startswith("#"):
-                    yield from self.iter_enchantments_tags(value[1:], getter)
-                else:
-                    yield value
-        elif self.enchantments is None:
-            ...
-        else:
-            raise TypeError(f"Invalid enchantments type {self.enchantments}")
 
     def is_valid(self, enchantments: dict[str, int], getter: PackGetterV2) -> bool:
-        for enchantment in self.iter_enchantments(getter):
+        enchantments = {
+            resolve_key(key): value for key, value in enchantments.items()
+        }
+        for enchantment in iter_tagged_id(self.enchantments, getter.data.enchantment_tags):
             if enchantment not in enchantments:
                 continue
             if compare_range(self.levels, enchantments[enchantment]):
@@ -166,7 +169,10 @@ class Enchantment(BaseModel):
 class EnchantmentsLikeDataComponent(RootModel, DataComponentBase):
     root: list[Enchantment] | None = None
 
-    def is_valid_enchantments(self, getter: PackGetterV2, item: Item, enchantments: dict[str, int] | None) -> bool:
+    def is_valid_enchantments(self, getter: PackGetterV2, item: Item, component_name: str) -> bool:
+        enchantments: dict[str, int] | None = item.get(component_name)
+        if enchantments is None:
+            return False
         if self.root is None or enchantments is None:
             return False
         if len(self.root) > len(enchantments):
@@ -179,14 +185,7 @@ class EnchantmentsLikeDataComponent(RootModel, DataComponentBase):
 
 class EnchantmentsDataComponent(EnchantmentsLikeDataComponent):
     def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
-        none_obj = object()
-        enchantments: dict[str, int] = item.components.get(
-            "minecraft:enchantments", 
-            item.components.get("enchantments", none_obj)
-        )
-        if enchantments is none_obj:
-            return False
-        return self.is_valid_enchantments(getter, item, enchantments)
+        return self.is_valid_enchantments(getter, item, "enchantments")
         
 
 
@@ -196,25 +195,72 @@ class FireworkExplosionDataComponent(DataComponentBase):
 class FireworksDataComponent(DataComponentBase):
     ...
 
-class JukeboxPlayableDataComponent(DataComponentBase):
-    ...
+class JukeboxPlayableDataComponent(RootModel, DataComponentBase):
+    root: TaggedID = None
+
+    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+        jukebox_playable = item.get("jukebox_playable")
+        if jukebox_playable is None:
+            return False
+        for sound in iter_tagged_id(self.root):
+            if resolve_key(sound) == resolve_key(jukebox_playable):
+                return True
+        return False
+        
 
 class PotionContentsDataComponent(DataComponentBase):
-    ...
+    root: TaggedID = None
+
+    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+        potion = item.get("potion_contents")
+        if potion is None:
+            return False
+        potion_type = potion.get("potion")
+        if potion_type is None:
+            return False
+        potion_type = resolve_key(potion_type)
+        for predicate_potion_type in iter_tagged_id(self.root):
+            if potion_type == predicate_potion_type:
+                return True
+        return False
+                
+    
 
 class StoredEnchantmentsDataComponent(EnchantmentsLikeDataComponent):
     def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
-        none_obj = object()
-        enchantments: dict[str, int] = item.components.get(
-            "minecraft:stored_enchantments", 
-            item.components.get("stored_enchantments", none_obj)
-        )
-        if enchantments is none_obj:
-            return False
-        return self.is_valid_enchantments(getter, item, enchantments)
+        return self.is_valid_enchantments(getter, item, "stored_enchantments")
 
 class TrimDataComponent(DataComponentBase):
-    ...
+    material: TaggedID = None
+    pattern: TaggedID = None
+
+    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+        trim = item.get("trim")
+        if trim is None:
+            return False
+        if self.material is not None:
+            material = trim.get("material")
+            if material is None:
+                return False
+            material = resolve_key(material)
+            if not any(
+                material == predicate_material
+                for predicate_material in iter_tagged_id(self.material)
+            ):
+                return False
+        if self.pattern is not None:
+            pattern = trim.get("pattern")
+            if pattern is None:
+                return False
+            pattern = resolve_key(pattern)
+            if not any(
+                pattern == predicate_pattern
+                for predicate_pattern in iter_tagged_id(self.pattern)
+            ):
+                return False
+        return True
+
+        
 
 class WritableBookContentDataComponent(DataComponentBase):
     ...

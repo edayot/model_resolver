@@ -28,3 +28,8 @@ class Item(BaseModel):
     @property
     def components(self) -> dict[str, Any]:
         return {**self.default_components, **self.components_from_user}
+    
+    def get(self, component_name: str) -> Any:
+        key = resolve_key(component_name)
+        namespace, path = key.split(":", 1)
+        return self.components.get(key, self.components.get(path, None))

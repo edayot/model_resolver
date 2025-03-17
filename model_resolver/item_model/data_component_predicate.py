@@ -122,18 +122,32 @@ class ContainerDataComponent(InventoryLikeDataComponent):
 class CustomDataDataComponent(RootModel, DataComponentBase):
     root: dict[str, Any]
 
+    def verify_equal(self, predicate: Any, value: Any) -> bool:
+        if isinstance(predicate, dict):
+            if not isinstance(value, dict):
+                return False
+            for key, val in predicate.items():
+                if key not in value:
+                    return False
+                if not self.verify_equal(val, value[key]):
+                    return False
+            return True
+        if isinstance(predicate, list):
+            if not isinstance(value, list):
+                return False
+            for val in predicate:
+                if not val in value:
+                    return False
+            return True
+        return predicate == value
+
     def is_valid(self, getter: PackGetterV2, item: Item):
         custom_data = item.get("custom_data")
         if custom_data is None:
             return False
         if not isinstance(custom_data, dict): 
             return False
-        for key, val in self.root.items():
-            if key not in custom_data:
-                return False
-            if val != custom_data[key]:
-                return False
-        return True
+        return self.verify_equal(self.root, custom_data)
 
 class DamageDataComponent(DataComponentBase):
     damage: NumberOrRange = None

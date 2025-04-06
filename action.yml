@@ -61,7 +61,7 @@ runs:
         export LIBGL_ALWAYS_SOFTWARE=1
         echo "${{ inputs.commands }}" > /tmp/commands.sh
         chmod +x /tmp/commands.sh
-        COMMANDS="source /tmp/commands.sh"
+        COMMANDS="bash /tmp/commands.sh"
         echo $COMMANDS
         /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMANDS
       shell: bash

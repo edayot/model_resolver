@@ -2,6 +2,19 @@
 
 
 
+## v1.4.0 (2025-04-06)
+
+### Feature
+
+* feat: more data component predicate ([`61b1b7a`](https://github.com/edayot/model_resolver/commit/61b1b7a1d11a0e6363c6cc862a7e4b61b8debc9d))
+
+* feat: new item model components condition ([`3c6404c`](https://github.com/edayot/model_resolver/commit/3c6404ce037a1ad799240ca27e06d39a569f157a))
+
+### Unknown
+
+* nested dict value predicate ([`6ca5357`](https://github.com/edayot/model_resolver/commit/6ca5357896eb78fe22f59c2fcca223c4ec1c9bd7))
+
+
 ## v1.3.0 (2025-03-15)
 
 ### Chore

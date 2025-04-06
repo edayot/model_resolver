@@ -59,7 +59,10 @@ runs:
       if: runner.os == 'Linux'
       run: |
         export LIBGL_ALWAYS_SOFTWARE=1
-        /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" bash -c "${{ inputs.commands }}"
+        echo "${{ inputs.commands }}" > /tmp/commands.sh
+        chmod +x /tmp/commands.sh
+        COMMANDS="bash /tmp/commands.sh"
+        /usr/bin/xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" $COMMANDS
       shell: bash
 
     - name: Execute Commands (Windows)

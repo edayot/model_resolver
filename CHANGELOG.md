@@ -2,6 +2,23 @@
 
 
 
+## v1.4.1 (2025-04-08)
+
+### Fix
+
+* fix: import error ([`61901ec`](https://github.com/edayot/model_resolver/commit/61901ec0add6a79aa53b7dc6846107e31257c522))
+
+* fix: bash script ([`d25e953`](https://github.com/edayot/model_resolver/commit/d25e9530a6a797ad5c2296a4a30964a6d1b321f8))
+
+* fix: action can run bash script ([`60e22c7`](https://github.com/edayot/model_resolver/commit/60e22c7d4785eb42909b2988cabb4c32ff30e5a3))
+
+### Unknown
+
+* ff ([`deca59c`](https://github.com/edayot/model_resolver/commit/deca59cc71fb782396c55dd9992317aa798d5f11))
+
+* ss ([`c6692aa`](https://github.com/edayot/model_resolver/commit/c6692aa5ffae3177b9b188ddd8b0091d9246eef5))
+
+
 ## v1.4.0 (2025-04-06)
 
 ### Feature

@@ -1,9 +1,8 @@
 
 
 
-from typing import Any, ClassVar, Generator, Literal, Union
+from typing import Any, ClassVar, Generator, Literal, Union, Optional
 from beet import NamespaceFile, NamespaceProxy, TagFile
-from git import Optional
 from pydantic import AliasChoices, Field, RootModel, BaseModel
 
 from model_resolver.item_model.item import Item

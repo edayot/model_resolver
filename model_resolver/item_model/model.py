@@ -324,7 +324,7 @@ class ItemModelSelectBase(ItemModelBase):
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        for model_data in self.resolve_select(getter, item).root.resolve(getter, item):
+        for model_data in self.resolve_select(getter, item):
             model = ItemModelAll.model_validate(model_data)
             yield from model.root.resolve(getter, item)
 

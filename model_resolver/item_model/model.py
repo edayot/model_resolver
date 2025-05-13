@@ -1,3 +1,4 @@
+from functools import cached_property
 from pydantic import BaseModel, Field, RootModel
 from model_resolver.item_model.data_component_predicate import DataComponent, DataComponentBase
 from model_resolver.item_model.tint_source import TintSource
@@ -65,14 +66,13 @@ class ItemModelModel(ItemModelBase):
 
 class ItemModelComposite(ItemModelBase):
     type: Literal["minecraft:composite", "composite"]
-    models: list[Any]
+    models: list["ItemModelRecursive"]
 
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        for model_data in self.models:
-            model = ItemModelAll.model_validate(model_data)
-            yield from model.root.resolve(getter, item)
+        for model in self.models:
+            yield from model.resolve(getter, item)
 
 
 class ItemModelConditionBase(ItemModelBase):
@@ -103,8 +103,8 @@ class ItemModelConditionBase(ItemModelBase):
         "minecraft:view_entity",
         "view_entity",
     ]
-    on_true: Any
-    on_false: Any
+    on_true: "ItemModelRecursive"
+    on_false: "ItemModelRecursive"
 
     def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
         raise NotImplementedError
@@ -113,11 +113,9 @@ class ItemModelConditionBase(ItemModelBase):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         if self.resolve_condition(getter, item):
-            on_true = ItemModelAll.model_validate(self.on_true)
-            yield from on_true.root.resolve(getter, item)
+            yield from self.on_true.resolve(getter, item)
         else:
-            on_false = ItemModelAll.model_validate(self.on_false)
-            yield from on_false.root.resolve(getter, item)
+            yield from self.on_false.resolve(getter, item)
 
 
 class ItemModelConditionUsingItem(ItemModelConditionBase):
@@ -277,7 +275,7 @@ type ItemModelCondition = Union[
 
 class SelectCase(BaseModel):
     when: Any | list[Any]
-    model: Any
+    model: "ItemModelRecursive"
 
 
 class ItemModelSelectBase(ItemModelBase):
@@ -305,13 +303,13 @@ class ItemModelSelectBase(ItemModelBase):
         "context_dimension",
     ]
     cases: list[SelectCase] = Field(default_factory=list)
-    fallback: Any
+    fallback: "ItemModelRecursive" 
     possible_values: ClassVar[list[str]] = []
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         return self.fallback
 
-    def resolve_case(self, value: Any) -> Any:
+    def resolve_case(self, value: Any) -> "ItemModelRecursive":
         for case in self.cases:
             if isinstance(case.when, list):
                 if value in case.when:
@@ -324,9 +322,7 @@ class ItemModelSelectBase(ItemModelBase):
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        model_data = self.resolve_select(getter, item)
-        model = ItemModelAll.model_validate(model_data)
-        yield from model.root.resolve(getter, item)
+        yield from self.resolve_select(getter, item).resolve(getter, item)
 
 
 class ItemModelSelectMainHand(ItemModelSelectBase):
@@ -338,7 +334,7 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
     property: Literal["minecraft:charge_type", "charge_type"]
     possible_values: ClassVar[list[str]] = ["none", "rocket", "arrow"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.resolve_case("none")
         if not "minecraft:charge_type" in item.components:
@@ -357,7 +353,7 @@ class ItemModelSelectComponent(ItemModelSelectBase):
     property: Literal["minecraft:component", "component"]
     component: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         component = item.components.get(resolve_key(self.component))
         if component is not None:
             return self.resolve_case(component)
@@ -370,7 +366,7 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
     time_zone: Optional[str] = None
     pattern: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         # Not possible to implement
         return self.fallback
 
@@ -378,14 +374,14 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
 class ItemModelSelectContextEntityType(ItemModelSelectBase):
     property: Literal["minecraft:context_entity_type", "context_entity_type"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("minecraft:player")
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
     property: Literal["minecraft:trim_material", "trim_material"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:trim" in item.components:
@@ -399,7 +395,7 @@ class ItemModelSelectBlockState(ItemModelSelectBase):
     property: Literal["minecraft:block_state", "block_state"]
     block_state_property: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:block_state" in item.components:
@@ -425,7 +421,7 @@ class ItemModelSelectDisplayContext(ItemModelSelectBase):
         "fixed",
     ]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("gui")
 
 
@@ -433,7 +429,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:custom_model_data" in item.components:
@@ -451,7 +447,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
 class ItemModelSelectContextDimension(ItemModelSelectBase):
     property: Literal["minecraft:context_dimension", "context_dimension"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> Any:
+    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("minecraft:overworld")
 
 
@@ -471,7 +467,7 @@ type ItemModelSelect = Union[
 
 class RangeDispatchEntry(BaseModel):
     threshold: float
-    model: Any
+    model: "ItemModelRecursive"
 
 
 class ItemModelRangeDispatchBase(ItemModelBase):
@@ -500,7 +496,7 @@ class ItemModelRangeDispatchBase(ItemModelBase):
     ]
     scale: Optional[float] = 1.0
     entries: list[RangeDispatchEntry] = Field(default_factory=list)
-    fallback: Optional[Any] = None
+    fallback: Optional["ItemModelRecursive"] = None
 
     def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
         return 0.0
@@ -511,12 +507,10 @@ class ItemModelRangeDispatchBase(ItemModelBase):
         value = self.resolve_range_dispatch(getter, item)
         for entry in self.entries:
             if value >= entry.threshold:
-                model = ItemModelAll.model_validate(entry.model)
-                yield from model.root.resolve(getter, item)
+                yield from entry.model.resolve(getter, item)
                 return
         if self.fallback:
-            fallback = ItemModelAll.model_validate(self.fallback)
-            yield from fallback.root.resolve(getter, item)
+            yield from self.fallback.resolve(getter, item)
 
 
 class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
@@ -720,12 +714,26 @@ class ItemModelAll(RootModel):
         ItemModelEmpty,
     ]
 
+class ItemModelRecursive(RootModel[Any]):
+    root: Any
 
-class ItemModel(BaseModel):
-    model: ItemModelAll
-    hand_animation_on_swap: Optional[bool] = True
+    @cached_property
+    def model(self) -> ItemModelAll:
+        return ItemModelAll.model_validate(self.root)
 
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.root.resolve(getter, item)
+        
+    
+
+
+class ItemModel(BaseModel):
+    model: ItemModelRecursive
+    hand_animation_on_swap: Optional[bool] = True
+
+    def resolve(
+        self, getter: PackGetterV2, item: Item
+    ) -> Generator["ItemModelResolvable", None, None]:
+        yield from self.model.resolve(getter, item)

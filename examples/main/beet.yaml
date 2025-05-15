@@ -4,7 +4,7 @@ resource_pack:
   load: .
 
 pipeline:
-  - model_resolver.plugins.render_all_context
+  - model_resolver.plugins.render_all_context_gif
 
 output: ../../dist
 

@@ -22,6 +22,7 @@ from typing import NotRequired, Optional, Generator, TypedDict, Literal
 from PIL import Image
 from model_resolver.tasks.base import Task, RenderError
 from math import pi, cos, sin, sqrt
+from rich import print  # noqa
 
 
 class FrameModel(BaseModel):
@@ -53,11 +54,11 @@ class TextureMcMetaModel(BaseModel):
     animation: Optional[AnimationModel] = None
 
 
-class TickGrouped(TypedDict):
+class TickGrouped(BaseModel):
     tick: dict[str, int]
     duration: int
-    tick_before: "TickGrouped"
-    tick_after: "TickGrouped"
+    tick_before: Optional["TickGrouped"] = None
+    tick_after: Optional["TickGrouped"] = None
 
 
 @dataclass(kw_only=True)
@@ -112,7 +113,7 @@ class GenericModelRenderTask(Task):
     
     def get_images(self, tick: TickGrouped, texture_interpolate: dict[str, bool]) -> dict[str, Image.Image]:
         images = {}
-        for texture_path, index in tick["tick"].items():
+        for texture_path, index in tick.tick.items():
             texture = self.get_texture(texture_path)
             if not texture:
                 raise RenderError(f"WTF")
@@ -123,22 +124,26 @@ class GenericModelRenderTask(Task):
             if texture_interpolate[texture_path]:
                 lenght = 0
                 current_index = index
-                tick_before = tick["tick_before"]
+                tick_before = tick.tick_before
+                assert tick_before is not None
                 for _ in range(999_999):
-                    if tick_before["tick"][texture_path] != current_index:
+                    if tick_before.tick[texture_path] != current_index:
                         break
-                    tick_before = tick_before["tick_before"]
+                    tick_before = tick_before.tick_before
+                    assert tick_before is not None
                     lenght += 1
                 
                 left_lenght = lenght
-                tick_after = tick["tick_after"]
+                tick_after = tick.tick_after
+                assert tick_after is not None
                 next_index = current_index
                 for _ in range(999_999):
-                    if tick_after["tick"][texture_path] != current_index:
-                        next_index = tick_after["tick"][texture_path]
+                    if tick_after.tick[texture_path] != current_index:
+                        next_index = tick_after.tick[texture_path]
                         lenght += 1
                         break
-                    tick_after = tick_after["tick_after"]
+                    tick_after = tick_after.tick_after
+                    assert tick_after is not None
                     lenght += 1
                 if lenght > 1:
                     next_cropped = img.crop(
@@ -178,16 +183,16 @@ class GenericModelRenderTask(Task):
             texture_interpolate[texture_path] for texture_path in texture_path_to_frames.keys()
         )
 
-        ticks_grouped: list = []
+        ticks_grouped: list[TickGrouped] = []
         for tick in ticks:
-            if len(ticks_grouped) > 0 and ticks_grouped[-1]["tick"] == tick and not is_interpolated:
-                ticks_grouped[-1]["duration"] += 1
+            if len(ticks_grouped) > 0 and ticks_grouped[-1].tick == tick and not is_interpolated:
+                ticks_grouped[-1].duration += 1
             else:
-                ticks_grouped.append({"tick": tick, "duration": 1})
+                ticks_grouped.append(TickGrouped(tick=tick, duration=1))
             
         for i, tick in enumerate(ticks_grouped):
-            tick["tick_before"] = ticks_grouped[(i - 1) % len(ticks_grouped)]
-            tick["tick_after"] = ticks_grouped[(i + 1) % len(ticks_grouped)]
+            tick.tick_before = ticks_grouped[(i - 1) % len(ticks_grouped)]
+            tick.tick_after = ticks_grouped[(i + 1) % len(ticks_grouped)]
 
         return ticks_grouped
     
@@ -195,6 +200,9 @@ class GenericModelRenderTask(Task):
     def blend_images(
         img1: Image.Image, img2: Image.Image, t: float
     ) -> Image.Image:
+        def lerp(a: int, b: int, t: float) -> int:
+            return int(a * (1 - t) + b * t)
+
         assert img1.size == img2.size
         assert t >= 0 and t <= 1
         img1 = img1.convert("RGBA")
@@ -208,10 +216,10 @@ class GenericModelRenderTask(Task):
                 assert len(pixel1) == 4 and len(pixel2) == 4
                 # Blend the pixels using alpha blending
                 blended_pixel = (
-                    int(pixel1[0] * (1 - t) + pixel2[0] * t),
-                    int(pixel1[1] * (1 - t) + pixel2[1] * t),
-                    int(pixel1[2] * (1 - t) + pixel2[2] * t),
-                    int(pixel1[3] * (1 - t) + pixel2[3] * t),
+                    lerp(pixel1[0], pixel2[0], t),
+                    lerp(pixel1[1], pixel2[1], t),
+                    lerp(pixel1[2], pixel2[2], t),
+                    lerp(pixel1[3], pixel2[3], t),
                 )
                 result.putpixel((x, y), blended_pixel)
         return result

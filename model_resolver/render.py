@@ -61,6 +61,7 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
         render_size: Optional[int] = None,
+        animated_as_gif: bool = False,
     ):
         if render_size is None:
             render_size = self.default_render_size
@@ -73,6 +74,7 @@ class Render:
                 path_ctx=path_ctx,
                 path_save=path_save,
                 render_size=render_size,
+                animated_as_gif=animated_as_gif,
             )
         )
 
@@ -83,6 +85,7 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
+        animated_as_gif: bool = False,
     ):
         if render_size is None:
             render_size = self.default_render_size
@@ -95,6 +98,7 @@ class Render:
                 path_ctx=path_ctx,
                 path_save=path_save,
                 render_size=render_size,
+                animated_as_gif=animated_as_gif,
             )
         )
 
@@ -105,6 +109,7 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
+        animated_as_gif: bool = False,
     ):
         """
         Structure rendering is still experimental and don't work with
@@ -122,6 +127,7 @@ class Render:
                 path_save=path_save,
                 render_size=render_size,
                 random_seed=self.random_seed,
+                animated_as_gif=animated_as_gif,
             )
         )
 

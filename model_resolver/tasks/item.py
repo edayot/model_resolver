@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from model_resolver.tasks.model import AnimatedResultTask
 from model_resolver.utils import (
     resolve_key,
 )
@@ -62,9 +63,12 @@ class ItemRenderTask(GenericModelRenderTask):
             texture_path_to_frames.update(new_texture_path_to_frames)
             texture_interpolate.update(new_texture_interpolate)
         if len(texture_path_to_frames) == 0:
+            self.animated_as_gif = False
             yield self
             return
         ticks_grouped = self.get_tick_grouped(texture_path_to_frames, texture_interpolate)
+
+        tasks = []
 
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
@@ -78,14 +82,14 @@ class ItemRenderTask(GenericModelRenderTask):
                 models.append((model_def, model.get_tints(self.getter, self.item)))
 
             if self.path_save:
-                new_path_save = self.path_save / f"{i}_{tick['duration']}.png"
+                new_path_save = self.path_save / f"{i}_{tick.duration}.png"
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + f"/{i}_{tick['duration']}"
+                new_path_ctx = self.path_ctx + f"/{i}_{tick.duration}"
             else:
                 new_path_ctx = None
-            yield ItemModelModelRenderTask(
+            task = ItemModelModelRenderTask(
                 getter=self.getter,
                 models=models,
                 item=self.item,
@@ -95,8 +99,20 @@ class ItemRenderTask(GenericModelRenderTask):
                 additional_rotations=self.additional_rotations,
                 path_ctx=new_path_ctx,
                 path_save=new_path_save,
+                animated_as_gif=self.animated_as_gif,
                 render_size=self.render_size,
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
+            )
+            yield task
+            tasks.append(task)
+        if self.animated_as_gif:
+            yield AnimatedResultTask(
+                tasks=tasks,
+                path_ctx=self.path_ctx,
+                path_save=self.path_save,
+                getter=self.getter,
+                render_size=self.render_size,
+                zoom=self.zoom,
             )

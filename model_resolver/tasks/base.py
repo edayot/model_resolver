@@ -11,7 +11,7 @@ from model_resolver.utils import (
     PackGetterV2,
 )
 from beet.contrib.vanilla import Vanilla
-from typing import Optional, Generator
+from typing import Any, Optional, Generator
 from pathlib import Path
 from PIL import Image
 
@@ -28,6 +28,9 @@ class Task:
     render_size: int = DEFAULT_RENDER_SIZE
     zoom: float = 8
 
+    animated_as_gif: bool = False
+    saved_img: Optional[Image.Image] = None
+    
     ensure_params: bool = False
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
 
@@ -46,6 +49,7 @@ class Task:
         glLoadIdentity()
 
     def resolve(self) -> Generator["Task", None, None]:
+        self.animated_as_gif = False
         yield self
 
     def run(self):
@@ -56,14 +60,17 @@ class Task:
         Function called after the save function.
         meant to be overridden by subclasses to free up resources.
         """
+        self.saved_img = None
 
     def save(self, img: Image.Image):
-        if self.path_ctx:
+        if self.path_ctx and not self.animated_as_gif:
             data = io.BytesIO()
             img.save(data, format="png")
-            self.getter._ctx.assets.textures[self.path_ctx] = Texture(content=data)
-        elif self.path_save:
+            self.getter._ctx.assets.textures[self.path_ctx] = Texture(data.getvalue())
+        elif self.path_save and not self.animated_as_gif:
             os.makedirs(self.path_save.parent, exist_ok=True)
             img.save(self.path_save)
-        
+        elif self.animated_as_gif:
+            self.saved_img = img
+            return
         self.flush()

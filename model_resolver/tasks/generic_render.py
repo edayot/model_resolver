@@ -18,7 +18,7 @@ from model_resolver.minecraft_model import (
     FaceModel,
 )
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Generator, TypedDict, Literal
+from typing import NotRequired, Optional, Generator, TypedDict, Literal
 from PIL import Image
 from model_resolver.tasks.base import Task, RenderError
 from math import pi, cos, sin, sqrt
@@ -56,6 +56,8 @@ class TextureMcMetaModel(BaseModel):
 class TickGrouped(TypedDict):
     tick: dict[str, int]
     duration: int
+    tick_before: "TickGrouped"
+    tick_after: "TickGrouped"
 
 
 @dataclass(kw_only=True)
@@ -67,6 +69,9 @@ class GenericModelRenderTask(Task):
     center_offset: tuple[float, float, float] = (0, 0, 0)
     additional_rotations: list[RotationModel] = field(default_factory=list)
 
+    def flush(self):
+        super().flush()
+        self.item = Item(id="do_not_use")
     def get_texture(self, key: str) -> Texture | None:
         key = resolve_key(key)
         return (
@@ -82,8 +87,9 @@ class GenericModelRenderTask(Task):
             return None
         return TextureMcMetaModel.model_validate(texturemcmeta.data)
 
-    def get_texture_path_to_frames(self, model: MinecraftModel) -> dict[str, list[int]]:
+    def get_texture_path_to_frames(self, model: MinecraftModel) -> tuple[dict[str, list[int]], dict[str, bool]]:
         texture_path_to_frames = {}
+        texture_interpolate = {}
         for texture_path in set(
             [x for x in model.textures.values() if isinstance(x, str)]
         ):
@@ -101,9 +107,10 @@ class GenericModelRenderTask(Task):
 
             frames = list(mcmeta.animation.resolve_frames(img.height, img.width))
             texture_path_to_frames[texture_path] = frames
-        return texture_path_to_frames
+            texture_interpolate[texture_path] = mcmeta.animation.interpolate
+        return texture_path_to_frames, texture_interpolate
     
-    def get_images(self, tick: TickGrouped) -> dict[str, Image.Image]:
+    def get_images(self, tick: TickGrouped, texture_interpolate: dict[str, bool]) -> dict[str, Image.Image]:
         images = {}
         for texture_path, index in tick["tick"].items():
             texture = self.get_texture(texture_path)
@@ -113,6 +120,32 @@ class GenericModelRenderTask(Task):
             cropped = img.crop(
                 (0, index * img.width, img.width, (index + 1) * img.width)
             )
+            if texture_interpolate[texture_path]:
+                lenght = 0
+                current_index = index
+                tick_before = tick["tick_before"]
+                for _ in range(999_999):
+                    if tick_before["tick"][texture_path] != current_index:
+                        break
+                    tick_before = tick_before["tick_before"]
+                    lenght += 1
+                
+                left_lenght = lenght
+                tick_after = tick["tick_after"]
+                next_index = current_index
+                for _ in range(999_999):
+                    if tick_after["tick"][texture_path] != current_index:
+                        next_index = tick_after["tick"][texture_path]
+                        lenght += 1
+                        break
+                    tick_after = tick_after["tick_after"]
+                    lenght += 1
+                if lenght > 1:
+                    next_cropped = img.crop(
+                        (0, next_index * img.width, img.width, (next_index + 1) * img.width)
+                    )
+                    t = left_lenght / (lenght)
+                    cropped = self.blend_images(cropped, next_cropped, t)
             images[texture_path] = cropped
         return images
     
@@ -128,7 +161,8 @@ class GenericModelRenderTask(Task):
         return textures
 
     def get_tick_grouped(
-        self, texture_path_to_frames: dict[str, list[int]]
+        self, texture_path_to_frames: dict[str, list[int]],
+        texture_interpolate: dict[str, bool]
     ) -> list[TickGrouped]:
         total_number_of_tick = np.lcm.reduce(
             [len(frames) for frames in texture_path_to_frames.values()]
@@ -139,15 +173,48 @@ class GenericModelRenderTask(Task):
             for texture_path, frames in texture_path_to_frames.items():
                 current_tick[texture_path] = frames[i % len(frames)]
             ticks.append(current_tick)
+        
+        is_interpolated = any(
+            texture_interpolate[texture_path] for texture_path in texture_path_to_frames.keys()
+        )
 
-        ticks_grouped = []
+        ticks_grouped: list = []
         for tick in ticks:
-            if len(ticks_grouped) > 0 and ticks_grouped[-1]["tick"] == tick:
+            if len(ticks_grouped) > 0 and ticks_grouped[-1]["tick"] == tick and not is_interpolated:
                 ticks_grouped[-1]["duration"] += 1
             else:
                 ticks_grouped.append({"tick": tick, "duration": 1})
-        return ticks_grouped
+            
+        for i, tick in enumerate(ticks_grouped):
+            tick["tick_before"] = ticks_grouped[(i - 1) % len(ticks_grouped)]
+            tick["tick_after"] = ticks_grouped[(i + 1) % len(ticks_grouped)]
 
+        return ticks_grouped
+    
+    @staticmethod
+    def blend_images(
+        img1: Image.Image, img2: Image.Image, t: float
+    ) -> Image.Image:
+        assert img1.size == img2.size
+        assert t >= 0 and t <= 1
+        img1 = img1.convert("RGBA")
+        img2 = img2.convert("RGBA")
+        result = Image.new("RGBA", img1.size)
+        for x in range(img1.width):
+            for y in range(img1.height):
+                pixel1 = img1.getpixel((x, y))
+                pixel2 = img2.getpixel((x, y))
+                assert isinstance(pixel1, tuple) and isinstance(pixel2, tuple)
+                assert len(pixel1) == 4 and len(pixel2) == 4
+                # Blend the pixels using alpha blending
+                blended_pixel = (
+                    int(pixel1[0] * (1 - t) + pixel2[0] * t),
+                    int(pixel1[1] * (1 - t) + pixel2[1] * t),
+                    int(pixel1[2] * (1 - t) + pixel2[2] * t),
+                    int(pixel1[3] * (1 - t) + pixel2[3] * t),
+                )
+                result.putpixel((x, y), blended_pixel)
+        return result
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
             return

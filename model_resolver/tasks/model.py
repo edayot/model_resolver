@@ -27,6 +27,12 @@ class ModelRenderTask(GenericModelRenderTask):
     def run(self):
         self.render_model(self.model, self.tints)
 
+    def flush(self):
+        super().flush()
+        self.model = MinecraftModel()
+        self.tints = []
+        self.item = Item(id="do_not_use")
+
 
 @dataclass(kw_only=True)
 class ModelPathRenderTask(GenericModelRenderTask):
@@ -53,16 +59,16 @@ class ModelPathRenderTask(GenericModelRenderTask):
         if not model.textures:
             yield self
             return
-        texture_path_to_frames = self.get_texture_path_to_frames(model)
+        texture_path_to_frames, texture_interpolate = self.get_texture_path_to_frames(model)
         if len(texture_path_to_frames) == 0:
             yield self
             return
-
-        ticks_grouped = self.get_tick_grouped(texture_path_to_frames)
+    
+        ticks_grouped = self.get_tick_grouped(texture_path_to_frames, texture_interpolate)
 
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
-            images = self.get_images(tick)
+            images = self.get_images(tick, texture_interpolate)
             textures = self.get_textures(model, images)
             new_model = model.model_copy()
             new_model.textures = textures
@@ -74,7 +80,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 new_path_ctx = self.path_ctx + f"/{i}_{tick['duration']}"
             else:
                 new_path_ctx = None
-            yield ModelRenderTask(
+            task = ModelRenderTask(
                 getter=self.getter,
                 model=new_model,
                 tints=self.tints,
@@ -90,3 +96,4 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
             )
+            yield task

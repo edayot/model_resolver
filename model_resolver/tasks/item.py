@@ -55,17 +55,20 @@ class ItemRenderTask(GenericModelRenderTask):
         parsed_item_model = self.get_parsed_item_model()
         item_model_models = list(parsed_item_model.resolve(self.getter, self.item))
         texture_path_to_frames = {}
+        texture_interpolate = {}
         for model in item_model_models:
             model_def = model.get_model(self.getter, self.item).bake()
-            texture_path_to_frames.update(self.get_texture_path_to_frames(model_def))
+            new_texture_path_to_frames, new_texture_interpolate = self.get_texture_path_to_frames(model_def)
+            texture_path_to_frames.update(new_texture_path_to_frames)
+            texture_interpolate.update(new_texture_interpolate)
         if len(texture_path_to_frames) == 0:
             yield self
             return
-        ticks_grouped = self.get_tick_grouped(texture_path_to_frames)
+        ticks_grouped = self.get_tick_grouped(texture_path_to_frames, texture_interpolate)
 
         for i, tick in enumerate(ticks_grouped):
             # get the images for the tick
-            images = self.get_images(tick)
+            images = self.get_images(tick, texture_interpolate)
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
                 model_def = model.get_model(self.getter, self.item).bake()

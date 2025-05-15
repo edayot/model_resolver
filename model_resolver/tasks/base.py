@@ -50,9 +50,17 @@ class Task:
     def run(self):
         pass
 
+    def flush(self):
+        """
+        Function called after the save function.
+        meant to be overridden by subclasses to free up resources.
+        """
+
     def save(self, img: Image.Image):
         if self.path_ctx:
             self.getter._ctx.assets.textures[self.path_ctx] = Texture(img)
         elif self.path_save:
             os.makedirs(self.path_save.parent, exist_ok=True)
             img.save(self.path_save)
+        
+        self.flush()

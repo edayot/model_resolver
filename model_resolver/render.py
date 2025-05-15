@@ -264,6 +264,9 @@ class Render:
             glutLeaveMainLoop()
             return
         try:
+            logging.debug(
+                f"Rendering task ({self.tasks_index}/{len(self.tasks)})..."
+            )
             x = self.real_display()
         except:
             glutLeaveMainLoop()
@@ -271,10 +274,11 @@ class Render:
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
             glutLeaveMainLoop()
+            logging.debug(
+                f"Rendering task ended"
+            )
             return
-        logging.debug(
-            f"Rendering task {self.current_task}... ({self.tasks_index}/{len(self.tasks)})"
-        )
+        
 
     def real_display(self):
         if not self.current_task.ensure_params:

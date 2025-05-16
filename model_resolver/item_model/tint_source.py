@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Union
-from beet import Context
-from beet.contrib.vanilla import Vanilla
 from model_resolver.utils import clamp
 from PIL import Image
 from model_resolver.item_model.item import Item
@@ -17,6 +15,7 @@ def to_rgb(color: Color) -> tuple[int, int, int]:
     green = (color >> 8) & 0xFF
     blue = color & 0xFF
     return (red, green, blue)
+
 
 def to_argb(color: int) -> tuple[int, int, int, int]:
     if isinstance(color, tuple):

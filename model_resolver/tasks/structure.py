@@ -1,4 +1,3 @@
-import re
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
@@ -17,7 +16,6 @@ from functools import cached_property
 import random
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.model import ModelPathRenderTask
-from beet import Blockstate as BeetBlockstate, Structure as BeetStructure
 
 
 class PaletteModel(BaseModel):

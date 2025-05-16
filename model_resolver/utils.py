@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 import json
 import os
-from platform import release
 import subprocess
-from beet import Context, DataPack, Pack, NamespaceFile, ResourcePack
+from beet import Context, DataPack, Pack, ResourcePack
 from pydantic import BaseModel
-from typing import TYPE_CHECKING, Any, Literal, Self, Type
-from collections.abc import MappingView
+from typing import TYPE_CHECKING, Any, Literal, Self
 from beet import Context, LATEST_MINECRAFT_VERSION
 from functools import lru_cache
 
@@ -67,7 +65,11 @@ class PackGetterV2[T: Pack]:
         opts = ctx.validate("model_resolver", ModelResolverOptions)
         vanilla = Vanilla(
             ctx,
-            minecraft_version=opts.minecraft_version if opts.minecraft_version != "latest" else LATEST_MINECRAFT_VERSION,
+            minecraft_version=(
+                opts.minecraft_version
+                if opts.minecraft_version != "latest"
+                else LATEST_MINECRAFT_VERSION
+            ),
         )
         assets = ResourcePack()
         assets.merge(vanilla.assets)
@@ -90,7 +92,12 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
     if prefered == "java":
         # test if java is available
         try:
-            subprocess.run(["java", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(
+                ["java", "--version"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
         except (subprocess.SubprocessError, FileNotFoundError):
             log.warning("Java not found, falling back to misode/mcmeta")
             prefered = "misode/mcmeta"
@@ -100,27 +107,32 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
             path = ctx.cache["model_resolver"].download(url)
             with open(path) as file:
                 components = json.load(file)
-            return {
-                resolve_key(key): value for key, value in components.items()
-            }
+            return {resolve_key(key): value for key, value in components.items()}
         case "java":
             release = getter._vanilla.releases[version]
-            jar = release.cache.download(release.info.data["downloads"]["server"]["url"])
+            jar = release.cache.download(
+                release.info.data["downloads"]["server"]["url"]
+            )
             cache = ctx.cache["model_resolver"]
             path = cache.get_path("minecraft_reports")
             if not path.is_dir():
                 os.makedirs(path, exist_ok=True)
-                subprocess.run([
-                    "java",
-                    "-DbundlerMainClass=net.minecraft.data.Main",
-                    "-jar",
-                    jar,
-                    "--reports",
-                ], cwd=path, check=True)
+                subprocess.run(
+                    [
+                        "java",
+                        "-DbundlerMainClass=net.minecraft.data.Main",
+                        "-jar",
+                        jar,
+                        "--reports",
+                    ],
+                    cwd=path,
+                    check=True,
+                )
             with open(path / "generated" / "reports" / "items.json") as file:
                 components = json.load(file)
             return {
-                resolve_key(key): value["components"] for key, value in components.items()
+                resolve_key(key): value["components"]
+                for key, value in components.items()
             }
         case _:
             raise ValueError(f"Unknown preferred_minecraft_generated: {prefered}")

@@ -16,7 +16,6 @@ from model_resolver.utils import (
     resolve_key,
     DEFAULT_RENDER_SIZE,
 )
-from beet.contrib.vanilla import Vanilla
 from typing import Optional, TypedDict
 from pathlib import Path
 import logging
@@ -270,9 +269,7 @@ class Render:
             glutLeaveMainLoop()
             return
         try:
-            logging.debug(
-                f"Rendering task ({self.tasks_index}/{len(self.tasks)})..."
-            )
+            logging.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
             x = self.real_display()
         except:
             glutLeaveMainLoop()
@@ -280,11 +277,8 @@ class Render:
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
             glutLeaveMainLoop()
-            logging.debug(
-                f"Rendering task ended"
-            )
+            logging.debug(f"Rendering task ended")
             return
-        
 
     def real_display(self):
         if not self.current_task.ensure_params:

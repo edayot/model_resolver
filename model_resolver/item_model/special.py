@@ -1,19 +1,19 @@
 import math
-from pickle import LIST
-from turtle import color, left
-from pydantic import BaseModel, Field
-from model_resolver.item_model.tint_source import TintSource, to_argb, TintSourceConstant
-from typing import Optional, Literal, ClassVar, Generator, Union, Any
-from beet import Context
-from beet.contrib.vanilla import Vanilla
+from pydantic import BaseModel
+from model_resolver.item_model.tint_source import (
+    TintSource,
+    to_argb,
+    TintSourceConstant,
+)
+from typing import Optional, Literal, Union, Any
 from model_resolver.item_model.item import Item
-from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
-from model_resolver.minecraft_model import MinecraftModel, resolve_model
+from model_resolver.utils import PackGetterV2, clamp, resolve_key
 from PIL import Image
 from uuid import UUID
 import json
 import base64
 from rich import print  # noqa
+
 
 class SpecialModelBase(BaseModel):
     type: Literal[
@@ -43,10 +43,10 @@ class SpecialModelBase(BaseModel):
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         return {}
-    
+
     def get_scale(self) -> float:
         return 1.0
-    
+
     def get_additional_rotations(self) -> tuple[float, float, float] | None:
         return None
 
@@ -82,10 +82,10 @@ class SpecialModelConduit(SpecialModelBase):
                         "south": {"uv": [6, 12, 3, 6], "texture": "#0"},
                         "west": {"uv": [9, 12, 6, 6], "texture": "#0"},
                         "up": {"uv": [9, 0, 6, 6], "texture": "#0"},
-                        "down": {"uv": [6, 6, 3, 0], "texture": "#0"}
-                    }
+                        "down": {"uv": [6, 6, 3, 0], "texture": "#0"},
+                    },
                 }
-            ]
+            ],
         }
         return model
 
@@ -207,7 +207,7 @@ class SpecialModelChest(SpecialModelBase):
             "textures": {"0": f"{namespace}:entity/chest/{path}"},
         }
         return model
-    
+
     def get_scale(self) -> float:
         return 0.75
 
@@ -270,8 +270,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [8, 2.875, 9, 3.875], "texture": "#0"},
                         "west": {"uv": [7, 2.875, 8, 3.875], "texture": "#0"},
                         "up": {"uv": [8, 1.875, 9, 2.875], "texture": "#0"},
-                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"}
-                    }
+                        "down": {"uv": [9, 1.875, 10, 2.875], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right ear",
@@ -284,8 +284,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [0.375, 0.375, 0.5, 0.625], "texture": "#0"},
                         "west": {"uv": [0.875, 0.375, 0.5, 0.625], "texture": "#0"},
                         "up": {"uv": [0.375, 0, 0.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"}
-                    }
+                        "down": {"uv": [0.5, 0, 0.625, 0.375], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left ear",
@@ -298,8 +298,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [3.375, 0.375, 3.5, 0.625], "texture": "#0"},
                         "west": {"uv": [3.875, 0.375, 3.5, 0.625], "texture": "#0"},
                         "up": {"uv": [3.375, 0, 3.5, 0.375], "texture": "#0"},
-                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"}
-                    }
+                        "down": {"uv": [3.5, 0, 3.625, 0.375], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up mouth",
@@ -312,22 +312,26 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [12, 3.75, 12.75, 4.0625], "texture": "#0"},
                         "west": {"uv": [11, 3.75, 12, 4.0625], "texture": "#0"},
                         "up": {"uv": [12, 2.75, 12.75, 3.75], "texture": "#0"},
-                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"}
-                    }
+                        "down": {"uv": [12.75, 3.75, 13.5, 2.75], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down mouth",
                     "from": [2, -2, 16],
                     "to": [14, 2, 32],
-                    "rotation": {"angle": self.get_dragon_angle(), "axis": "x", "origin": [8, 2, 16]},
+                    "rotation": {
+                        "angle": self.get_dragon_angle(),
+                        "axis": "x",
+                        "origin": [8, 2, 16],
+                    },
                     "faces": {
                         "north": {"uv": [13.75, 5.0625, 14.5, 5.3125], "texture": "#0"},
                         "east": {"uv": [12.75, 5.0625, 13.75, 5.3125], "texture": "#0"},
                         "south": {"uv": [12, 5.0625, 12.75, 5.3125], "texture": "#0"},
                         "west": {"uv": [11, 5.0625, 12, 5.3125], "texture": "#0"},
                         "up": {"uv": [12, 4.0625, 12.75, 5.0625], "texture": "#0"},
-                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"}
-                    }
+                        "down": {"uv": [12.75, 5.0625, 13.5, 4.0625], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "right nose",
@@ -340,8 +344,8 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
-                    }
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "left nose",
@@ -354,13 +358,13 @@ class SpecialModelHead(SpecialModelBase):
                         "south": {"uv": [7.625, 0.25, 7.75, 0.375], "texture": "#0"},
                         "west": {"uv": [7.375, 0.25, 7.625, 0.375], "texture": "#0"},
                         "up": {"uv": [7.25, 0, 7.375, 0.25], "texture": "#0"},
-                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"}
-                    }
-                }
+                        "down": {"uv": [7.375, 0, 7.5, 0.25], "texture": "#0"},
+                    },
+                },
             ],
         }
         return model
-    
+
     def get_dragon_angle(self) -> float:
         f = self.animation
         jaw = (math.sin(f * math.pi * 0.2) + 1.0) * 0.2
@@ -430,7 +434,11 @@ class SpecialModelHead(SpecialModelBase):
                     "name": "right ear",
                     "from": [1, 1, 5],
                     "to": [2, 7, 10],
-                    "rotation": {"angle": left_ear, "axis": "z", "origin": [1.5, 4, 7.5]},
+                    "rotation": {
+                        "angle": left_ear,
+                        "axis": "z",
+                        "origin": [1.5, 4, 7.5],
+                    },
                     "faces": {
                         "north": {"uv": [12, 2.5, 12.25, 3.75], "texture": "#0"},
                         "east": {"uv": [11, 2.5, 12, 3.75], "texture": "#0"},
@@ -444,7 +452,11 @@ class SpecialModelHead(SpecialModelBase):
                     "name": "left ear",
                     "from": [14, 1, 5],
                     "to": [15, 7, 10],
-                    "rotation": {"angle": right_ear, "axis": "z", "origin": [14.5, 4, 7.5]},
+                    "rotation": {
+                        "angle": right_ear,
+                        "axis": "z",
+                        "origin": [14.5, 4, 7.5],
+                    },
                     "faces": {
                         "north": {"uv": [15, 2.5, 15.25, 3.75], "texture": "#0"},
                         "east": {"uv": [14, 2.5, 15, 3.75], "texture": "#0"},
@@ -457,7 +469,7 @@ class SpecialModelHead(SpecialModelBase):
             ],
         }
         return model
-    
+
     def get_piglin_angles(self) -> tuple[float, float]:
         f = self.animation
         left_ear = -(math.cos(f * math.pi * 0.2 * 1.2) + 2.5) * 0.2
@@ -466,7 +478,6 @@ class SpecialModelHead(SpecialModelBase):
         left_ear = math.degrees(left_ear)
         right_ear = math.degrees(right_ear)
         return left_ear, right_ear
-        
 
     def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
@@ -614,7 +625,7 @@ class SpecialModelShulkerBox(SpecialModelBase):
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
         x = clamp(0, self.openness * 8, 8)
-        rotation = - clamp(0, self.openness * 90*3, 90*3)
+        rotation = -clamp(0, self.openness * 90 * 3, 90 * 3)
         model: dict[str, Any] = {
             "credit": "Made with Blockbench",
             "textures": {
@@ -628,8 +639,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "up": {"uv": [8, 7, 12, 11], "texture": "#0"},
-                        "down": {"uv": [8, 7, 12, 11], "texture": "#0"}
-                    }
+                        "down": {"uv": [8, 7, 12, 11], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down_north",
@@ -638,8 +649,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [8, 11, 12, 13], "texture": "#0"},
-                        "south": {"uv": [8, 11, 12, 13], "texture": "#0"}
-                    }
+                        "south": {"uv": [8, 11, 12, 13], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down_south",
@@ -648,8 +659,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [0, 11, 4, 13], "texture": "#0"},
-                        "south": {"uv": [0, 11, 4, 13], "texture": "#0"}
-                    }
+                        "south": {"uv": [0, 11, 4, 13], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down_east",
@@ -658,8 +669,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "east": {"uv": [4, 11, 8, 13], "texture": "#0"},
-                        "west": {"uv": [4, 11, 8, 13], "texture": "#0"}
-                    }
+                        "west": {"uv": [4, 11, 8, 13], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down_west",
@@ -668,8 +679,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "east": {"uv": [12, 11, 16, 13], "texture": "#0"},
-                        "west": {"uv": [12, 11, 16, 13], "texture": "#0"}
-                    }
+                        "west": {"uv": [12, 11, 16, 13], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "down_up",
@@ -678,74 +689,74 @@ class SpecialModelShulkerBox(SpecialModelBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "up": {"uv": [4, 7, 8, 11], "texture": "#0"},
-                        "down": {"uv": [4, 7, 8, 11], "texture": "#0"}
-                    }
+                        "down": {"uv": [4, 7, 8, 11], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_north",
-                    "from": [0, 4+x, 0],
-                    "to": [16, 16+x, 0],
+                    "from": [0, 4 + x, 0],
+                    "to": [16, 16 + x, 0],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [8, 4, 12, 7], "texture": "#0"},
-                        "south": {"uv": [8, 4, 12, 7], "texture": "#0"}
-                    }
+                        "south": {"uv": [8, 4, 12, 7], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_south",
-                    "from": [0, 4+x, 16],
-                    "to": [16, 16+x, 16],
+                    "from": [0, 4 + x, 16],
+                    "to": [16, 16 + x, 16],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [0, 4, 4, 7], "texture": "#0"},
-                        "south": {"uv": [0, 4, 4, 7], "texture": "#0"}
-                    }
+                        "south": {"uv": [0, 4, 4, 7], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_west",
-                    "from": [0, 4+x, 0],
-                    "to": [0, 16+x, 16],
+                    "from": [0, 4 + x, 0],
+                    "to": [0, 16 + x, 16],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "east": {"uv": [12, 4, 16, 7], "texture": "#0"},
-                        "west": {"uv": [12, 4, 16, 7], "texture": "#0"}
-                    }
+                        "west": {"uv": [12, 4, 16, 7], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_east",
-                    "from": [16, 4+x, 0],
-                    "to": [16, 16+x, 16],
+                    "from": [16, 4 + x, 0],
+                    "to": [16, 16 + x, 16],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "east": {"uv": [4, 4, 8, 7], "texture": "#0"},
-                        "west": {"uv": [4, 4, 8, 7], "texture": "#0"}
-                    }
+                        "west": {"uv": [4, 4, 8, 7], "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_up",
-                    "from": [0, 16+x, 0],
-                    "to": [16, 16+x, 16],
+                    "from": [0, 16 + x, 0],
+                    "to": [16, 16 + x, 16],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
-                        "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"}
-                    }
+                        "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
+                    },
                 },
                 {
                     "name": "up_down",
-                    "from": [0, 4+x, 0],
-                    "to": [16, 4+x, 16],
+                    "from": [0, 4 + x, 0],
+                    "to": [16, 4 + x, 16],
                     "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
                     "faces": {
                         "up": {"uv": [8, 0, 12, 4], "texture": "#0"},
-                        "down": {"uv": [8, 0, 12, 4], "texture": "#0"}
-                    }
-                }
-            ]
+                        "down": {"uv": [8, 0, 12, 4], "texture": "#0"},
+                    },
+                },
+            ],
         }
 
         return model
-    
+
     def get_additional_rotations(self) -> tuple[float, float, float] | None:
         match self.orientation:
             case "up":
@@ -762,10 +773,11 @@ class SpecialModelShulkerBox(SpecialModelBase):
                 return (0, -90, -90)
             case _:
                 raise ValueError(f"Invalid orientation {self.orientation}")
-            
+
+
 class SpecialModelShield(SpecialModelBase):
     type: Literal["minecraft:shield", "shield"]
-    COLOR_STRING_TO_ARGB : dict[str, int] = {
+    COLOR_STRING_TO_ARGB: dict[str, int] = {
         "white": 16383998,
         "light_gray": 10329495,
         "gray": 4673362,
@@ -798,9 +810,6 @@ class SpecialModelShield(SpecialModelBase):
                 color = (color[1], color[2], color[3])
                 res.append(TintSourceConstant(type="constant", value=color))
         return res
-               
-
-
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = "minecraft:entity/shield_base_nopattern"
@@ -809,32 +818,42 @@ class SpecialModelShield(SpecialModelBase):
         if "minecraft:base_color" in item.components:
             texture = "minecraft:entity/shield_base"
             additionnal_textures["1"] = "minecraft:entity/shield/base"
-            additionnal_elements.append({
-                "from": [-6, -11, 1 + self.STEP],
-                "to": [6, 11, 2 + self.STEP],
-                "faces": {
-                    "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#1", "tintindex": 0},
+            additionnal_elements.append(
+                {
+                    "from": [-6, -11, 1 + self.STEP],
+                    "to": [6, 11, 2 + self.STEP],
+                    "faces": {
+                        "south": {
+                            "uv": [0.25, 0.25, 3.25, 5.75],
+                            "texture": "#1",
+                            "tintindex": 0,
+                        },
+                    },
                 }
-            })
-            for i, pattern in enumerate(item.components.get("minecraft:banner_patterns", [])):
+            )
+            for i, pattern in enumerate(
+                item.components.get("minecraft:banner_patterns", [])
+            ):
                 pattern_id = resolve_key(pattern["pattern"])
                 namespace, path = pattern_id.split(":")
                 additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
-                step = self.STEP * (i+2)
-                additionnal_elements.append({
-                    "from": [-6, -11, 1 + step],
-                    "to": [6, 11, 2 + step],
-                    "faces": {
-                        "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": f"#{i+2}", "tintindex": i+1},
+                step = self.STEP * (i + 2)
+                additionnal_elements.append(
+                    {
+                        "from": [-6, -11, 1 + step],
+                        "to": [6, 11, 2 + step],
+                        "faces": {
+                            "south": {
+                                "uv": [0.25, 0.25, 3.25, 5.75],
+                                "texture": f"#{i+2}",
+                                "tintindex": i + 1,
+                            },
+                        },
                     }
-                })
-             
+                )
 
         res = {
-            "textures": {
-                "0": texture,
-                **additionnal_textures
-            },
+            "textures": {"0": texture, **additionnal_textures},
             "elements": [
                 {
                     "from": [-6, -11, 1],
@@ -844,9 +863,17 @@ class SpecialModelShield(SpecialModelBase):
                         "east": {"uv": [3.25, 0.25, 3.5, 5.75], "texture": "#0"},
                         "south": {"uv": [0.25, 0.25, 3.25, 5.75], "texture": "#0"},
                         "west": {"uv": [0, 0.25, 0.25, 5.75], "texture": "#0"},
-                        "up": {"uv": [0.25, 0, 3, 0.25], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [3.25, 0, 6.25, 0.25], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [0.25, 0, 3, 0.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [3.25, 0, 6.25, 0.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [-1, -3, -5],
@@ -856,11 +883,19 @@ class SpecialModelShield(SpecialModelBase):
                         "east": {"uv": [8.5, 1.5, 10, 3], "texture": "#0"},
                         "south": {"uv": [8, 1.5, 8.5, 3], "texture": "#0"},
                         "west": {"uv": [6.5, 1.5, 8, 3], "texture": "#0"},
-                        "up": {"uv": [8, 0, 8.5, 1.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [8.5, 0, 9, 1.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [8, 0, 8.5, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [8.5, 0, 9, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
-                *additionnal_elements
+                *additionnal_elements,
             ],
             "gui_light": "front",
         }

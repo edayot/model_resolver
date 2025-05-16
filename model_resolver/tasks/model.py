@@ -1,20 +1,18 @@
 from dataclasses import dataclass, field
 import io
 import os
-import re
 from model_resolver.item_model.item import Item
-from model_resolver.utils import resolve_key
 from model_resolver.minecraft_model import (
     MinecraftModel,
     resolve_model,
 )
-from typing import ClassVar, Generator, Optional
+from typing import ClassVar, Generator
 from rich import print  # noqa
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.item_model.tint_source import TintSource
 from PIL import Image
-from beet import BinaryFileBase, BinaryFileContent, Model as BeetModel, NamespaceFileScope, PngFile, ResourcePack, Texture, TextureMcmeta
+from beet import BinaryFileBase, NamespaceFileScope
 
 
 @dataclass(kw_only=True)
@@ -41,7 +39,7 @@ class AnimatedResultTask(Task):
     tasks: list[Task] = field(default_factory=list)
 
     def save(self, _: Image.Image):
-        # create a gif from the images        
+        # create a gif from the images
         images = []
         for task in self.tasks:
             img = task.saved_img
@@ -60,9 +58,9 @@ class AnimatedResultTask(Task):
             data = io.BytesIO()
             res = images_duration[0]
             res.save(
-                data, 
-                format="gif", 
-                append_images=images_duration[1:], 
+                data,
+                format="gif",
+                append_images=images_duration[1:],
                 save_all=True,
                 duration=50,
                 loop=0,
@@ -70,7 +68,9 @@ class AnimatedResultTask(Task):
             )
             if not TextureGif in self.getter._ctx.assets.extend_namespace:
                 self.getter._ctx.assets.extend_namespace.append(TextureGif)
-            self.getter._ctx.assets[TextureGif][self.path_ctx] = TextureGif(data.getvalue())
+            self.getter._ctx.assets[TextureGif][self.path_ctx] = TextureGif(
+                data.getvalue()
+            )
         elif self.path_save:
             images.sort(key=lambda x: int(x[2].name.split("_")[0]))
             images_duration = []
@@ -82,8 +82,8 @@ class AnimatedResultTask(Task):
             os.makedirs(self.path_save.parent, exist_ok=True)
             res.save(
                 self.path_save,
-                format="gif", 
-                append_images=images_duration[1:], 
+                format="gif",
+                append_images=images_duration[1:],
                 save_all=True,
                 duration=50,
                 loop=0,
@@ -92,7 +92,7 @@ class AnimatedResultTask(Task):
         self.flush()
         for task in self.tasks:
             task.flush()
-        
+
 
 @dataclass(eq=False, repr=False)
 class TextureGif(BinaryFileBase):
@@ -100,8 +100,6 @@ class TextureGif(BinaryFileBase):
 
     scope: ClassVar[NamespaceFileScope] = ("textures",)
     extension: ClassVar[str] = ".gif"
-
-
 
 
 @dataclass(kw_only=True)
@@ -130,13 +128,17 @@ class ModelPathRenderTask(GenericModelRenderTask):
             self.animated_as_gif = False
             yield self
             return
-        texture_path_to_frames, texture_interpolate = self.get_texture_path_to_frames(model)
+        texture_path_to_frames, texture_interpolate = self.get_texture_path_to_frames(
+            model
+        )
         if len(texture_path_to_frames) == 0:
             self.animated_as_gif = False
             yield self
             return
-    
-        ticks_grouped = self.get_tick_grouped(texture_path_to_frames, texture_interpolate)
+
+        ticks_grouped = self.get_tick_grouped(
+            texture_path_to_frames, texture_interpolate
+        )
 
         tasks = []
 
@@ -173,7 +175,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             )
             yield task
             tasks.append(task)
-        
+
         if self.animated_as_gif:
             yield AnimatedResultTask(
                 tasks=tasks,

@@ -1,8 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Self
-from beet import Context, LATEST_MINECRAFT_VERSION
-from model_resolver.utils import ModelResolverOptions, get_default_components, resolve_key
-import json
+from beet import Context
+from model_resolver.utils import get_default_components, resolve_key
 
 
 class Item(BaseModel):
@@ -28,7 +27,7 @@ class Item(BaseModel):
     @property
     def components(self) -> dict[str, Any]:
         return {**self.default_components, **self.components_from_user}
-    
+
     def get(self, component_name: str) -> Any:
         key = resolve_key(component_name)
         namespace, path = key.split(":", 1)

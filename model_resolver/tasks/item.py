@@ -1,15 +1,11 @@
 from dataclasses import dataclass
 from model_resolver.tasks.model import AnimatedResultTask
-from model_resolver.utils import (
-    resolve_key,
-)
 from model_resolver.minecraft_model import (
     MinecraftModel,
 )
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
 from typing import Generator
-from PIL import Image
 from model_resolver.tasks.generic_render import GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
 from rich import print  # noqa
@@ -59,14 +55,18 @@ class ItemRenderTask(GenericModelRenderTask):
         texture_interpolate = {}
         for model in item_model_models:
             model_def = model.get_model(self.getter, self.item).bake()
-            new_texture_path_to_frames, new_texture_interpolate = self.get_texture_path_to_frames(model_def)
+            new_texture_path_to_frames, new_texture_interpolate = (
+                self.get_texture_path_to_frames(model_def)
+            )
             texture_path_to_frames.update(new_texture_path_to_frames)
             texture_interpolate.update(new_texture_interpolate)
         if len(texture_path_to_frames) == 0:
             self.animated_as_gif = False
             yield self
             return
-        ticks_grouped = self.get_tick_grouped(texture_path_to_frames, texture_interpolate)
+        ticks_grouped = self.get_tick_grouped(
+            texture_path_to_frames, texture_interpolate
+        )
 
         tasks = []
 

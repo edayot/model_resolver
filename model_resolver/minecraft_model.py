@@ -1,7 +1,5 @@
-from beet import Context, NamespaceFileScope, JsonFile
-from typing import ClassVar, Any
+from typing import Any
 from model_resolver.utils import PackGetterV2, resolve_key
-from beet.contrib.vanilla import Vanilla
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from typing import Annotated, Literal, Optional

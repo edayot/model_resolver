@@ -6,7 +6,6 @@ from OpenGL.GLUT import special
 INITIALIZED = False
 def glutInit( *args ):
     """Initialise the GLUT library"""
-    INITIALIZED = True
     if args:
         arg,args = args[0],args[1:]
         count = None

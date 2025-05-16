@@ -1,18 +1,12 @@
 from functools import cached_property
 from pydantic import BaseModel, Field, RootModel
-from model_resolver.item_model.data_component_predicate import DataComponent, DataComponentBase
+from model_resolver.item_model.data_component_predicate import DataComponent
 from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
-from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
-from beet import Context
-from beet.contrib.vanilla import Vanilla
+from typing import Optional, Literal, ClassVar, Generator, Union, Any
 from model_resolver.item_model.item import Item
 from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
-from PIL import Image
-from uuid import UUID
-import json
-import base64
 from rich import print  # noqa
 
 
@@ -59,7 +53,7 @@ class ItemModelModel(ItemModelBase):
         else:
             raise ValueError(f"Model {key} not found")
         return MinecraftModel.model_validate(resolve_model(data, getter)).bake()
-    
+
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return self.tints
 
@@ -143,19 +137,14 @@ class ItemModelConditionBroken(ItemModelConditionBase):
         return remaining <= 1
 
 
-
 class ItemModelConditionComponent(ItemModelConditionBase):
     property: Literal["minecraft:component", "component"]
     predicate: str
     value: Any
 
     def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
-        data_component = DataComponent.model_validate({
-            self.predicate: self.value
-        })
+        data_component = DataComponent.model_validate({self.predicate: self.value})
         return data_component.is_valid(getter, item) or False
-        
-        
 
 
 class ItemModelConditionDamaged(ItemModelConditionBase):
@@ -303,7 +292,7 @@ class ItemModelSelectBase(ItemModelBase):
         "context_dimension",
     ]
     cases: list[SelectCase] = Field(default_factory=list)
-    fallback: "ItemModelRecursive" 
+    fallback: "ItemModelRecursive"
     possible_values: ClassVar[list[str]] = []
 
     def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
@@ -348,6 +337,7 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
         if charge_type == "none" and len(items) > 0:
             charge_type = "arrow"
         return self.resolve_case(charge_type)
+
 
 class ItemModelSelectComponent(ItemModelSelectBase):
     property: Literal["minecraft:component", "component"]
@@ -662,7 +652,11 @@ class ItemModelSpecial(ItemModelBase):
         merged = resolve_model(child, getter)
         res = MinecraftModel.model_validate(merged).bake()
         init_scale = res.display.gui.scale
-        res.display.gui.scale = (init_scale[0] * scale, init_scale[1] * scale, init_scale[2] * scale)
+        res.display.gui.scale = (
+            init_scale[0] * scale,
+            init_scale[1] * scale,
+            init_scale[2] * scale,
+        )
 
         init_rotation = res.display.gui.rotation
         if rotations:
@@ -673,13 +667,11 @@ class ItemModelSpecial(ItemModelBase):
             )
         return res
 
-
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
 
-    
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return self.model.get_tints(getter, item)
 
@@ -702,6 +694,7 @@ class ItemModelEmpty(ItemModelBase):
 
 type ItemModelResolvable = Union[ItemModelModel, ItemModelSpecial]
 
+
 class ItemModelAll(RootModel):
     root: Union[
         ItemModelModel,
@@ -714,6 +707,7 @@ class ItemModelAll(RootModel):
         ItemModelEmpty,
     ]
 
+
 class ItemModelRecursive(RootModel[Any]):
     root: Any
 
@@ -725,8 +719,6 @@ class ItemModelRecursive(RootModel[Any]):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.root.resolve(getter, item)
-        
-    
 
 
 class ItemModel(BaseModel):

@@ -1,17 +1,15 @@
-from functools import cached_property
 import io
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
-from beet import Context, Texture
+from beet import Texture
 from dataclasses import dataclass, field
 from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
     PackGetterV2,
 )
-from beet.contrib.vanilla import Vanilla
-from typing import Any, Optional, Generator
+from typing import Optional, Generator
 from pathlib import Path
 from PIL import Image
 
@@ -30,7 +28,7 @@ class Task:
 
     animated_as_gif: bool = False
     saved_img: Optional[Image.Image] = None
-    
+
     ensure_params: bool = False
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
 

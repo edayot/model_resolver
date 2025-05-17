@@ -112,6 +112,13 @@ class GenericModelRenderTask(Task):
             frames = list(mcmeta.animation.resolve_frames(img.height, img.width))
             texture_path_to_frames[texture_path] = frames
             texture_interpolate[texture_path] = mcmeta.animation.interpolate
+        for key in texture_path_to_frames.keys():
+            new_frames = []
+            for frame in texture_path_to_frames[key]:
+                for _ in range(self.duration_coef):
+                    new_frames.append(frame)
+            texture_path_to_frames[key] = new_frames
+
         return texture_path_to_frames, texture_interpolate
 
     def get_images(

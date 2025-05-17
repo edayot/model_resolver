@@ -61,9 +61,13 @@ class ItemRenderTask(GenericModelRenderTask):
             texture_path_to_frames.update(new_texture_path_to_frames)
             texture_interpolate.update(new_texture_interpolate)
         if len(texture_path_to_frames) == 0:
-            self.animated_as_gif = False
+            self.animation_mode = "multi_files"
             yield self
             return
+        is_interpolated = any(
+            texture_interpolate[texture_path]
+            for texture_path in texture_path_to_frames.keys()
+        )
         ticks_grouped = self.get_tick_grouped(
             texture_path_to_frames, texture_interpolate
         )
@@ -99,7 +103,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 additional_rotations=self.additional_rotations,
                 path_ctx=new_path_ctx,
                 path_save=new_path_save,
-                animated_as_gif=self.animated_as_gif,
+                animation_mode=self.animation_mode,
                 render_size=self.render_size,
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
@@ -107,7 +111,7 @@ class ItemRenderTask(GenericModelRenderTask):
             )
             yield task
             tasks.append(task)
-        if self.animated_as_gif:
+        if self.animation_mode == "webp":
             yield AnimatedResultTask(
                 tasks=tasks,
                 path_ctx=self.path_ctx,
@@ -115,4 +119,5 @@ class ItemRenderTask(GenericModelRenderTask):
                 getter=self.getter,
                 render_size=self.render_size,
                 zoom=self.zoom,
+                is_interpolated=is_interpolated,
             )

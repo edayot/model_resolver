@@ -31,25 +31,27 @@ class ModelRenderTask(GenericModelRenderTask):
         super().flush()
         self.model = MinecraftModel()
         self.tints = []
-        self.item = Item(id="do_not_use")
+        self.item = Item(id="do_not_use")        
 
 
 @dataclass(kw_only=True)
 class AnimatedResultTask(Task):
     tasks: list[Task] = field(default_factory=list)
+    is_interpolated: bool
 
     def save(self, _: Image.Image):
-        # create a gif from the images
+        # create a webp from the images
         images = []
         for task in self.tasks:
             img = task.saved_img
             if img is None:
                 continue
             images.append((img, task.path_ctx, task.path_save))
+        duration_ms = 50 / self.duration_coef
 
         if self.path_ctx:
             images.sort(key=lambda x: int(x[1].split("/")[-1].split("_")[0]))
-            images_duration = []
+            images_duration: list[Image.Image] = []
             for x in images:
                 duration = int(x[1].split("/")[-1].split("_")[1])
                 for i in range(duration):
@@ -59,35 +61,38 @@ class AnimatedResultTask(Task):
             res = images_duration[0]
             res.save(
                 data,
-                format="gif",
+                format="webp",
                 append_images=images_duration[1:],
                 save_all=True,
-                duration=50,
+                duration=duration_ms,
                 loop=0,
                 disposal=2,
+                lossless=True,
             )
-            if not TextureGif in self.getter._ctx.assets.extend_namespace:
-                self.getter._ctx.assets.extend_namespace.append(TextureGif)
-            self.getter._ctx.assets[TextureGif][self.path_ctx] = TextureGif(
+            if not TextureWebP in self.getter._ctx.assets.extend_namespace:
+                self.getter._ctx.assets.extend_namespace.append(TextureWebP)
+            self.getter._ctx.assets[TextureWebP][self.path_ctx] = TextureWebP(
                 data.getvalue()
             )
         elif self.path_save:
             images.sort(key=lambda x: int(x[2].name.split("_")[0]))
-            images_duration = []
+            images_duration: list[Image.Image] = []
             for x in images:
                 duration = int(x[2].name.split("_")[1])
                 for i in range(duration):
                     images_duration.append(x[0])
+
             res = images_duration[0]
             os.makedirs(self.path_save.parent, exist_ok=True)
             res.save(
                 self.path_save,
-                format="gif",
+                format="webp",
                 append_images=images_duration[1:],
                 save_all=True,
-                duration=50,
+                duration=duration_ms,
                 loop=0,
                 disposal=2,
+                lossless=True,
             )
         self.flush()
         for task in self.tasks:
@@ -95,11 +100,11 @@ class AnimatedResultTask(Task):
 
 
 @dataclass(eq=False, repr=False)
-class TextureGif(BinaryFileBase):
+class TextureWebP(BinaryFileBase):
     """Class representing a texture."""
 
     scope: ClassVar[NamespaceFileScope] = ("textures",)
-    extension: ClassVar[str] = ".gif"
+    extension: ClassVar[str] = ".webp"
 
 
 @dataclass(kw_only=True)
@@ -125,14 +130,18 @@ class ModelPathRenderTask(GenericModelRenderTask):
     def resolve(self) -> Generator[Task, None, None]:
         model = self.get_parsed_model()
         if not model.textures:
-            self.animated_as_gif = False
+            self.animation_mode = "multi_files"
             yield self
             return
         texture_path_to_frames, texture_interpolate = self.get_texture_path_to_frames(
             model
         )
+        is_interpolated = any(
+            texture_interpolate[texture_path]
+            for texture_path in texture_path_to_frames.keys()
+        )
         if len(texture_path_to_frames) == 0:
-            self.animated_as_gif = False
+            self.animation_mode = "multi_files"
             yield self
             return
 
@@ -167,7 +176,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 additional_rotations=self.additional_rotations,
                 path_ctx=new_path_ctx,
                 path_save=new_path_save,
-                animated_as_gif=self.animated_as_gif,
+                animation_mode=self.animation_mode,
                 render_size=self.render_size,
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
@@ -176,7 +185,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             yield task
             tasks.append(task)
 
-        if self.animated_as_gif:
+        if self.animation_mode == "webp":
             yield AnimatedResultTask(
                 tasks=tasks,
                 path_ctx=self.path_ctx,
@@ -184,4 +193,5 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 getter=self.getter,
                 render_size=self.render_size,
                 zoom=self.zoom,
+                is_interpolated=is_interpolated,
             )

@@ -1,8 +1,8 @@
 
 
 pipeline:
-  - model_resolver.plugins.render_all_vanilla_gif
-  - model_resolver.plugins.render_all_items_gif
+  - model_resolver.plugins.render_all_vanilla_webp
+  - model_resolver.plugins.render_all_items_webp
 
 output: ../../dist
 

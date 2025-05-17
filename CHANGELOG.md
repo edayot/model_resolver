@@ -2,6 +2,37 @@
 
 
 
+## v1.5.0 (2025-05-17)
+
+### Feature
+
+* feat: export as webp now support custom framerate ([`3ba22b1`](https://github.com/edayot/model_resolver/commit/3ba22b11f90d5357f6b2e813cf5be572a9c801a0))
+
+* feat: export as gif option ([`a418ed9`](https://github.com/edayot/model_resolver/commit/a418ed9da0a6e92f30f0a6d42f58fa1f3335ad4c))
+
+* feat: taking account interpolation ([`c2cfb2e`](https://github.com/edayot/model_resolver/commit/c2cfb2ea050752bab214f1f72ce625b0427dec9e))
+
+### Fix
+
+* fix: decrease memory usage by saving to png before saving images ([`eee5a0a`](https://github.com/edayot/model_resolver/commit/eee5a0a39ee03b0f956777626ef59a9edbc4a3a5))
+
+* fix: refix ([`a3a8aec`](https://github.com/edayot/model_resolver/commit/a3a8aec15deb75543af941265fd5a6265012fabe))
+
+* fix: typo ([`8bf2720`](https://github.com/edayot/model_resolver/commit/8bf2720e034c2eafd7b2ea804ca94abc27efe7cc))
+
+### Performance
+
+* perf: ItemModel in no longer a recursive type ([`2462169`](https://github.com/edayot/model_resolver/commit/2462169912447bf33dd35a0f3b063d83c19132b9))
+
+### Style
+
+* style: run black ([`995f2bc`](https://github.com/edayot/model_resolver/commit/995f2bcb2383237c994f1c1fee13293d1013baf0))
+
+### Unknown
+
+* better caching and usage of root model ([`6bd1447`](https://github.com/edayot/model_resolver/commit/6bd1447d1e6bb7e1818a1c6e6ee18061972f3990))
+
+
 ## v1.4.1 (2025-04-08)
 
 ### Fix

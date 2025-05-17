@@ -2,6 +2,13 @@
 
 
 
+## v1.5.1 (2025-05-17)
+
+### Unknown
+
+* fis: framerate work ([`20bb558`](https://github.com/edayot/model_resolver/commit/20bb558a3a95884ae426b729b3a67716d0a7b979))
+
+
 ## v1.5.0 (2025-05-17)
 
 ### Feature

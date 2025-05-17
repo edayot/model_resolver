@@ -120,4 +120,6 @@ class ItemRenderTask(GenericModelRenderTask):
                 render_size=self.render_size,
                 zoom=self.zoom,
                 is_interpolated=is_interpolated,
+                animation_mode=self.animation_mode,
+                animation_framerate=self.animation_framerate,
             )

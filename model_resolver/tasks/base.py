@@ -32,7 +32,7 @@ class Task:
 
     @property
     def duration_coef(self):
-        if self.animation_framerate % 20 !=0 and self.animation_framerate > 0:
+        if self.animation_framerate % 20 != 0 and self.animation_framerate > 0:
             raise TypeError(f"animation_frame must be a positive multiple of 20")
         return self.animation_framerate // 20
 

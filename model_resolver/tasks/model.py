@@ -31,7 +31,7 @@ class ModelRenderTask(GenericModelRenderTask):
         super().flush()
         self.model = MinecraftModel()
         self.tints = []
-        self.item = Item(id="do_not_use")        
+        self.item = Item(id="do_not_use")
 
 
 @dataclass(kw_only=True)
@@ -47,7 +47,7 @@ class AnimatedResultTask(Task):
             if img is None:
                 continue
             images.append((img, task.path_ctx, task.path_save))
-        duration_ms = 50 / self.duration_coef
+        duration_ms = 1000 / self.animation_framerate
 
         if self.path_ctx:
             images.sort(key=lambda x: int(x[1].split("/")[-1].split("_")[0]))
@@ -194,4 +194,6 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 render_size=self.render_size,
                 zoom=self.zoom,
                 is_interpolated=is_interpolated,
+                animation_mode=self.animation_mode,
+                animation_framerate=self.animation_framerate,
             )

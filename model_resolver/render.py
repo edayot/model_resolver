@@ -360,7 +360,7 @@ class Render:
         img = Image.frombytes(
             "RGBA",
             (self.current_task.render_size, self.current_task.render_size),
-            pixel_data, #type: ignore
+            pixel_data,  # type: ignore
         )
         img = img.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
 

@@ -132,7 +132,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             self.animation_mode = "multi_files"
             yield self
             return
-        
+
         animation = Animation(
             textures=[model.textures],
             getter=self.getter,
@@ -142,7 +142,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             self.animation_mode = "multi_files"
             yield self
             return
-        
+
         tasks = []
 
         for i, (images, duration) in animation.get_frames():
@@ -158,6 +158,10 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 new_path_ctx = self.path_ctx + f"/{i:03}_{duration}"
             else:
                 new_path_ctx = None
+            if self.animation_mode == "one_file":
+                new_path_save = self.path_save
+                new_path_ctx = self.path_ctx
+
             task = ModelRenderTask(
                 getter=self.getter,
                 model=new_model,
@@ -177,6 +181,8 @@ class ModelPathRenderTask(GenericModelRenderTask):
             )
             yield task
             tasks.append(task)
+            if self.animation_mode == "one_file":
+                break
 
         if self.animation_mode == "webp":
             yield AnimatedResultTask(

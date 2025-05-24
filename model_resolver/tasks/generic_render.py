@@ -6,7 +6,7 @@ from beet import Texture
 from dataclasses import dataclass, field
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from model_resolver.item_model.item import Item
 from model_resolver.utils import (
     PackGetterV2,
@@ -75,7 +75,6 @@ class GenericModelRenderTask(Task):
         super().flush()
         self.item = Item(id="do_not_use")
 
-
     def get_textures(self, model: MinecraftModel, images: dict[str, Image.Image]):
         textures = {}
         for key, value in model.textures.items():
@@ -86,7 +85,6 @@ class GenericModelRenderTask(Task):
             else:
                 textures[key] = value
         return textures
-
 
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
@@ -313,7 +311,7 @@ class GenericModelRenderTask(Task):
                 )
             elif rotation.axis == "z":
                 x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
-            
+
             if rotation.rescale:
                 factor = sqrt(2)
                 if rotation.axis != "x":
@@ -322,7 +320,6 @@ class GenericModelRenderTask(Task):
                     y = y * factor
                 if rotation.axis != "z":
                     z = z * factor
-
 
             x += origin[0]
             y += origin[1]
@@ -457,30 +454,27 @@ class GenericModelRenderTask(Task):
                 raise RenderError(f"Unknown face {face}")
 
 
-
-
 @dataclass(kw_only=True)
-class Animation():
+class Animation:
     textures: list[dict[str, str | Image.Image]]
     getter: PackGetterV2
     animation_framerate: int
 
     cache_texture_animated: Any = None
 
-
     @property
     def duration_coef(self):
         if self.animation_framerate % 20 != 0 and self.animation_framerate > 0:
             raise TypeError(f"animation_frame must be a positive multiple of 20")
         return self.animation_framerate // 20
-    
+
     @property
     def is_animated(self) -> bool:
         texture_animated = self.get_texture_animated()
         if len(texture_animated) == 0:
             return False
         return True
-    
+
     def get_texture_animated(self) -> dict[str, tuple[list[int], bool]]:
         if self.cache_texture_animated is not None:
             return self.cache_texture_animated
@@ -501,12 +495,14 @@ class Animation():
                     continue
 
                 frames = list(
-                    mcmeta.animation.resolve_frames(texture.image.height, texture.image.width)
+                    mcmeta.animation.resolve_frames(
+                        texture.image.height, texture.image.width
+                    )
                 )
                 texture_animated[texture_path] = (frames, mcmeta.animation.interpolate)
         self.cache_texture_animated = texture_animated
         return texture_animated
-    
+
     def get_tick_grouped(
         self,
         texture_animated: dict[str, tuple[list[int], bool]],
@@ -517,7 +513,7 @@ class Animation():
         ticks = []
         for i in range(total_number_of_tick):
             current_tick = {}
-            for (texture_path, (frames, interpolated)) in texture_animated.items():
+            for texture_path, (frames, interpolated) in texture_animated.items():
                 current_tick[texture_path] = frames[i % len(frames)]
             ticks.append(current_tick)
 
@@ -543,13 +539,15 @@ class Animation():
 
         return ticks_grouped
 
-    def get_frames(self) -> Generator[tuple[int, tuple[dict[str, Image.Image], int]], None, None]:
+    def get_frames(
+        self,
+    ) -> Generator[tuple[int, tuple[dict[str, Image.Image], int]], None, None]:
         if not self.is_animated:
             raise RenderError("Should not be called if is_animated is False")
         texture_animated = self.get_texture_animated()
         if len(texture_animated) == 0:
             raise RenderError("No animated textures found")
-        
+
         ticks_grouped = self.get_tick_grouped(texture_animated)
 
         for i, tick in enumerate(ticks_grouped):
@@ -631,17 +629,12 @@ class Animation():
                 )
                 result.putpixel((x, y), blended_pixel)
         return result
-            
-    
+
     def texture(self, key: str) -> Optional[Texture]:
         return self.getter.assets.textures.get(resolve_key(key))
-        
-    
+
     def mcmeta(self, key: str) -> Optional[TextureMcMetaModel]:
         mcmeta = self.getter.assets.textures_mcmeta.get(resolve_key(key))
         if not mcmeta:
             return None
         return TextureMcMetaModel.model_validate(mcmeta.data)
-
-
-

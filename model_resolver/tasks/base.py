@@ -18,6 +18,13 @@ class RenderError(Exception):
     pass
 
 
+type AnimationType = Literal[
+    "multi_files",
+    "webp",
+    "one_file",
+]
+
+
 @dataclass(kw_only=True)
 class Task:
     getter: PackGetterV2
@@ -26,7 +33,7 @@ class Task:
     render_size: int = DEFAULT_RENDER_SIZE
     zoom: float = 8
 
-    animation_mode: Literal["multi_files", "webp"] = "multi_files"
+    animation_mode: AnimationType = "multi_files"
     animation_framerate: int = 20
     saved_img: Optional[Image.Image] = None
 

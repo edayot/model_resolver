@@ -16,13 +16,13 @@ from model_resolver.utils import (
     resolve_key,
     DEFAULT_RENDER_SIZE,
 )
-from typing import Literal, Optional, TypedDict
+from typing import Optional, TypedDict
 from pathlib import Path
 import logging
 from PIL import Image
 from rich import print  # noqa
 
-from model_resolver.tasks.base import Task, RenderError
+from model_resolver.tasks.base import AnimationType, Task, RenderError
 
 
 class AtlasDict(TypedDict):
@@ -60,7 +60,7 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path] = None,
         render_size: Optional[int] = None,
-        animation_mode: Literal["multi_files", "webp"] = "multi_files",
+        animation_mode: AnimationType = "multi_files",
         animation_framerate: int = 20,
     ):
         if render_size is None:
@@ -86,7 +86,7 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
-        animation_mode: Literal["multi_files", "webp"] = "multi_files",
+        animation_mode: AnimationType = "multi_files",
         animation_framerate: int = 20,
     ):
         if render_size is None:
@@ -112,13 +112,9 @@ class Render:
         path_ctx: Optional[str] = None,
         path_save: Optional[Path | str] = None,
         render_size: Optional[int] = None,
-        animation_mode: Literal["multi_files", "webp"] = "multi_files",
+        animation_mode: AnimationType = "one_file",
         animation_framerate: int = 20,
     ):
-        """
-        Structure rendering is still experimental and don't work with
-        animated textures.
-        """
         if render_size is None:
             render_size = self.default_render_size
         if isinstance(path_save, str):

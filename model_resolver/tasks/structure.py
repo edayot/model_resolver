@@ -19,7 +19,7 @@ from rich import print  # noqa
 from functools import cached_property
 import random
 from model_resolver.tasks.base import Task, RenderError
-from model_resolver.tasks.model import AnimatedResultTask, ModelPathRenderTask, ModelRenderTask
+from model_resolver.tasks.model import AnimatedResultTask, ModelRenderTask
 from PIL import Image
 
 
@@ -189,7 +189,6 @@ class StructureRenderTask(GenericModelRenderTask):
                 model = self.get_parsed_model(model_path)
                 yield model.textures
 
-
     def resolve(self) -> Generator[Task, None, None]:
         animation = Animation(
             textures=list(self.get_all_textures()),
@@ -200,7 +199,7 @@ class StructureRenderTask(GenericModelRenderTask):
             self.animation_mode = "multi_files"
             yield self
             return
-        
+
         tasks = []
 
         for i, (images, duration) in animation.get_frames():
@@ -212,6 +211,9 @@ class StructureRenderTask(GenericModelRenderTask):
                 new_path_ctx = self.path_ctx + f"/{i}_{duration}"
             else:
                 new_path_ctx = None
+            if self.animation_mode == "one_file":
+                new_path_save = self.path_save
+                new_path_ctx = self.path_ctx
 
             task = StructureRenderTask(
                 structure_key=self.structure_key,
@@ -232,6 +234,8 @@ class StructureRenderTask(GenericModelRenderTask):
             )
             yield task
             tasks.append(task)
+            if self.animation_mode == "one_file":
+                break
         if self.animation_mode == "webp":
             yield AnimatedResultTask(
                 tasks=tasks,

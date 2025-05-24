@@ -85,6 +85,10 @@ class ItemRenderTask(GenericModelRenderTask):
                 new_path_ctx = self.path_ctx + f"/{i}_{duration}"
             else:
                 new_path_ctx = None
+            if self.animation_mode == "one_file":
+                new_path_save = self.path_save
+                new_path_ctx = self.path_ctx
+
             task = ItemModelModelRenderTask(
                 getter=self.getter,
                 models=models,
@@ -103,6 +107,9 @@ class ItemRenderTask(GenericModelRenderTask):
             )
             yield task
             tasks.append(task)
+
+            if self.animation_mode == "one_file":
+                break
         if self.animation_mode == "webp":
             yield AnimatedResultTask(
                 tasks=tasks,

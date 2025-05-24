@@ -6,7 +6,7 @@ from model_resolver.minecraft_model import (
 from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.tint_source import TintSource
 from typing import Generator
-from model_resolver.tasks.generic_render import GenericModelRenderTask
+from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
 from rich import print  # noqa
 
@@ -51,32 +51,24 @@ class ItemRenderTask(GenericModelRenderTask):
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
         item_model_models = list(parsed_item_model.resolve(self.getter, self.item))
-        texture_path_to_frames = {}
-        texture_interpolate = {}
-        for model in item_model_models:
-            model_def = model.get_model(self.getter, self.item).bake()
-            new_texture_path_to_frames, new_texture_interpolate = (
-                self.get_texture_path_to_frames(model_def)
-            )
-            texture_path_to_frames.update(new_texture_path_to_frames)
-            texture_interpolate.update(new_texture_interpolate)
-        if len(texture_path_to_frames) == 0:
+
+        animation = Animation(
+            textures=[
+                model.get_model(self.getter, self.item).bake().textures
+                for model in item_model_models
+            ],
+            getter=self.getter,
+            animation_framerate=self.animation_framerate,
+        )
+        if not animation.is_animated:
             self.animation_mode = "multi_files"
             yield self
             return
-        is_interpolated = any(
-            texture_interpolate[texture_path]
-            for texture_path in texture_path_to_frames.keys()
-        )
-        ticks_grouped = self.get_tick_grouped(
-            texture_path_to_frames, texture_interpolate
-        )
 
         tasks = []
 
-        for i, tick in enumerate(ticks_grouped):
+        for i, (images, duration) in animation.get_frames():
             # get the images for the tick
-            images = self.get_images(tick, texture_interpolate)
             models: list[tuple[MinecraftModel, list[TintSource]]] = []
             for model in item_model_models:
                 model_def = model.get_model(self.getter, self.item).bake()
@@ -86,11 +78,11 @@ class ItemRenderTask(GenericModelRenderTask):
                 models.append((model_def, model.get_tints(self.getter, self.item)))
 
             if self.path_save:
-                new_path_save = self.path_save / f"{i}_{tick.duration}.png"
+                new_path_save = self.path_save / f"{i}_{duration}.png"
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + f"/{i}_{tick.duration}"
+                new_path_ctx = self.path_ctx + f"/{i}_{duration}"
             else:
                 new_path_ctx = None
             task = ItemModelModelRenderTask(
@@ -119,7 +111,6 @@ class ItemRenderTask(GenericModelRenderTask):
                 getter=self.getter,
                 render_size=self.render_size,
                 zoom=self.zoom,
-                is_interpolated=is_interpolated,
                 animation_mode=self.animation_mode,
                 animation_framerate=self.animation_framerate,
             )

@@ -6,9 +6,10 @@ from beet import Texture
 from dataclasses import dataclass, field
 
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from model_resolver.item_model.item import Item
 from model_resolver.utils import (
+    PackGetterV2,
     resolve_key,
 )
 from model_resolver.minecraft_model import (
@@ -18,7 +19,7 @@ from model_resolver.minecraft_model import (
     FaceModel,
 )
 from model_resolver.item_model.tint_source import TintSource
-from typing import Optional, Generator, Literal
+from typing import Any, Optional, Generator, Literal
 from PIL import Image
 from model_resolver.tasks.base import Task, RenderError
 from math import pi, cos, sin, sqrt
@@ -74,102 +75,6 @@ class GenericModelRenderTask(Task):
         super().flush()
         self.item = Item(id="do_not_use")
 
-    def get_texture(self, key: str) -> Texture | None:
-        key = resolve_key(key)
-        return (
-            self.getter.assets.textures[key]
-            if key in self.getter.assets.textures
-            else None
-        )
-
-    def get_texture_mcmeta(self, texture_key: str) -> Optional["TextureMcMetaModel"]:
-        texture_key = resolve_key(texture_key)
-        texturemcmeta = self.getter.assets.textures_mcmeta.get(texture_key)
-        if not texturemcmeta:
-            return None
-        return TextureMcMetaModel.model_validate(texturemcmeta.data)
-
-    def get_texture_path_to_frames(
-        self, model: MinecraftModel
-    ) -> tuple[dict[str, list[int]], dict[str, bool]]:
-        texture_path_to_frames = {}
-        texture_interpolate = {}
-        for texture_path in set(
-            [x for x in model.textures.values() if isinstance(x, str)]
-        ):
-            if isinstance(texture_path, Image.Image):
-                continue
-            texture = self.get_texture(texture_path)
-            if not texture:
-                continue
-            mcmeta = self.get_texture_mcmeta(texture_path)
-            if not mcmeta:
-                continue
-            if not mcmeta.animation:
-                continue
-            img: Image.Image = texture.image
-
-            frames = list(mcmeta.animation.resolve_frames(img.height, img.width))
-            texture_path_to_frames[texture_path] = frames
-            texture_interpolate[texture_path] = mcmeta.animation.interpolate
-        for key in texture_path_to_frames.keys():
-            new_frames = []
-            for frame in texture_path_to_frames[key]:
-                for _ in range(self.duration_coef):
-                    new_frames.append(frame)
-            texture_path_to_frames[key] = new_frames
-
-        return texture_path_to_frames, texture_interpolate
-
-    def get_images(
-        self, tick: TickGrouped, texture_interpolate: dict[str, bool]
-    ) -> dict[str, Image.Image]:
-        images = {}
-        for texture_path, index in tick.tick.items():
-            texture = self.get_texture(texture_path)
-            if not texture:
-                raise RenderError(f"WTF")
-            img: Image.Image = texture.image
-            cropped = img.crop(
-                (0, index * img.width, img.width, (index + 1) * img.width)
-            )
-            if texture_interpolate[texture_path]:
-                lenght = 0
-                current_index = index
-                tick_before = tick.tick_before
-                assert tick_before is not None
-                for _ in range(999_999):
-                    if tick_before.tick[texture_path] != current_index:
-                        break
-                    tick_before = tick_before.tick_before
-                    assert tick_before is not None
-                    lenght += 1
-
-                left_lenght = lenght
-                tick_after = tick.tick_after
-                assert tick_after is not None
-                next_index = current_index
-                for _ in range(999_999):
-                    if tick_after.tick[texture_path] != current_index:
-                        next_index = tick_after.tick[texture_path]
-                        lenght += 1
-                        break
-                    tick_after = tick_after.tick_after
-                    assert tick_after is not None
-                    lenght += 1
-                if lenght > 1:
-                    next_cropped = img.crop(
-                        (
-                            0,
-                            next_index * img.width,
-                            img.width,
-                            (next_index + 1) * img.width,
-                        )
-                    )
-                    t = left_lenght / (lenght)
-                    cropped = self.blend_images(cropped, next_cropped, t)
-            images[texture_path] = cropped
-        return images
 
     def get_textures(self, model: MinecraftModel, images: dict[str, Image.Image]):
         textures = {}
@@ -182,68 +87,6 @@ class GenericModelRenderTask(Task):
                 textures[key] = value
         return textures
 
-    def get_tick_grouped(
-        self,
-        texture_path_to_frames: dict[str, list[int]],
-        texture_interpolate: dict[str, bool],
-    ) -> list[TickGrouped]:
-        total_number_of_tick = np.lcm.reduce(
-            [len(frames) for frames in texture_path_to_frames.values()]
-        )
-        ticks = []
-        for i in range(total_number_of_tick):
-            current_tick = {}
-            for texture_path, frames in texture_path_to_frames.items():
-                current_tick[texture_path] = frames[i % len(frames)]
-            ticks.append(current_tick)
-
-        is_interpolated = any(
-            texture_interpolate[texture_path]
-            for texture_path in texture_path_to_frames.keys()
-        )
-
-        ticks_grouped: list[TickGrouped] = []
-        for tick in ticks:
-            if (
-                len(ticks_grouped) > 0
-                and ticks_grouped[-1].tick == tick
-                and not is_interpolated
-            ):
-                ticks_grouped[-1].duration += 1
-            else:
-                ticks_grouped.append(TickGrouped(tick=tick, duration=1))
-
-        for i, tick in enumerate(ticks_grouped):
-            tick.tick_before = ticks_grouped[(i - 1) % len(ticks_grouped)]
-            tick.tick_after = ticks_grouped[(i + 1) % len(ticks_grouped)]
-
-        return ticks_grouped
-
-    @staticmethod
-    def blend_images(img1: Image.Image, img2: Image.Image, t: float) -> Image.Image:
-        def lerp(a: int, b: int, t: float) -> int:
-            return int(a * (1 - t) + b * t)
-
-        assert img1.size == img2.size
-        assert t >= 0 and t <= 1
-        img1 = img1.convert("RGBA")
-        img2 = img2.convert("RGBA")
-        result = Image.new("RGBA", img1.size)
-        for x in range(img1.width):
-            for y in range(img1.height):
-                pixel1 = img1.getpixel((x, y))
-                pixel2 = img2.getpixel((x, y))
-                assert isinstance(pixel1, tuple) and isinstance(pixel2, tuple)
-                assert len(pixel1) == 4 and len(pixel2) == 4
-                # Blend the pixels using alpha blending
-                blended_pixel = (
-                    lerp(pixel1[0], pixel2[0], t),
-                    lerp(pixel1[1], pixel2[1], t),
-                    lerp(pixel1[2], pixel2[2], t),
-                    lerp(pixel1[3], pixel2[3], t),
-                )
-                result.putpixel((x, y), blended_pixel)
-        return result
 
     def rotate_camera(self, model: MinecraftModel):
         if not self.do_rotate_camera:
@@ -470,20 +313,22 @@ class GenericModelRenderTask(Task):
                 )
             elif rotation.axis == "z":
                 x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
+            
+            if rotation.rescale:
+                factor = sqrt(2)
+                if rotation.axis != "x":
+                    x = x * factor
+                if rotation.axis != "y":
+                    y = y * factor
+                if rotation.axis != "z":
+                    z = z * factor
+
+
             x += origin[0]
             y += origin[1]
             z += origin[2]
             point[0], point[1], point[2] = x, y, z
 
-        if rotation.rescale:
-            factor = sqrt(2)
-            for point in vertices:
-                if rotation.axis != "x":
-                    point[0] = point[0] * factor
-                if rotation.axis != "y":
-                    point[1] = point[1] * factor
-                if rotation.axis != "z":
-                    point[2] = point[2] * factor
         return vertices
 
     def draw_face(
@@ -610,3 +455,193 @@ class GenericModelRenderTask(Task):
                 return (x1 + x_offset, y1 + y_offset, x2 + x_offset, y2 + y_offset)
             case _:
                 raise RenderError(f"Unknown face {face}")
+
+
+
+
+@dataclass(kw_only=True)
+class Animation():
+    textures: list[dict[str, str | Image.Image]]
+    getter: PackGetterV2
+    animation_framerate: int
+
+    cache_texture_animated: Any = None
+
+
+    @property
+    def duration_coef(self):
+        if self.animation_framerate % 20 != 0 and self.animation_framerate > 0:
+            raise TypeError(f"animation_frame must be a positive multiple of 20")
+        return self.animation_framerate // 20
+    
+    @property
+    def is_animated(self) -> bool:
+        texture_animated = self.get_texture_animated()
+        if len(texture_animated) == 0:
+            return False
+        return True
+    
+    def get_texture_animated(self) -> dict[str, tuple[list[int], bool]]:
+        if self.cache_texture_animated is not None:
+            return self.cache_texture_animated
+        texture_animated: dict[str, tuple[list[int], bool]] = {}
+        for textures in self.textures:
+            for texture_path in textures.values():
+                if isinstance(texture_path, Image.Image):
+                    raise RenderError(f"WTF is going on")
+                if resolve_key(texture_path) in texture_animated:
+                    continue
+                texture = self.texture(texture_path)
+                if not texture:
+                    continue
+                mcmeta = self.mcmeta(texture_path)
+                if not mcmeta:
+                    continue
+                if not mcmeta.animation:
+                    continue
+
+                frames = list(
+                    mcmeta.animation.resolve_frames(texture.image.height, texture.image.width)
+                )
+                texture_animated[texture_path] = (frames, mcmeta.animation.interpolate)
+        self.cache_texture_animated = texture_animated
+        return texture_animated
+    
+    def get_tick_grouped(
+        self,
+        texture_animated: dict[str, tuple[list[int], bool]],
+    ) -> list[TickGrouped]:
+        total_number_of_tick = np.lcm.reduce(
+            [len(frames[0]) for frames in texture_animated.values()]
+        )
+        ticks = []
+        for i in range(total_number_of_tick):
+            current_tick = {}
+            for (texture_path, (frames, interpolated)) in texture_animated.items():
+                current_tick[texture_path] = frames[i % len(frames)]
+            ticks.append(current_tick)
+
+        is_interpolated = any(
+            texture_animated[texture_path][1]
+            for texture_path in texture_animated.keys()
+        )
+
+        ticks_grouped: list[TickGrouped] = []
+        for tick in ticks:
+            if (
+                len(ticks_grouped) > 0
+                and ticks_grouped[-1].tick == tick
+                and not is_interpolated
+            ):
+                ticks_grouped[-1].duration += 1
+            else:
+                ticks_grouped.append(TickGrouped(tick=tick, duration=1))
+
+        for i, tick in enumerate(ticks_grouped):
+            tick.tick_before = ticks_grouped[(i - 1) % len(ticks_grouped)]
+            tick.tick_after = ticks_grouped[(i + 1) % len(ticks_grouped)]
+
+        return ticks_grouped
+
+    def get_frames(self) -> Generator[tuple[int, tuple[dict[str, Image.Image], int]], None, None]:
+        if not self.is_animated:
+            raise RenderError("Should not be called if is_animated is False")
+        texture_animated = self.get_texture_animated()
+        if len(texture_animated) == 0:
+            raise RenderError("No animated textures found")
+        
+        ticks_grouped = self.get_tick_grouped(texture_animated)
+
+        for i, tick in enumerate(ticks_grouped):
+            images = self.get_images(tick, texture_animated)
+            yield i, (images, tick.duration)
+
+    def get_images(
+        self, tick: TickGrouped, texture_animated: dict[str, tuple[list[int], bool]]
+    ) -> dict[str, Image.Image]:
+        images = {}
+        for texture_path, index in tick.tick.items():
+            texture = self.texture(texture_path)
+            if not texture:
+                raise RenderError(f"WTF")
+            img: Image.Image = texture.image
+            cropped = img.crop(
+                (0, index * img.width, img.width, (index + 1) * img.width)
+            )
+            if texture_animated[texture_path][1]:
+                lenght = 0
+                current_index = index
+                tick_before = tick.tick_before
+                assert tick_before is not None
+                for _ in range(999_999):
+                    if tick_before.tick[texture_path] != current_index:
+                        break
+                    tick_before = tick_before.tick_before
+                    assert tick_before is not None
+                    lenght += 1
+
+                left_lenght = lenght
+                tick_after = tick.tick_after
+                assert tick_after is not None
+                next_index = current_index
+                for _ in range(999_999):
+                    if tick_after.tick[texture_path] != current_index:
+                        next_index = tick_after.tick[texture_path]
+                        lenght += 1
+                        break
+                    tick_after = tick_after.tick_after
+                    assert tick_after is not None
+                    lenght += 1
+                if lenght > 1:
+                    next_cropped = img.crop(
+                        (
+                            0,
+                            next_index * img.width,
+                            img.width,
+                            (next_index + 1) * img.width,
+                        )
+                    )
+                    t = left_lenght / (lenght)
+                    cropped = self.blend_images(cropped, next_cropped, t)
+            images[texture_path] = cropped
+        return images
+
+    @staticmethod
+    def blend_images(img1: Image.Image, img2: Image.Image, t: float) -> Image.Image:
+        def lerp(a: int, b: int, t: float) -> int:
+            return int(a * (1 - t) + b * t)
+
+        assert img1.size == img2.size
+        assert t >= 0 and t <= 1
+        img1 = img1.convert("RGBA")
+        img2 = img2.convert("RGBA")
+        result = Image.new("RGBA", img1.size)
+        for x in range(img1.width):
+            for y in range(img1.height):
+                pixel1 = img1.getpixel((x, y))
+                pixel2 = img2.getpixel((x, y))
+                assert isinstance(pixel1, tuple) and isinstance(pixel2, tuple)
+                assert len(pixel1) == 4 and len(pixel2) == 4
+                # Blend the pixels using alpha blending
+                blended_pixel = (
+                    lerp(pixel1[0], pixel2[0], t),
+                    lerp(pixel1[1], pixel2[1], t),
+                    lerp(pixel1[2], pixel2[2], t),
+                    lerp(pixel1[3], pixel2[3], t),
+                )
+                result.putpixel((x, y), blended_pixel)
+        return result
+            
+    
+    def texture(self, key: str) -> Optional[Texture]:
+        return self.getter.assets.textures.get(resolve_key(key))
+        
+    
+    def mcmeta(self, key: str) -> Optional[TextureMcMetaModel]:
+        mcmeta = self.getter.assets.textures_mcmeta.get(resolve_key(key))
+        if not mcmeta:
+            return None
+        return TextureMcMetaModel.model_validate(mcmeta.data)
+
+
+

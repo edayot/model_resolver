@@ -3,19 +3,24 @@ from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
 
 from dataclasses import dataclass, field
+from model_resolver.item_model.item import Item
 from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
+from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.utils import ModelResolverOptions, resolve_key
 from model_resolver.minecraft_model import (
     DisplayOptionModel,
+    MinecraftModel,
     RotationModel,
+    resolve_model,
 )
-from typing import Optional, Any, TypedDict, Union
+from typing import Generator, Optional, Any, TypedDict, Union
 from pydantic import BaseModel, Field
 from rich import print  # noqa
 from functools import cached_property
 import random
 from model_resolver.tasks.base import Task, RenderError
-from model_resolver.tasks.model import ModelPathRenderTask
+from model_resolver.tasks.model import AnimatedResultTask, ModelPathRenderTask, ModelRenderTask
+from PIL import Image
 
 
 class PaletteModel(BaseModel):
@@ -99,9 +104,26 @@ class BlockState(BaseModel):
     variants: Optional[dict[str, Variant]] = None
     multipart: Optional[list[MultiPartModel]] = None
 
+    def get_models(self):
+        if self.variants:
+            for variant in self.variants.values():
+                if isinstance(variant, list):
+                    for v in variant:
+                        yield v.model
+                else:
+                    yield variant.model
+        if self.multipart:
+            for multipart in self.multipart:
+                variant = multipart.apply
+                if isinstance(variant, list):
+                    for v in variant:
+                        yield v.model
+                else:
+                    yield variant.model
+
 
 @dataclass(kw_only=True)
-class StructureRenderTask(Task):
+class StructureRenderTask(GenericModelRenderTask):
     structure_key: str
     display_option: DisplayOptionModel = field(
         default_factory=lambda: DisplayOptionModel(
@@ -111,6 +133,9 @@ class StructureRenderTask(Task):
     zoom: int = 128
     do_rotate_camera: bool = True
     random_seed: int = 143221
+
+    images_override: Optional[dict[str, Image.Image]] = None
+    item: Item = field(default_factory=lambda: Item(id="do_not_use"))
 
     @cached_property
     def structure(self):
@@ -144,6 +169,80 @@ class StructureRenderTask(Task):
         for block in self.structure.blocks:
             self.render_block(block, center)
         random.seed()
+
+    def get_parsed_model(self, key: str) -> MinecraftModel:
+        model = self.getter.assets.models.get(key)
+        if not model:
+            raise RenderError(f"Model {key} not found")
+        return MinecraftModel.model_validate(
+            resolve_model(model.data, self.getter)
+        ).bake()
+
+    def get_all_textures(self) -> Generator[dict[str, str | Image.Image], None, None]:
+        for block in self.structure.blocks:
+            palleted = self.structure.palette[block.state]
+            block_state = self.getter.assets.blockstates.get(palleted.Name)
+            if block_state is None:
+                raise RenderError(f"Blockstate {palleted.Name} not found")
+            block_state = BlockState.model_validate(block_state.data)
+            for model_path in block_state.get_models():
+                model = self.get_parsed_model(model_path)
+                yield model.textures
+
+
+    def resolve(self) -> Generator[Task, None, None]:
+        animation = Animation(
+            textures=list(self.get_all_textures()),
+            getter=self.getter,
+            animation_framerate=self.animation_framerate,
+        )
+        if not animation.is_animated:
+            self.animation_mode = "multi_files"
+            yield self
+            return
+        
+        tasks = []
+
+        for i, (images, duration) in animation.get_frames():
+            if self.path_save:
+                new_path_save = self.path_save / f"{i}_{duration}.png"
+            else:
+                new_path_save = None
+            if self.path_ctx:
+                new_path_ctx = self.path_ctx + f"/{i}_{duration}"
+            else:
+                new_path_ctx = None
+
+            task = StructureRenderTask(
+                structure_key=self.structure_key,
+                getter=self.getter,
+                item=self.item,
+                do_rotate_camera=self.do_rotate_camera,
+                offset=self.offset,
+                center_offset=self.center_offset,
+                additional_rotations=self.additional_rotations,
+                path_ctx=new_path_ctx,
+                path_save=new_path_save,
+                animation_mode=self.animation_mode,
+                render_size=self.render_size,
+                zoom=self.zoom,
+                ensure_params=self.ensure_params,
+                dynamic_textures=self.dynamic_textures,
+                images_override=images,
+            )
+            yield task
+            tasks.append(task)
+        if self.animation_mode == "webp":
+            yield AnimatedResultTask(
+                tasks=tasks,
+                path_ctx=self.path_ctx,
+                path_save=self.path_save,
+                getter=self.getter,
+                render_size=self.render_size,
+                zoom=self.zoom,
+                animation_mode=self.animation_mode,
+                animation_framerate=self.animation_framerate,
+            )
 
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
@@ -212,10 +311,16 @@ class StructureRenderTask(Task):
             ),
         ]
         tints = self.get_tints(resolved_variant.model, palleted)
-        task = ModelPathRenderTask(
+
+        model = self.get_parsed_model(resolved_variant.model)
+        if self.images_override:
+            textures = self.get_textures(model, self.images_override)
+            model.textures = textures
+
+        task = ModelRenderTask(
             getter=self.getter,
             render_size=self.render_size,
-            model=resolved_variant.model,
+            model=model,
             dynamic_textures=self.dynamic_textures,
             do_rotate_camera=False,
             additional_rotations=rots,

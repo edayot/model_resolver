@@ -9,7 +9,7 @@ from model_resolver.minecraft_model import (
 from typing import ClassVar, Generator
 from rich import print  # noqa
 from model_resolver.tasks.base import Task, RenderError
-from model_resolver.tasks.generic_render import GenericModelRenderTask
+from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.item_model.tint_source import TintSource
 from PIL import Image
 from beet import BinaryFileBase, NamespaceFileScope
@@ -37,7 +37,6 @@ class ModelRenderTask(GenericModelRenderTask):
 @dataclass(kw_only=True)
 class AnimatedResultTask(Task):
     tasks: list[Task] = field(default_factory=list)
-    is_interpolated: bool
 
     def save(self, _: Image.Image):
         # create a webp from the images
@@ -133,36 +132,30 @@ class ModelPathRenderTask(GenericModelRenderTask):
             self.animation_mode = "multi_files"
             yield self
             return
-        texture_path_to_frames, texture_interpolate = self.get_texture_path_to_frames(
-            model
+        
+        animation = Animation(
+            textures=[model.textures],
+            getter=self.getter,
+            animation_framerate=self.animation_framerate,
         )
-        is_interpolated = any(
-            texture_interpolate[texture_path]
-            for texture_path in texture_path_to_frames.keys()
-        )
-        if len(texture_path_to_frames) == 0:
+        if not animation.is_animated:
             self.animation_mode = "multi_files"
             yield self
             return
-
-        ticks_grouped = self.get_tick_grouped(
-            texture_path_to_frames, texture_interpolate
-        )
-
+        
         tasks = []
 
-        for i, tick in enumerate(ticks_grouped):
+        for i, (images, duration) in animation.get_frames():
             # get the images for the tick
-            images = self.get_images(tick, texture_interpolate)
             textures = self.get_textures(model, images)
             new_model = model.model_copy()
             new_model.textures = textures
             if self.path_save:
-                new_path_save = self.path_save / f"{i:03}_{tick.duration}.png"
+                new_path_save = self.path_save / f"{i:03}_{duration}.png"
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + f"/{i:03}_{tick.duration}"
+                new_path_ctx = self.path_ctx + f"/{i:03}_{duration}"
             else:
                 new_path_ctx = None
             task = ModelRenderTask(
@@ -193,7 +186,6 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 getter=self.getter,
                 render_size=self.render_size,
                 zoom=self.zoom,
-                is_interpolated=is_interpolated,
                 animation_mode=self.animation_mode,
                 animation_framerate=self.animation_framerate,
             )

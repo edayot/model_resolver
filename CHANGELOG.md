@@ -2,6 +2,23 @@
 
 
 
+## v1.6.0 (2025-05-25)
+
+### Chore
+
+* chore: update tests ([`316abac`](https://github.com/edayot/model_resolver/commit/316abacdf66d77c7592b1a7a88e4df9ed61333b0))
+
+* chore: update tests ([`a12e83f`](https://github.com/edayot/model_resolver/commit/a12e83fae9e7fe4c1b4088a4883a9ec5ea0af086))
+
+### Feature
+
+* feat: animated structures ([`595424a`](https://github.com/edayot/model_resolver/commit/595424a5a372bb5f88671ed589b796e8f8995c84))
+
+### Unknown
+
+* new animation type ([`f219db0`](https://github.com/edayot/model_resolver/commit/f219db0669ba533c79865bcf7ca0119cae0e3005))
+
+
 ## v1.5.1 (2025-05-17)
 
 ### Unknown

@@ -227,7 +227,9 @@ class ProfileComponent(BaseModel):
 class SpecialModelBaseHead(SpecialModelBase):
 
     @staticmethod
-    def get_model_player(getter: PackGetterV2, item: Item, texture: str | Image.Image) -> dict[str, Any]:
+    def get_model_player(
+        getter: PackGetterV2, item: Item, texture: str | Image.Image
+    ) -> dict[str, Any]:
         model = {
             "textures": {"1": texture, "particle": texture},
             "elements": [
@@ -270,7 +272,9 @@ class SpecialModelPlayerHead(SpecialModelBaseHead):
     type: Literal["minecraft:player_head", "player_head"]
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        return self.get_model_player(getter, item, self.get_player_texture(getter, item))
+        return self.get_model_player(
+            getter, item, self.get_player_texture(getter, item)
+        )
 
     def get_player_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
         DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
@@ -321,6 +325,7 @@ class SpecialModelPlayerHead(SpecialModelBaseHead):
         with Image.open(texture_cache) as texture:
             img.paste(texture, (0, 0))
         return img
+
 
 class SpecialModelHead(SpecialModelBaseHead):
     type: Literal["minecraft:head", "head"]
@@ -621,8 +626,6 @@ class SpecialModelHead(SpecialModelBaseHead):
             ],
         }
         return model
-
-
 
 
 class SpecialModelShulkerBox(SpecialModelBase):

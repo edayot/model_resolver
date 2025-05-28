@@ -1,6 +1,7 @@
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
+from model_resolver.minecraft_model import DisplayOptionModel
 from model_resolver.my_glut_init import glutInit
 
 from beet import Context, Atlas
@@ -16,7 +17,7 @@ from model_resolver.utils import (
     resolve_key,
     DEFAULT_RENDER_SIZE,
 )
-from typing import Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict
 from pathlib import Path
 import logging
 from PIL import Image
@@ -114,11 +115,17 @@ class Render:
         render_size: Optional[int] = None,
         animation_mode: AnimationType = "one_file",
         animation_framerate: int = 20,
+        display_option: Optional[DisplayOptionModel | dict[str, Any]] = None,
     ):
+        kwargs: dict[Literal["display_option"], DisplayOptionModel] = {}
         if render_size is None:
             render_size = self.default_render_size
         if isinstance(path_save, str):
             path_save = Path(path_save)
+        if isinstance(display_option, dict):
+            kwargs["display_option"] = DisplayOptionModel(**display_option)
+        elif isinstance(display_option, DisplayOptionModel):
+            kwargs["display_option"] = display_option
         self.tasks.append(
             StructureRenderTask(
                 getter=self.getter,
@@ -129,6 +136,7 @@ class Render:
                 random_seed=self.random_seed,
                 animation_mode=animation_mode,
                 animation_framerate=animation_framerate,
+                **kwargs,
             )
         )
 

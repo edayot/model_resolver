@@ -2,6 +2,13 @@
 
 
 
+## v1.7.1 (2025-05-28)
+
+### Fix
+
+* fix: special model ([`9033cdd`](https://github.com/edayot/model_resolver/commit/9033cdd01fb926e7a22b6f785a1b919e7d4c5ae0))
+
+
 ## v1.7.0 (2025-05-28)
 
 ### Feature

@@ -224,7 +224,105 @@ class ProfileComponent(BaseModel):
     properties: Optional[list[PropertiesModel]] = None
 
 
-class SpecialModelHead(SpecialModelBase):
+class SpecialModelBaseHead(SpecialModelBase):
+
+    @staticmethod
+    def get_model_player(getter: PackGetterV2, item: Item, texture: str | Image.Image) -> dict[str, Any]:
+        model = {
+            "textures": {"1": texture, "particle": texture},
+            "elements": [
+                {
+                    "from": [4, 0, 4],
+                    "to": [12, 8, 12],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [6, 2, 8, 4], "texture": "#1"},
+                        "east": {"uv": [4, 2, 6, 4], "texture": "#1"},
+                        "south": {"uv": [2, 2, 4, 4], "texture": "#1"},
+                        "west": {"uv": [0, 2, 2, 4], "texture": "#1"},
+                        "up": {"uv": [2, 0, 4, 2], "rotation": 180, "texture": "#1"},
+                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"},
+                    },
+                },
+                {
+                    "from": [3.75, -0.25, 3.75],
+                    "to": [12.25, 8.25, 12.25],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                    "faces": {
+                        "north": {"uv": [14, 2, 16, 4], "texture": "#1"},
+                        "east": {"uv": [12, 2, 14, 4], "texture": "#1"},
+                        "south": {"uv": [10, 2, 12, 4], "texture": "#1"},
+                        "west": {"uv": [8, 2, 10, 4], "texture": "#1"},
+                        "up": {"uv": [10, 0, 12, 2], "rotation": 180, "texture": "#1"},
+                        "down": {
+                            "uv": [12, 0, 14, 2],
+                            "rotation": 180,
+                            "texture": "#1",
+                        },
+                    },
+                },
+            ],
+        }
+        return model
+
+
+class SpecialModelPlayerHead(SpecialModelBaseHead):
+    type: Literal["minecraft:player_head", "player_head"]
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        return self.get_model_player(getter, item, self.get_player_texture(getter, item))
+
+    def get_player_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
+        DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
+        if not item.components:
+            return DEFAULT_TEXTURE
+        if not "minecraft:profile" in item.components:
+            return DEFAULT_TEXTURE
+        cache = getter._ctx.cache["model_resolver"]
+        if not isinstance(item.components["minecraft:profile"], str):
+            profile = ProfileComponent.model_validate(
+                item.components["minecraft:profile"]
+            )
+        else:
+            profile = ProfileComponent(name=item.components["minecraft:profile"])
+
+        if profile.id or profile.name:
+            if profile.name:
+                url = "https://api.mojang.com/users/profiles/minecraft/" + profile.name
+                path = cache.download(url)
+                with open(path, "r") as f:
+                    data = json.load(f)
+                if not "id" in data:
+                    return DEFAULT_TEXTURE
+                uuid = UUID(data["id"])
+            elif profile.id:
+                assert isinstance(profile.id, list)
+                id = 0
+                for i, signed in enumerate(profile.id):
+                    # signed is a 32 bit signed integer
+                    unsigned = signed & 0xFFFFFFFF
+                    id += unsigned * 2 ** (32 * (3 - i))
+                uuid = UUID(int=id)
+            url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
+            path = cache.download(url)
+            with open(path, "r") as f:
+                data = json.load(f)
+            profile = ProfileComponent.model_validate(data)
+        if not profile.properties:
+            return DEFAULT_TEXTURE
+        if len(profile.properties) == 0:
+            return DEFAULT_TEXTURE
+        prop = profile.properties[0]
+        value = base64.b64decode(prop.value)
+        data = json.loads(value)
+        texture_url = data["textures"]["SKIN"]["url"]
+        texture_cache = cache.download(texture_url)
+        img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
+        with Image.open(texture_cache) as texture:
+            img.paste(texture, (0, 0))
+        return img
+
+class SpecialModelHead(SpecialModelBaseHead):
     type: Literal["minecraft:head", "head"]
     kind: Literal[
         "skeleton", "wither_skeleton", "player", "zombie", "creeper", "piglin", "dragon"
@@ -235,7 +333,8 @@ class SpecialModelHead(SpecialModelBase):
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         match self.kind:
             case "player":
-                return self.get_model_player(getter, item)
+                texture = "minecraft:entity/player/wide/steve"
+                return self.get_model_player(getter, item, texture)
             case "zombie":
                 return self.get_model_zombie(getter, item)
             case "skeleton":
@@ -523,96 +622,7 @@ class SpecialModelHead(SpecialModelBase):
         }
         return model
 
-    def get_model_player(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        texture = self.get_player_texture(getter, item)
-        model = {
-            "textures": {"1": texture, "particle": texture},
-            "elements": [
-                {
-                    "from": [4, 0, 4],
-                    "to": [12, 8, 12],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [6, 2, 8, 4], "texture": "#1"},
-                        "east": {"uv": [4, 2, 6, 4], "texture": "#1"},
-                        "south": {"uv": [2, 2, 4, 4], "texture": "#1"},
-                        "west": {"uv": [0, 2, 2, 4], "texture": "#1"},
-                        "up": {"uv": [2, 0, 4, 2], "rotation": 180, "texture": "#1"},
-                        "down": {"uv": [4, 0, 6, 2], "rotation": 180, "texture": "#1"},
-                    },
-                },
-                {
-                    "from": [3.75, -0.25, 3.75],
-                    "to": [12.25, 8.25, 12.25],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [14, 2, 16, 4], "texture": "#1"},
-                        "east": {"uv": [12, 2, 14, 4], "texture": "#1"},
-                        "south": {"uv": [10, 2, 12, 4], "texture": "#1"},
-                        "west": {"uv": [8, 2, 10, 4], "texture": "#1"},
-                        "up": {"uv": [10, 0, 12, 2], "rotation": 180, "texture": "#1"},
-                        "down": {
-                            "uv": [12, 0, 14, 2],
-                            "rotation": 180,
-                            "texture": "#1",
-                        },
-                    },
-                },
-            ],
-        }
-        return model
 
-    def get_player_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
-        DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
-        if self.texture:
-            return self.texture
-        if not item.components:
-            return DEFAULT_TEXTURE
-        if not "minecraft:profile" in item.components:
-            return DEFAULT_TEXTURE
-        cache = getter._ctx.cache["model_resolver"]
-        if not isinstance(item.components["minecraft:profile"], str):
-            profile = ProfileComponent.model_validate(
-                item.components["minecraft:profile"]
-            )
-        else:
-            profile = ProfileComponent(name=item.components["minecraft:profile"])
-
-        if profile.id or profile.name:
-            if profile.name:
-                url = "https://api.mojang.com/users/profiles/minecraft/" + profile.name
-                path = cache.download(url)
-                with open(path, "r") as f:
-                    data = json.load(f)
-                if not "id" in data:
-                    return DEFAULT_TEXTURE
-                uuid = UUID(data["id"])
-            elif profile.id:
-                assert isinstance(profile.id, list)
-                id = 0
-                for i, signed in enumerate(profile.id):
-                    # signed is a 32 bit signed integer
-                    unsigned = signed & 0xFFFFFFFF
-                    id += unsigned * 2 ** (32 * (3 - i))
-                uuid = UUID(int=id)
-            url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
-            path = cache.download(url)
-            with open(path, "r") as f:
-                data = json.load(f)
-            profile = ProfileComponent.model_validate(data)
-        if not profile.properties:
-            return DEFAULT_TEXTURE
-        if len(profile.properties) == 0:
-            return DEFAULT_TEXTURE
-        prop = profile.properties[0]
-        value = base64.b64decode(prop.value)
-        data = json.loads(value)
-        texture_url = data["textures"]["SKIN"]["url"]
-        texture_cache = cache.download(texture_url)
-        img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
-        with Image.open(texture_cache) as texture:
-            img.paste(texture, (0, 0))
-        return img
 
 
 class SpecialModelShulkerBox(SpecialModelBase):

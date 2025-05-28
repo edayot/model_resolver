@@ -954,6 +954,7 @@ type SpecialModel = Union[
     SpecialModelBanner,
     SpecialModelConduit,
     SpecialModelChest,
+    SpecialModelPlayerHead,
     SpecialModelHead,
     SpecialModelShulkerBox,
     SpecialModelShield,

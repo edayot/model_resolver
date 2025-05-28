@@ -2,6 +2,13 @@
 
 
 
+## v1.7.0 (2025-05-28)
+
+### Feature
+
+* feat: special type for heads with 1.21.6-pre1 ([`926b3e5`](https://github.com/edayot/model_resolver/commit/926b3e5826131d8e2ad9663641e65663c87ec0b1))
+
+
 ## v1.6.0 (2025-05-25)
 
 ### Chore

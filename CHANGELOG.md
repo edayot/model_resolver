@@ -2,6 +2,23 @@
 
 
 
+## v1.8.0 (2025-05-29)
+
+### Feature
+
+* feat: special rendering for structure ([`326e2a4`](https://github.com/edayot/model_resolver/commit/326e2a4fd506afa3562f6d97adc3edf8efe83b1b))
+
+* feat: display option as a option ([`0154b7b`](https://github.com/edayot/model_resolver/commit/0154b7b9fad883c8aa204ca5177b9694e0fbd821))
+
+### Fix
+
+* fix: logging ([`2bc6947`](https://github.com/edayot/model_resolver/commit/2bc694753e03c88802187673fb53d006185a11ba))
+
+### Style
+
+* style: format.sh ([`01cba94`](https://github.com/edayot/model_resolver/commit/01cba94a9f77d2f22eef1ddb2075441670cb2663))
+
+
 ## v1.7.1 (2025-05-28)
 
 ### Fix

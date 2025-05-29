@@ -4,6 +4,7 @@ from OpenGL.GLU import *  # type: ignore
 
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.special import SpecialModelShulkerBox
 from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.utils import ModelResolverOptions, resolve_key
@@ -52,7 +53,7 @@ class StructureDataModel(BaseModel):
 
 
 class VariantModel(BaseModel):
-    model: str
+    model: str | MinecraftModel
     x: int = 0
     y: int = 0
     uvlock: bool = False
@@ -186,6 +187,7 @@ class StructureRenderTask(GenericModelRenderTask):
                 raise RenderError(f"Blockstate {palleted.Name} not found")
             block_state = BlockState.model_validate(block_state.data)
             for model_path in block_state.get_models():
+                assert isinstance(model_path, str), "Model path must be a string"
                 model = self.get_parsed_model(model_path)
                 yield model.textures
 
@@ -248,10 +250,52 @@ class StructureRenderTask(GenericModelRenderTask):
                 animation_framerate=self.animation_framerate,
             )
 
+    def render_special(self, palleted: PaletteModel) -> VariantModel | None:
+        if not self.getter.opts.special_rendering:
+            return None
+        shulker_block_to_textures = {
+            "minecraft:shulker_box": "minecraft:shulker",
+            "minecraft:white_shulker_box": "minecraft:shulker_white",
+            "minecraft:light_gray_shulker_box": "minecraft:shulker_light_gray",
+            "minecraft:gray_shulker_box": "minecraft:shulker_gray",
+            "minecraft:black_shulker_box": "minecraft:shulker_black",
+            "minecraft:brown_shulker_box": "minecraft:shulker_brown",
+            "minecraft:red_shulker_box": "minecraft:shulker_red",
+            "minecraft:orange_shulker_box": "minecraft:shulker_orange",
+            "minecraft:yellow_shulker_box": "minecraft:shulker_yellow",
+            "minecraft:lime_shulker_box": "minecraft:shulker_lime",
+            "minecraft:green_shulker_box": "minecraft:shulker_green",
+            "minecraft:cyan_shulker_box": "minecraft:shulker_cyan",
+            "minecraft:light_blue_shulker_box": "minecraft:shulker_light_blue",
+            "minecraft:blue_shulker_box": "minecraft:shulker_blue",
+            "minecraft:purple_shulker_box": "minecraft:shulker_purple",
+            "minecraft:magenta_shulker_box": "minecraft:shulker_magenta",
+            "minecraft:pink_shulker_box": "minecraft:shulker_pink",
+        }
+        if resolve_key(palleted.Name) in shulker_block_to_textures.keys():
+            orientation = palleted.Properties.get("facing", "up")
+            model = SpecialModelShulkerBox(
+                type="minecraft:shulker_box",
+                texture=shulker_block_to_textures[resolve_key(palleted.Name)],
+                openness=0,
+                orientation=orientation, # type: ignore[call-arg]
+            ).get_model(
+                getter=self.getter,
+                item=self.item,
+            )
+            return VariantModel(
+                model=MinecraftModel.model_validate(model).bake(),
+            )
+        
+
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
 
         block_state = self.getter.assets.blockstates.get(palleted.Name)
+        if variant := self.render_special(palleted):
+            return self.render_variant(
+                variant, block, center, palleted
+            )
         if block_state is None:
             raise RenderError(f"Blockstate {palleted.Name} not found")
 
@@ -303,7 +347,7 @@ class StructureRenderTask(GenericModelRenderTask):
             )[0]
         else:
             resolved_variant = variant
-        if resolve_key(resolved_variant.model) == "minecraft:block/air":
+        if isinstance(resolved_variant.model, str) and resolve_key(resolved_variant.model) == "minecraft:block/air":
             return
 
         rots = [
@@ -314,9 +358,10 @@ class StructureRenderTask(GenericModelRenderTask):
                 origin=(8, 8, 8), axis="y", angle=-resolved_variant.y, rescale=False
             ),
         ]
-        tints = self.get_tints(resolved_variant.model, palleted)
+        tints = self.get_tints(resolved_variant.model, palleted) if isinstance(resolved_variant.model, str) else []
 
-        model = self.get_parsed_model(resolved_variant.model)
+        model = self.get_parsed_model(resolved_variant.model) if isinstance(resolved_variant.model, str) else resolved_variant.model
+        model = model.bake()
         if self.images_override:
             textures = self.get_textures(model, self.images_override)
             model.textures = textures

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import json
 import os
+import pathlib
 import subprocess
 from beet import Context, DataPack, Pack, ResourcePack
 from pydantic import BaseModel
@@ -57,6 +58,7 @@ class ModelResolverOptions(BaseModel):
 class PackGetterV2[T: Pack]:
     assets: ResourcePack
     data: DataPack
+    opts: ModelResolverOptions
     _ctx: Context
     _vanilla: Vanilla
 
@@ -71,15 +73,24 @@ class PackGetterV2[T: Pack]:
                 else LATEST_MINECRAFT_VERSION
             ),
         )
+        
+            
+
         assets = ResourcePack()
         assets.merge(vanilla.assets)
+        if opts.special_rendering:
+            static_models = pathlib.Path(__file__).parent / "static_models"
+            rp = ResourcePack(str(static_models))
+            assets.merge(rp)
+
         assets.merge(ctx.assets)
+        
 
         data = DataPack()
         data.merge(vanilla.data)
         data.merge(ctx.data)
 
-        return cls(assets=assets, data=data, _ctx=ctx, _vanilla=vanilla)
+        return cls(assets=assets, data=data, _ctx=ctx, _vanilla=vanilla, opts=opts)
 
 
 @lru_cache

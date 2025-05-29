@@ -16,10 +16,10 @@ from model_resolver.utils import (
     PackGetterV2,
     resolve_key,
     DEFAULT_RENDER_SIZE,
+    log,
 )
 from typing import Any, Literal, Optional, TypedDict
 from pathlib import Path
-import logging
 from PIL import Image
 from rich import print  # noqa
 
@@ -279,7 +279,7 @@ class Render:
             glutLeaveMainLoop()
             return
         try:
-            logging.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
+            log.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
             x = self.real_display()
         except:
             glutLeaveMainLoop()
@@ -287,7 +287,7 @@ class Render:
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
             glutLeaveMainLoop()
-            logging.debug(f"Rendering task ended")
+            log.debug(f"Rendering task ended")
             return
 
     def real_display(self):

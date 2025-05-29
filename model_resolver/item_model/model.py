@@ -724,6 +724,7 @@ class ItemModelRecursive(RootModel[Any]):
 class ItemModel(BaseModel):
     model: ItemModelRecursive
     hand_animation_on_swap: Optional[bool] = True
+    oversized_in_gui: Optional[bool] = False
 
     def resolve(
         self, getter: PackGetterV2, item: Item

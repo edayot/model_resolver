@@ -649,7 +649,7 @@ class ItemModelSpecial(ItemModelBase):
         scale = self.model.get_scale()
         rotations = self.model.get_additional_rotations()
         child["parent"] = resolve_key(self.base)
-        merged = resolve_model(child, getter)
+        merged = resolve_model(child, getter, delete_parent_elements=True)
         res = MinecraftModel.model_validate(merged).bake()
         init_scale = res.display.gui.scale
         res.display.gui.scale = (

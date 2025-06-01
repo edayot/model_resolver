@@ -939,17 +939,71 @@ wood_types = Literal[
     "warped",
 ]
 
+class SpecialModelSignBase(SpecialModelBase):
+    texture: Optional[str] = None
+    wood_type: wood_types
 
-class SpecialModelStandingSign(SpecialModelBase):
+    @property
+    def used_texture(self) -> str:
+        if self.texture:
+            namespace, path = resolve_key(self.texture).split(":", 1)
+            return f"{namespace}:entity/signs/{path}"
+        if isinstance(self, SpecialModelStandingSign):
+            return f"minecraft:entity/signs/{self.wood_type}"
+        elif isinstance(self, SpecialModelHangingSign):
+            return f"minecraft:entity/signs/hanging/{self.wood_type}"
+        raise NotImplementedError()
+
+class SpecialModelStandingSign(SpecialModelSignBase):
     type: Literal["minecraft:standing_sign", "standing_sign"]
-    texture: Optional[str] = None
-    wood_type: wood_types
+
+    def get_scale(self) -> float:
+        return 0.75
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        texture = self.used_texture
+        return {
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "entity/signs/jungle",
+		"particle": "entity/signs/jungle"
+	},
+	"elements": [
+		{
+			"from": [7, -6, 7],
+			"to": [9, 8, 9],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, -8, 7]},
+			"faces": {
+				"north": {"uv": [0.5, 8, 1, 15], "texture": "#0"},
+				"east": {"uv": [0, 8, 0.5, 15], "texture": "#0"},
+				"south": {"uv": [1.5, 8, 2, 15], "texture": "#0"},
+				"west": {"uv": [1, 8, 1.5, 15], "texture": "#0"},
+				"up": {"uv": [1, 8, 0.5, 7], "texture": "#0"},
+				"down": {"uv": [1.5, 7, 1, 8], "texture": "#0"}
+			}
+		},
+		{
+			"from": [-4, 8, 7],
+			"to": [20, 20, 9],
+			"rotation": {"angle": 0, "axis": "y", "origin": [-4, 6, 7]},
+			"faces": {
+				"north": {"uv": [0.5, 1, 6.5, 7], "texture": "#0"},
+				"east": {"uv": [0, 1, 0.5, 7], "texture": "#0"},
+				"south": {"uv": [7, 1, 13, 7], "texture": "#0"},
+				"west": {"uv": [6.5, 1, 7, 7], "texture": "#0"},
+				"up": {"uv": [6.5, 1, 0.5, 0], "texture": "#0"},
+				"down": {"uv": [12.5, 0, 6.5, 1], "texture": "#0"}
+			}
+		}
+	]
+}
+
+    
 
 
-class SpecialModelHangingSign(SpecialModelBase):
+class SpecialModelHangingSign(SpecialModelSignBase):
     type: Literal["minecraft:hanging_sign", "hanging_sign"]
-    texture: Optional[str] = None
-    wood_type: wood_types
+
 
 
 type SpecialModel = Union[

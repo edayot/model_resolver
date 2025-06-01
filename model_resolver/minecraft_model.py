@@ -122,6 +122,7 @@ class MinecraftModel(BaseModel):
 def resolve_model(
     data: dict[str, Any],
     getter: PackGetterV2,
+    delete_parent_elements: bool = False,
 ) -> dict[str, Any]:
     if not "parent" in data:
         return data
@@ -136,11 +137,13 @@ def resolve_model(
     else:
         raise ValueError(f"{parent_key} not in Context or Vanilla")
     resolved_parent = resolve_model(parent, getter)
-    return merge_parent(resolved_parent, data)
+    return merge_parent(resolved_parent, data, delete_parent_elements)
 
 
-def merge_parent(parent: dict[str, Any], child: dict[str, Any]) -> dict[str, Any]:
+def merge_parent(parent: dict[str, Any], child: dict[str, Any], delete_parent_elements: bool = False,) -> dict[str, Any]:
     res = deepcopy(parent)
+    if delete_parent_elements:
+        res.pop("elements", None)
     if "textures" in child:
         res.setdefault("textures", {})
         res["textures"].update(child["textures"])

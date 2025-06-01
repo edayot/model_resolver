@@ -1,9 +1,11 @@
-from typing import Any, Generator, Literal, Union, Optional
+from typing import Any, ClassVar, Generator, Literal, Union, Optional
 from beet import NamespaceFile, NamespaceProxy, TagFile
 from pydantic import AliasChoices, Field, RootModel, BaseModel
+from nbtlib import parse_nbt, Compound
 
 from model_resolver.item_model.item import Item
 from model_resolver.utils import PackGetterV2, resolve_key
+from rich import print
 
 
 class MinMax(BaseModel):
@@ -108,25 +110,76 @@ class ItemCondition(BaseModel):
 
 class CountItem(DataComponentBase):
     count: NumberOrRange = None
-    test: ItemCondition | None = None
+    test: ItemCondition
 
 
-class InventoryLikeDataComponent(DataComponentBase):
+class PredicateCollection(DataComponentBase):
     contains: Optional[list[ItemCondition]] = None
     size: NumberOrRange = None
-    count: CountItem | None = None
+    count: list[CountItem] | None = None
+
+class InventoryLikeDataComponent(DataComponentBase):
+    inventory_component: ClassVar[str] 
+    items: Optional[PredicateCollection] = None
+
+    def verify_item_condition(
+        self, getter: PackGetterV2, item_condition: ItemCondition, container: list[Item]
+    ) -> int:
+        """
+        Checks the number of times an item condition is met in the container.
+        """
+        res = 0
+        for item in container:
+            if item_condition.items is not None:
+                if resolve_key(item.id) not in iter_tagged_id(item_condition.items, getter.data.item_tags):
+                    continue
+            if item_condition.count is not None:
+                if not compare_range(item_condition.count, item.count):
+                    continue
+            if item_condition.components is not None:
+                if item_condition.components != item.get("components"):
+                    continue
+            if item_condition.predicates is not None:
+                if not item_condition.predicates.is_valid(getter, item):
+                    continue
+            res += 1
+        return res
+    
+
+    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+        container: list[Item] = [Item.model_validate(x["item"]) for x in item.get(self.inventory_component)]
+        if self.items is None:
+            return False
+        if self.items.size is not None:
+            if not compare_range(self.items.size, len(container)):
+                return False
+        if self.items.contains is not None:
+            for item_condition in self.items.contains:
+                if self.verify_item_condition(getter, item_condition, container) == 0:
+                    return False
+        if self.items.count is not None:
+            for test_count in self.items.count:
+                nb_valid = self.verify_item_condition(getter, test_count.test, container)
+                if not compare_range(test_count.count, nb_valid):
+                    return False
+        return True
 
 
-class BundleContentsDataComponent(InventoryLikeDataComponent): ...
+
+class BundleContentsDataComponent(InventoryLikeDataComponent):
+    inventory_component: ClassVar[str] = "bundle_contents"
 
 
-class ContainerDataComponent(InventoryLikeDataComponent): ...
+class ContainerDataComponent(InventoryLikeDataComponent):
+    inventory_component: ClassVar[str] = "container"
+
+    
 
 
 class CustomDataDataComponent(RootModel, DataComponentBase):
-    root: dict[str, Any]
+    root: dict[str, Any] | str
 
-    def verify_equal(self, predicate: Any, value: Any) -> bool:
+    def verify_equal(self, predicate: dict[str, Any] | list[dict[str, Any]] | int | str, value: Any) -> bool:
         if isinstance(predicate, dict):
             if not isinstance(value, dict):
                 return False
@@ -151,6 +204,10 @@ class CustomDataDataComponent(RootModel, DataComponentBase):
             return False
         if not isinstance(custom_data, dict):
             return False
+        if isinstance(self.root, str):
+            nbt: Compound = parse_nbt(self.root)
+            a = self.verify_equal(nbt, custom_data)
+            return a
         return self.verify_equal(self.root, custom_data)
 
 

@@ -149,6 +149,8 @@ class Render:
             for key, path in cache.json["dynamic_textures"].items():
                 self.dynamic_textures[key] = Image.open(path)
             return
+        # clear the dynamic textures
+        cache.clear()
         # construct the dynamic textures
         atlases = {
             **{key: value for key, value in self.getter.assets.atlases.items()},

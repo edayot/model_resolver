@@ -2,6 +2,21 @@
 
 
 
+## v1.8.1 (2025-06-04)
+
+### Feature
+
+* feat: start sign special ([`c7a2ecc`](https://github.com/edayot/model_resolver/commit/c7a2ecc61f499f311ace61f6329a256462b728ed))
+
+### Fix
+
+* fix: clear the cache ([`aa4217d`](https://github.com/edayot/model_resolver/commit/aa4217d5b52cf8e23300df424a6c4fd207533b36))
+
+### Unknown
+
+* fis: custom data data component predicate now accept nbt string ([`5eea12e`](https://github.com/edayot/model_resolver/commit/5eea12eef7e85b9c3e1913045368cedf88083c50))
+
+
 ## v1.8.0 (2025-05-29)
 
 ### Feature

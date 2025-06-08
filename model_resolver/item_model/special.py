@@ -627,6 +627,11 @@ class SpecialModelHead(SpecialModelBaseHead):
         }
         return model
 
+    def get_scale(self) -> float:
+        if self.kind == "dragon":
+            return 0.75
+        return 1
+
 
 class SpecialModelShulkerBox(SpecialModelBase):
     type: Literal["minecraft:shulker_box", "shulker_box"]

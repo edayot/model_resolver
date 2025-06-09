@@ -2,6 +2,13 @@
 
 
 
+## v1.8.2 (2025-06-09)
+
+### Fix
+
+* fix: dragon head are smaller ([`e8f3b5d`](https://github.com/edayot/model_resolver/commit/e8f3b5deea4a45b4a01e9ee16dc545674827e196))
+
+
 ## v1.8.1 (2025-06-04)
 
 ### Feature

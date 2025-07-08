@@ -282,7 +282,7 @@ class SpecialModelPlayerHead(SpecialModelBaseHead):
             return DEFAULT_TEXTURE
         if not "minecraft:profile" in item.components:
             return DEFAULT_TEXTURE
-        cache = getter._ctx.cache["model_resolver"]
+        cache = getter._ctx.cache["model_resolver_player_skin"]
         if not isinstance(item.components["minecraft:profile"], str):
             profile = ProfileComponent.model_validate(
                 item.components["minecraft:profile"]

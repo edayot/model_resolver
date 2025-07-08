@@ -115,7 +115,7 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
     match prefered:
         case "misode/mcmeta":
             url = f"https://raw.githubusercontent.com/misode/mcmeta/refs/tags/{version}-summary/item_components/data.json"
-            path = ctx.cache["model_resolver"].download(url)
+            path = ctx.cache["model_resolver_components"].download(url)
             with open(path) as file:
                 components = json.load(file)
             return {resolve_key(key): value for key, value in components.items()}
@@ -124,7 +124,7 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
             jar = release.cache.download(
                 release.info.data["downloads"]["server"]["url"]
             )
-            cache = ctx.cache["model_resolver"]
+            cache = ctx.cache["model_resolver_components"]
             path = cache.get_path("minecraft_reports")
             if not path.is_dir():
                 os.makedirs(path, exist_ok=True)

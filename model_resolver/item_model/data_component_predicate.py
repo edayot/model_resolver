@@ -5,7 +5,7 @@ from nbtlib import parse_nbt, Compound
 
 from model_resolver.item_model.item import Item
 from model_resolver.utils import PackGetterV2, resolve_key
-from rich import print
+from rich import print  # noqa
 
 
 class MinMax(BaseModel):
@@ -118,8 +118,9 @@ class PredicateCollection(DataComponentBase):
     size: NumberOrRange = None
     count: list[CountItem] | None = None
 
+
 class InventoryLikeDataComponent(DataComponentBase):
-    inventory_component: ClassVar[str] 
+    inventory_component: ClassVar[str]
     items: Optional[PredicateCollection] = None
 
     def verify_item_condition(
@@ -131,7 +132,9 @@ class InventoryLikeDataComponent(DataComponentBase):
         res = 0
         for item in container:
             if item_condition.items is not None:
-                if resolve_key(item.id) not in iter_tagged_id(item_condition.items, getter.data.item_tags):
+                if resolve_key(item.id) not in iter_tagged_id(
+                    item_condition.items, getter.data.item_tags
+                ):
                     continue
             if item_condition.count is not None:
                 if not compare_range(item_condition.count, item.count):
@@ -144,10 +147,11 @@ class InventoryLikeDataComponent(DataComponentBase):
                     continue
             res += 1
         return res
-    
 
     def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
-        container: list[Item] = [Item.model_validate(x["item"]) for x in item.get(self.inventory_component)]
+        container: list[Item] = [
+            Item.model_validate(x["item"]) for x in item.get(self.inventory_component)
+        ]
         if self.items is None:
             return False
         if self.items.size is not None:
@@ -159,11 +163,12 @@ class InventoryLikeDataComponent(DataComponentBase):
                     return False
         if self.items.count is not None:
             for test_count in self.items.count:
-                nb_valid = self.verify_item_condition(getter, test_count.test, container)
+                nb_valid = self.verify_item_condition(
+                    getter, test_count.test, container
+                )
                 if not compare_range(test_count.count, nb_valid):
                     return False
         return True
-
 
 
 class BundleContentsDataComponent(InventoryLikeDataComponent):
@@ -173,13 +178,13 @@ class BundleContentsDataComponent(InventoryLikeDataComponent):
 class ContainerDataComponent(InventoryLikeDataComponent):
     inventory_component: ClassVar[str] = "container"
 
-    
-
 
 class CustomDataDataComponent(RootModel, DataComponentBase):
     root: dict[str, Any] | str
 
-    def verify_equal(self, predicate: dict[str, Any] | list[dict[str, Any]] | int | str, value: Any) -> bool:
+    def verify_equal(
+        self, predicate: dict[str, Any] | list[dict[str, Any]] | int | str, value: Any
+    ) -> bool:
         if isinstance(predicate, dict):
             if not isinstance(value, dict):
                 return False

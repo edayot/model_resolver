@@ -140,7 +140,11 @@ def resolve_model(
     return merge_parent(resolved_parent, data, delete_parent_elements)
 
 
-def merge_parent(parent: dict[str, Any], child: dict[str, Any], delete_parent_elements: bool = False,) -> dict[str, Any]:
+def merge_parent(
+    parent: dict[str, Any],
+    child: dict[str, Any],
+    delete_parent_elements: bool = False,
+) -> dict[str, Any]:
     res = deepcopy(parent)
     if delete_parent_elements:
         res.pop("elements", None)

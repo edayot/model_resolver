@@ -278,7 +278,7 @@ class StructureRenderTask(GenericModelRenderTask):
                 type="minecraft:shulker_box",
                 texture=shulker_block_to_textures[resolve_key(palleted.Name)],
                 openness=0,
-                orientation=orientation, # type: ignore[call-arg]
+                orientation=orientation,  # type: ignore[call-arg]
             ).get_model(
                 getter=self.getter,
                 item=self.item,
@@ -286,16 +286,13 @@ class StructureRenderTask(GenericModelRenderTask):
             return VariantModel(
                 model=MinecraftModel.model_validate(model).bake(),
             )
-        
 
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
 
         block_state = self.getter.assets.blockstates.get(palleted.Name)
         if variant := self.render_special(palleted):
-            return self.render_variant(
-                variant, block, center, palleted
-            )
+            return self.render_variant(variant, block, center, palleted)
         if block_state is None:
             raise RenderError(f"Blockstate {palleted.Name} not found")
 
@@ -347,7 +344,10 @@ class StructureRenderTask(GenericModelRenderTask):
             )[0]
         else:
             resolved_variant = variant
-        if isinstance(resolved_variant.model, str) and resolve_key(resolved_variant.model) == "minecraft:block/air":
+        if (
+            isinstance(resolved_variant.model, str)
+            and resolve_key(resolved_variant.model) == "minecraft:block/air"
+        ):
             return
 
         rots = [
@@ -358,9 +358,17 @@ class StructureRenderTask(GenericModelRenderTask):
                 origin=(8, 8, 8), axis="y", angle=-resolved_variant.y, rescale=False
             ),
         ]
-        tints = self.get_tints(resolved_variant.model, palleted) if isinstance(resolved_variant.model, str) else []
+        tints = (
+            self.get_tints(resolved_variant.model, palleted)
+            if isinstance(resolved_variant.model, str)
+            else []
+        )
 
-        model = self.get_parsed_model(resolved_variant.model) if isinstance(resolved_variant.model, str) else resolved_variant.model
+        model = (
+            self.get_parsed_model(resolved_variant.model)
+            if isinstance(resolved_variant.model, str)
+            else resolved_variant.model
+        )
         model = model.bake()
         if self.images_override:
             textures = self.get_textures(model, self.images_override)

@@ -73,8 +73,6 @@ class PackGetterV2[T: Pack]:
                 else LATEST_MINECRAFT_VERSION
             ),
         )
-        
-            
 
         assets = ResourcePack()
         assets.merge(vanilla.assets)
@@ -84,7 +82,6 @@ class PackGetterV2[T: Pack]:
             assets.merge(rp)
 
         assets.merge(ctx.assets)
-        
 
         data = DataPack()
         data.merge(vanilla.data)

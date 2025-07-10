@@ -2,6 +2,13 @@
 
 
 
+## v1.8.3 (2025-07-10)
+
+### Fix
+
+* fix: #14 all caches are now separated ([`e5a6404`](https://github.com/edayot/model_resolver/commit/e5a64041268c8f2464d27acf06aed2c6af893fcb))
+
+
 ## v1.8.2 (2025-06-09)
 
 ### Fix

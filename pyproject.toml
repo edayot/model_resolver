@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "model-resolver"
-version = "1.8.2"
+version = "1.8.3"
 description = ""
 authors = ["edayot <pro.e.dayot@gmail.com>"]
 license = "MIT"

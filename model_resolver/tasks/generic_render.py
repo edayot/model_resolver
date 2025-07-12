@@ -11,6 +11,7 @@ from model_resolver.item_model.item import Item
 from model_resolver.utils import (
     PackGetterV2,
     resolve_key,
+    log,
 )
 from model_resolver.minecraft_model import (
     MinecraftModel,
@@ -141,6 +142,7 @@ class GenericModelRenderTask(Task):
             value = self.get_real_key(key, model.textures)
             if value is None:
                 res[key] = (Image.new("RGBA", (16, 16), (0, 0, 0, 0)), "empty")
+                log.warning(f"Texture {key} not found in model")
             elif isinstance(value, Image.Image):
                 res[key] = (value, "dynamic")
             elif isinstance(value, tuple):
@@ -156,6 +158,8 @@ class GenericModelRenderTask(Task):
                         img = texture.image
                     else:
                         img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                        log.warning(f"Texture {key} not found at {path}")
+                        
                     img = img.convert("RGBA")
                     textures.append((img, tint))
                 res[key] = (tuple(textures), key)
@@ -169,6 +173,7 @@ class GenericModelRenderTask(Task):
                     img = texture.image
                 else:
                     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                    log.warning(f"Texture {key} not found at {path}")
                 img = img.convert("RGBA")
                 res[key] = (img, path)
         return res

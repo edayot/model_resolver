@@ -14,7 +14,7 @@ import logging
 
 from beet.contrib.vanilla import Vanilla
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("model_resolver")
 
 DEFAULT_RENDER_SIZE = 256
 

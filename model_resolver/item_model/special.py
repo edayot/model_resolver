@@ -124,6 +124,9 @@ class SpecialModelBanner(SpecialModelBaseLayer):
     def get_base_color(self, item: Item) -> str | None:
         return self.color
     
+    def get_scale(self) -> float:
+        return 0.75/0.5325
+    
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.get_texture(getter, item)
         res = {
@@ -132,9 +135,9 @@ class SpecialModelBanner(SpecialModelBaseLayer):
             },
             "elements": [
                 {
-                    "from": [7.5, 0, 7.5],
-                    "to": [8.5, 21, 8.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 8]},
+                    "from": [7.5, 1.5, 7.5],
+                    "to": [8.5, 22.5, 8.5],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 2, 8]},
                     "faces": {
                         "north": {"uv": [12.5, 0.5, 13, 11], "texture": "#0"},
                         "east": {"uv": [12, 0.5, 12.5, 11], "texture": "#0"},
@@ -145,9 +148,9 @@ class SpecialModelBanner(SpecialModelBaseLayer):
                     }
                 },
                 {
-                    "from": [3, 21, 7.5],
-                    "to": [13, 22, 8.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 22, 8]},
+                    "from": [3, 22.5, 7.5],
+                    "to": [13, 23.5, 8.5],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 24, 8]},
                     "faces": {
                         "north": {"uv": [6, 11, 11, 11.5], "texture": "#0"},
                         "east": {"uv": [5.5, 11, 6, 11.5], "texture": "#0"},
@@ -158,9 +161,9 @@ class SpecialModelBanner(SpecialModelBaseLayer):
                     }
                 },
                 {
-                    "from": [3, 2, 8.5],
-                    "to": [13, 22, 9.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [9, 2, 9]},
+                    "from": [3, 3.5, 8.5],
+                    "to": [13, 23.5, 9.5],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [9, 4, 9]},
                     "faces": {
                         "north": {"uv": [5.5, 0.25, 10.5, 10.25], "texture": "#0"},
                         "east": {"uv": [5.25, 0.25, 5.5, 10.25], "texture": "#0"},

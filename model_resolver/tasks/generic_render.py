@@ -478,7 +478,13 @@ class GenericModelRenderTask(Task):
         # self.set_uniforms(self.program)
 
         glEnable(GL_TEXTURE_2D)
-        depth_offset = 0.0001  # Small depth increment to layer textures
+        
+        # Save current blend function
+        blend_src = glGetIntegerv(GL_BLEND_SRC)
+        blend_dst = glGetIntegerv(GL_BLEND_DST)
+        
+        depht_coef = 0.1
+
         for layer_index, (tex_id, tint) in enumerate(bindings[0]):
             glBindTexture(GL_TEXTURE_2D, tex_id)
             color = (1.0, 1.0, 1.0)
@@ -489,11 +495,13 @@ class GenericModelRenderTask(Task):
                 color = real_tint.resolve(self.getter, item=self.item)
                 color = (color[0] / 255, color[1] / 255, color[2] / 255)  
             
-            # Apply depth offset for layering
+            # Apply depth offset for layering by modifying polygon offset
             if layer_index > 0:
-                glPushMatrix()
-                glTranslatef(0, 0, depth_offset * layer_index)
-                          
+                glEnable(GL_POLYGON_OFFSET_FILL)
+                glPolygonOffset(-layer_index * depht_coef, -layer_index * depht_coef)
+                # Change blend function for layered textures
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            
             glBegin(GL_QUADS)
             for i, (v0, v1, v2) in enumerate(triangulated_vertices):
                 normal = normals[i]
@@ -504,10 +512,13 @@ class GenericModelRenderTask(Task):
                 glVertex3fv(rotated_vertices[i])
             glEnd()
             
-            # Restore matrix if depth offset was applied
+            # Disable polygon offset after use
             if layer_index > 0:
-                glPopMatrix()
-        # glUseProgram(0)
+                glDisable(GL_POLYGON_OFFSET_FILL)
+        
+        # Restore previous blend function
+        glBlendFunc(blend_src, blend_dst)
+        
         glDisable(GL_TEXTURE_2D)
 
     def get_uv(

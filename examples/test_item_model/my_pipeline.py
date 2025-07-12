@@ -91,25 +91,29 @@ def beet_default(ctx: Context):
         ), 
         path_ctx="test:render/component_condition_on_true", render_size=512)
 
+    patterns = [
+        {"color": "cyan", "pattern": "minecraft:rhombus"}, 
+        {"color": "light_gray", "pattern": "minecraft:stripe_bottom"}, 
+        {"color": "gray", "pattern": "minecraft:stripe_center"}, 
+        {"color": "light_gray", "pattern": "minecraft:border"}, 
+        {"color": "black", "pattern": "minecraft:stripe_middle"}, 
+        {"color": "light_gray", "pattern": "minecraft:half_horizontal"}, 
+        {"color": "light_gray", "pattern": "minecraft:circle"}, 
+        {"color": "black", "pattern": "minecraft:border"}
+    ]
 
-    render.add_item_task(
-    Item(
-        id="minecraft:shield", 
-        components={
-            "minecraft:base_color": "white", 
-            "minecraft:banner_patterns": [
-                {"color": "cyan", "pattern": "minecraft:rhombus"}, 
-                {"color": "light_gray", "pattern": "minecraft:stripe_bottom"}, 
-                {"color": "gray", "pattern": "minecraft:stripe_center"}, 
-                {"color": "light_gray", "pattern": "minecraft:border"}, 
-                {"color": "black", "pattern": "minecraft:stripe_middle"}, 
-                {"color": "light_gray", "pattern": "minecraft:half_horizontal"}, 
-                {"color": "light_gray", "pattern": "minecraft:circle"}, 
-                {"color": "black", "pattern": "minecraft:border"}
-            ]
-        }
-    ), 
-    path_ctx="test:render/shield", render_size=512)
+
+    for i in range(len(patterns) + 1):
+
+        render.add_item_task(
+        Item(
+            id="minecraft:white_banner", 
+            components={
+                "minecraft:banner_patterns": patterns[:i],
+            }
+        ), 
+        path_ctx=f"test:render/shield/{i}", render_size=512)
+    
 
     # render.add_item_task(Item(id="minecraft:diamond", components={
     #     "minecraft:item_model": "test:zombie"

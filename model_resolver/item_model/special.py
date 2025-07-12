@@ -1,3 +1,4 @@
+import colorsys
 import math
 from pydantic import BaseModel
 from model_resolver.item_model.tint_source import (
@@ -811,67 +812,140 @@ class SpecialModelShield(SpecialModelBase):
         "magenta": 13061821,
         "pink": 15961002,
     }
-    STEP: float = 0.0005
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         res: list[TintSource] = []
-        if "minecraft:base_color" in item.components:
-            color = item.components["minecraft:base_color"]
-            color = self.COLOR_STRING_TO_ARGB[color]
-            color = to_argb(color)
-            color = (color[1], color[2], color[3])
-            res.append(TintSourceConstant(type="constant", value=color))
-            for pattern in item.components.get("minecraft:banner_patterns", []):
-                color = pattern["color"]
-                color = self.COLOR_STRING_TO_ARGB[color]
-                color = to_argb(color)
-                color = (color[1], color[2], color[3])
-                res.append(TintSourceConstant(type="constant", value=color))
+        # if "minecraft:base_color" in item.components:
+        #     color = item.components["minecraft:base_color"]
+        #     color = self.COLOR_STRING_TO_ARGB[color]
+        #     color = to_argb(color)
+        #     color = (color[1], color[2], color[3])
+        #     res.append(TintSourceConstant(type="constant", value=color))
+        #     for pattern in item.components.get("minecraft:banner_patterns", []):
+        #         color = pattern["color"]
+        #         color = self.COLOR_STRING_TO_ARGB[color]
+        #         color = to_argb(color)
+        #         color = (color[1], color[2], color[3])
+        #         res.append(TintSourceConstant(type="constant", value=color))
         return res
+    
+    @staticmethod
+    def blend_colors(
+        color: tuple[int, int, int],
+        pixel: tuple[int, int, int]
+    ) -> tuple[int, int, int]:
+        """
+        :param color: (r, g, b)
+        :param pixel: (r, g, b) - couleur du pixel actuel dans le framebuffer
+        :return: (r, g, b) - couleur résultante du pixel après coloration
+        """
+        rc, gc, bc = color
+        rp, gp, bp = pixel
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        texture = "minecraft:entity/shield_base_nopattern"
-        additionnal_textures = {}
-        additionnal_elements = []
-        if "minecraft:base_color" in item.components:
-            texture = "minecraft:entity/shield_base"
-            additionnal_textures["1"] = "minecraft:entity/shield/base"
-            additionnal_elements.append(
-                {
-                    "from": [-6, -11, 1 + self.STEP],
-                    "to": [6, 11, 2 + self.STEP],
-                    "faces": {
-                        "south": {
-                            "uv": [0.25, 0.25, 3.25, 5.75],
-                            "texture": "#1",
-                            "tintindex": 0,
-                        },
-                    },
-                }
+        # divide by 255
+        rc /= 255
+        gc /= 255
+        bc /= 255
+
+        rp /= 255
+        gp /= 255
+        bp /= 255
+
+        r = 4 * ()
+
+    def color_image(self, img: Image.Image, color: str) -> Image.Image:
+        # Bake the opengl glColor3f in the image directly
+        if not (color_rgb := self.COLOR_STRING_TO_ARGB.get(color)):
+            raise ValueError(f"Unknown color {color}")
+        color_argb = to_argb(color_rgb)
+        color_rgb = (color_argb[1], color_argb[2], color_argb[3])  # RGBA
+        img = img.convert("RGBA").copy()
+        data = img.getdata()
+        new_data = []
+        for item in data:
+            # We use GL_ONE_MINUS_SRC_ALPHA
+            new_data.append(
+                (*self.blend_colors(color_rgb, (item[0], item[1], item[2],)), item[3])
             )
-            for i, pattern in enumerate(
-                item.components.get("minecraft:banner_patterns", [])
-            ):
+        img.putdata(new_data)
+        return img
+        
+    
+    def get_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
+        if not (base_color := item.components.get("minecraft:base_color")):
+            return "minecraft:entity/shield_base_nopattern"
+        img: Image.Image = getter.assets.textures["minecraft:entity/shield_base"].image
+        img = img.copy().convert("RGBA")
+
+        base: Image.Image = getter.assets.textures["minecraft:entity/shield/base"].image
+        base = base.copy().convert("RGBA")
+        base = self.color_image(base, base_color)
+        img.paste(base, (0, 0), base)
+        
+
+        if "minecraft:banner_patterns" in item.components:
+            for i, pattern in enumerate(item.components["minecraft:banner_patterns"]):
                 pattern_id = resolve_key(pattern["pattern"])
                 namespace, path = pattern_id.split(":")
-                additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
-                step = self.STEP * (i + 2)
-                additionnal_elements.append(
-                    {
-                        "from": [-6, -11, 1 + step],
-                        "to": [6, 11, 2 + step],
-                        "faces": {
-                            "south": {
-                                "uv": [0.25, 0.25, 3.25, 5.75],
-                                "texture": f"#{i+2}",
-                                "tintindex": i + 1,
-                            },
-                        },
-                    }
-                )
+                texture = f"{namespace}:entity/shield/{path}"
+                if not (pattern_texture := getter.assets.textures.get(texture)):
+                    raise ValueError(
+                        f"Pattern texture {texture} not found in assets"
+                    )
+                pattern_img: Image.Image = pattern_texture.image
+                pattern_img = pattern_img.copy().convert("RGBA")
+                pattern_img = self.color_image(pattern_img, pattern["color"])
+                img.paste(pattern_img, (0, 0), pattern_img)
+        img.save("./test.png")
+
+        return img
+                
+
+        
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        texture = self.get_texture(getter, item)
+        # additionnal_textures = {}
+        # additionnal_elements = []
+        # if "minecraft:base_color" in item.components:
+        #     texture = "minecraft:entity/shield_base"
+        #     additionnal_textures["1"] = "minecraft:entity/shield/base"
+        #     additionnal_elements.append(
+        #         {
+        #             "from": [-6, -11, 1 + self.STEP],
+        #             "to": [6, 11, 2 + self.STEP],
+        #             "faces": {
+        #                 "south": {
+        #                     "uv": [0.25, 0.25, 3.25, 5.75],
+        #                     "texture": "#1",
+        #                     "tintindex": 0,
+        #                 },
+        #             },
+        #         }
+        #     )
+        #     for i, pattern in enumerate(
+        #         item.components.get("minecraft:banner_patterns", [])
+        #     ):
+        #         pattern_id = resolve_key(pattern["pattern"])
+        #         namespace, path = pattern_id.split(":")
+        #         additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
+        #         step = self.STEP * (i + 2)
+        #         additionnal_elements.append(
+        #             {
+        #                 "from": [-6, -11, 1 + step],
+        #                 "to": [6, 11, 2 + step],
+        #                 "faces": {
+        #                     "south": {
+        #                         "uv": [0.25, 0.25, 3.25, 5.75],
+        #                         "texture": f"#{i+2}",
+        #                         "tintindex": i + 1,
+        #                     },
+        #                 },
+        #             }
+        #         )
 
         res = {
-            "textures": {"0": texture, **additionnal_textures},
+            "textures": {"0": texture},
             "elements": [
                 {
                     "from": [-6, -11, 1],
@@ -913,7 +987,6 @@ class SpecialModelShield(SpecialModelBase):
                         },
                     },
                 },
-                *additionnal_elements,
             ],
             "gui_light": "front",
         }

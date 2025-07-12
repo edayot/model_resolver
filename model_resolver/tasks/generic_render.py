@@ -482,7 +482,7 @@ class Animation:
         for textures in self.textures:
             for texture_path in textures.values():
                 if isinstance(texture_path, Image.Image):
-                    raise RenderError(f"WTF is going on")
+                    continue
                 if resolve_key(texture_path) in texture_animated:
                     continue
                 texture = self.texture(texture_path)

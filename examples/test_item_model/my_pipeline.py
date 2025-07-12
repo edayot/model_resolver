@@ -115,10 +115,9 @@ def beet_default(ctx: Context):
         path_ctx=f"test:render/shield/{i}", render_size=512)
     
 
-    # render.add_item_task(Item(id="minecraft:diamond", components={
-    #     "minecraft:item_model": "test:zombie"
-    # }), path_ctx="test:render/zombie", render_size=512)
-    # render.add_item_task(Item(id="minecraft:diamond"), path_ctx="test:render/diamond", render_size=512)
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "minecraft:red_bed"
+    }), path_ctx="test:render/red_bed", render_size=512)
 
 
     render.add_model_task("test:item/conduit", path_ctx="test:render/conduit", render_size=512)

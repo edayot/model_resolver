@@ -7,6 +7,7 @@ from model_resolver.item_model.tint_source import (
 )
 from typing import Optional, Literal, Union, Any
 from model_resolver.item_model.item import Item
+from model_resolver.minecraft_model import MultiTexture, TextureSource
 from model_resolver.utils import PackGetterV2, clamp, resolve_key
 from PIL import Image
 from uuid import UUID
@@ -811,67 +812,34 @@ class SpecialModelShield(SpecialModelBase):
         "magenta": 13061821,
         "pink": 15961002,
     }
-    STEP: float = 0.0005
 
-    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
-        res: list[TintSource] = []
-        if "minecraft:base_color" in item.components:
-            color = item.components["minecraft:base_color"]
-            color = self.COLOR_STRING_TO_ARGB[color]
-            color = to_argb(color)
-            color = (color[1], color[2], color[3])
-            res.append(TintSourceConstant(type="constant", value=color))
-            for pattern in item.components.get("minecraft:banner_patterns", []):
-                color = pattern["color"]
-                color = self.COLOR_STRING_TO_ARGB[color]
-                color = to_argb(color)
-                color = (color[1], color[2], color[3])
-                res.append(TintSourceConstant(type="constant", value=color))
-        return res
+    def get_color(self, color: str) -> TintSourceConstant:
+        if color not in self.COLOR_STRING_TO_ARGB:
+            raise ValueError(f"Invalid color {color} for shield")
+        argb = self.COLOR_STRING_TO_ARGB[color]
+        argb = to_argb(argb)
+        return TintSourceConstant(type="constant", value=(argb[1], argb[2], argb[3]))
+    
+
+    def get_texture(self, getter: PackGetterV2, item: Item) -> TextureSource:
+        if not (base_color := item.components.get("minecraft:base_color")):
+            return "minecraft:entity/shield_base_nopattern"
+        res: list[MultiTexture] = []
+        res.append(("minecraft:entity/shield_base", None))
+        res.append(("minecraft:entity/shield/base", self.get_color(base_color)))
+
+        for pattern in item.components.get("minecraft:banner_patterns", []):
+            pattern_id = resolve_key(pattern["pattern"])
+            namespace, path = pattern_id.split(":")
+            res.append((f"{namespace}:entity/shield/{path}", self.get_color(pattern["color"])))
+
+
+        return tuple(res)
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        texture = "minecraft:entity/shield_base_nopattern"
-        additionnal_textures = {}
-        additionnal_elements = []
-        if "minecraft:base_color" in item.components:
-            texture = "minecraft:entity/shield_base"
-            additionnal_textures["1"] = "minecraft:entity/shield/base"
-            additionnal_elements.append(
-                {
-                    "from": [-6, -11, 1 + self.STEP],
-                    "to": [6, 11, 2 + self.STEP],
-                    "faces": {
-                        "south": {
-                            "uv": [0.25, 0.25, 3.25, 5.75],
-                            "texture": "#1",
-                            "tintindex": 0,
-                        },
-                    },
-                }
-            )
-            for i, pattern in enumerate(
-                item.components.get("minecraft:banner_patterns", [])
-            ):
-                pattern_id = resolve_key(pattern["pattern"])
-                namespace, path = pattern_id.split(":")
-                additionnal_textures[f"{i+2}"] = f"{namespace}:entity/shield/{path}"
-                step = self.STEP * (i + 2)
-                additionnal_elements.append(
-                    {
-                        "from": [-6, -11, 1 + step],
-                        "to": [6, 11, 2 + step],
-                        "faces": {
-                            "south": {
-                                "uv": [0.25, 0.25, 3.25, 5.75],
-                                "texture": f"#{i+2}",
-                                "tintindex": i + 1,
-                            },
-                        },
-                    }
-                )
-
+        texture = self.get_texture(getter, item)
         res = {
-            "textures": {"0": texture, **additionnal_textures},
+            "textures": {"0": texture},
             "elements": [
                 {
                     "from": [-6, -11, 1],
@@ -913,7 +881,6 @@ class SpecialModelShield(SpecialModelBase):
                         },
                     },
                 },
-                *additionnal_elements,
             ],
             "gui_light": "front",
         }

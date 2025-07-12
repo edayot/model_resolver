@@ -1,4 +1,5 @@
 from typing import Any
+from model_resolver.item_model.tint_source import TintSource
 from model_resolver.utils import PackGetterV2, resolve_key
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
@@ -60,6 +61,16 @@ class ElementModel(BaseModel):
     faces: dict[faces_keys, FaceModel]
 
 
+type MultiTexture = tuple[str, TintSource | None]
+type MultiTextureResolved = tuple[Image.Image, TintSource | None]
+
+
+type ResolvableTexture = None | str | Image.Image | tuple[MultiTexture, ...]
+type ResolvedTexture = Image.Image | tuple[MultiTextureResolved, ...] 
+
+type TextureSource = str | Image.Image | tuple[MultiTexture, ...]
+
+
 class MinecraftModel(BaseModel):
     parent: Annotated[Optional[str], "The parent of the model"] = None
     ambientocclusion: Annotated[
@@ -70,7 +81,7 @@ class MinecraftModel(BaseModel):
         "The display settings for the model in various situations in the game",
     ] = Field(default_factory=lambda: DisplayModel())
     textures: Annotated[
-        dict[str, str | Image.Image],
+        dict[str, TextureSource],
         "Resource locations for the textures used in the model, can also be a texture variable",
     ] = Field(default_factory=dict)
     elements: Annotated[list[ElementModel], "The elements that make up the model"] = (

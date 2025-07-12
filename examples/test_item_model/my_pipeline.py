@@ -119,6 +119,12 @@ def beet_default(ctx: Context):
         "minecraft:item_model": "minecraft:red_bed"
     }), path_ctx="test:render/red_bed", render_size=512)
 
+    render.add_item_task(Item(id="minecraft:bedrock", components={
+        "minecraft:item_model": "minecraft:decorated_pot",
+        # "minecraft:pot_decorations": ["minecraft:blade_pottery_sherd", "minecraft:archer_pottery_sherd", "minecraft:brewer_pottery_sherd", "minecraft:burn_pottery_sherd"]
+    }), path_ctx="test:render/pot", render_size=512)
+
+
 
     render.add_model_task("test:item/conduit", path_ctx="test:render/conduit", render_size=512)
     render.add_item_task(Item(id="stone", components={

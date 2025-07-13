@@ -67,7 +67,6 @@ class SpecialModelBed(SpecialModelBase):
                 {
                     "from": [0, 0, 13],
                     "to": [3, 3, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "north": {"uv": [14.75, 5.25, 15.5, 6], "texture": "#0"},
                         "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
@@ -80,19 +79,17 @@ class SpecialModelBed(SpecialModelBase):
                 {
                     "from": [0, 3, -16],
                     "to": [16, 9, 0],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "north": {"uv": [5.5, 5.5, 9.5, 7], "rotation": 180, "texture": "#0"},
                         "east": {"uv": [0, 7, 1.5, 11], "rotation": 270, "texture": "#0"},
                         "west": {"uv": [5.5, 7, 7, 11], "rotation": 90, "texture": "#0"},
                         "up": {"uv": [1.5, 7, 5.5, 11], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [10.75, 10.75, 7, 7], "rotation": 180, "texture": "#0"}
+                        "down": {"uv": [11, 11, 7, 7], "rotation": 180, "texture": "#0"}
                     }
                 },
                 {
                     "from": [0, 0, -16],
                     "to": [3, 3, -13],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "north": {"uv": [12.5, 3.75, 13.25, 4.5], "texture": "#0"},
                         "east": {"uv": [14.75, 3.75, 15.5, 4.5], "texture": "#0"},
@@ -105,7 +102,6 @@ class SpecialModelBed(SpecialModelBase):
                 {
                     "from": [13, 0, -16],
                     "to": [16, 3, -13],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "north": {"uv": [13.25, 0.75, 14, 1.5], "texture": "#0"},
                         "east": {"uv": [12.5, 0.75, 13.25, 1.5], "texture": "#0"},
@@ -118,19 +114,17 @@ class SpecialModelBed(SpecialModelBase):
                 {
                     "from": [0, 3, 0],
                     "to": [16, 9, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "east": {"uv": [0, 1.5, 1.5, 5.5], "rotation": 270, "texture": "#0"},
                         "south": {"uv": [1.5, 0, 5.5, 1.5], "rotation": 180, "texture": "#0"},
                         "west": {"uv": [5.5, 1.5, 7, 5.5], "rotation": 90, "texture": "#0"},
                         "up": {"uv": [1.5, 1.5, 5.5, 5.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [10.75, 5.25, 7, 1.5], "rotation": 180, "texture": "#0"}
+                        "down": {"uv": [11, 5.5, 7, 1.5], "rotation": 180, "texture": "#0"}
                     }
                 },
                 {
                     "from": [13, 0, 13],
                     "to": [16, 3, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 0]},
                     "faces": {
                         "north": {"uv": [14, 2.25, 14.75, 3], "texture": "#0"},
                         "east": {"uv": [13.25, 2.25, 14, 3], "texture": "#0"},

@@ -2,6 +2,43 @@
 
 
 
+## v1.9.0 (2025-07-13)
+
+### Chore
+
+* chore: update tests ([`f78bbfe`](https://github.com/edayot/model_resolver/commit/f78bbfe0b769e3385ca15f1e2aa9945959ade993))
+
+### Feature
+
+* feat: missingno texture ([`d655684`](https://github.com/edayot/model_resolver/commit/d655684e1f4ed0b3c7f4232294e37a33e0c7d309))
+
+* feat: hanging signs #12 ([`0038337`](https://github.com/edayot/model_resolver/commit/00383373ec93f51c41a0400e64d8713bd6da0488))
+
+* feat: adding decorated pots
+
+Co-authored-by: tryashtar &lt;tryashtar@gmail.com&gt; ([`0a65230`](https://github.com/edayot/model_resolver/commit/0a65230e7115cca1316c80d20b026e4dd2afdb70))
+
+* feat: adding bed special
+
+Co-authored-by: tryashtar &lt;tryashtar@gmail.com&gt; ([`8db490d`](https://github.com/edayot/model_resolver/commit/8db490d3e15ea822b9d7a4fcfbd9256cdfdc5752))
+
+* feat: more precise shield rendering ([`ebe1d22`](https://github.com/edayot/model_resolver/commit/ebe1d22e8441c5577ec464d95028db41a8e94b36))
+
+### Fix
+
+* fix: placing ([`84da8d1`](https://github.com/edayot/model_resolver/commit/84da8d1e98a8e44156f241409240aeeee571fed0))
+
+### Style
+
+* style: format ([`1651797`](https://github.com/edayot/model_resolver/commit/1651797b8a7e7695b63bef58e2a9ac7d870543eb))
+
+### Unknown
+
+* more logging ([`d327628`](https://github.com/edayot/model_resolver/commit/d327628a713ce0ff6a98de2595d5374839d5a2e2))
+
+* wip: banners ([`c50a87b`](https://github.com/edayot/model_resolver/commit/c50a87b0aba5480f725038503346ed95a414a9b0))
+
+
 ## v1.8.3 (2025-07-10)
 
 ### Fix

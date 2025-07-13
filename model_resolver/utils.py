@@ -52,6 +52,7 @@ class ModelResolverOptions(BaseModel):
     special_rendering: bool = False
     colorize_blocks: bool = True
     preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "misode/mcmeta"
+    transparent_missingno: bool = True
 
 
 @dataclass

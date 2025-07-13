@@ -1,3 +1,4 @@
+from pathlib import Path
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
@@ -133,6 +134,15 @@ class GenericModelRenderTask(Task):
                 return value
         else:
             raise RenderError(f"Unknown texture type {type(value)} for key {key}")
+    
+    def get_missingno(self) -> Image.Image:
+        """Returns a missingno image for debugging purposes."""
+        if self.getter.opts.transparent_missingno:
+            return Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        path = Path(__file__).parent.parent / "missingno.png"
+        if not path.exists():
+            raise RenderError(f"Missingno image not found at {path}")
+        return Image.open(path).convert("RGBA")
 
     def load_textures(
         self, model: MinecraftModel
@@ -141,7 +151,7 @@ class GenericModelRenderTask(Task):
         for key in model.textures.keys():
             value = self.get_real_key(key, model.textures)
             if value is None:
-                res[key] = (Image.new("RGBA", (16, 16), (0, 0, 0, 0)), "empty")
+                res[key] = (self.get_missingno(), "empty")
                 log.warning(f"Texture {key} not found in model")
             elif isinstance(value, Image.Image):
                 res[key] = (value, "dynamic")
@@ -157,7 +167,7 @@ class GenericModelRenderTask(Task):
                         texture = Texture(self.dynamic_textures[path])
                         img = texture.image
                     else:
-                        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                        img = self.get_missingno()
                         log.warning(f"Texture {key} not found at {path}")
                         
                     img = img.convert("RGBA")
@@ -172,7 +182,7 @@ class GenericModelRenderTask(Task):
                     texture = Texture(self.dynamic_textures[path])
                     img = texture.image
                 else:
-                    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+                    img = self.get_missingno()
                     log.warning(f"Texture {key} not found at {path}")
                 img = img.convert("RGBA")
                 res[key] = (img, path)

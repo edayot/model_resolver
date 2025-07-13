@@ -12,3 +12,4 @@ meta:
   model_resolver:
     # load vanilla item models
     minecraft_version: "1.21.4"
+    transparent_missingno: false

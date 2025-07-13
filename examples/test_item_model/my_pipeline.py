@@ -125,6 +125,11 @@ def beet_default(ctx: Context):
     }), path_ctx="test:render/pot", render_size=512)
 
 
+    render.add_item_task(Item(id="minecraft:diamond", components={
+        "minecraft:item_model": "test:hanging_sign",
+    }), path_ctx="test:render/hanging_sing", render_size=512)
+
+
 
     render.add_model_task("test:item/conduit", path_ctx="test:render/conduit", render_size=512)
     render.add_item_task(Item(id="stone", components={

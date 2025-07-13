@@ -1205,6 +1205,38 @@ class SpecialModelStandingSign(SpecialModelSignBase):
 class SpecialModelHangingSign(SpecialModelSignBase):
     type: Literal["minecraft:hanging_sign", "hanging_sign"]
 
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        res = {
+            "textures": {
+                "0": self.used_texture,
+            },
+            "elements": [
+                {
+                    "from": [1, 0, 7],
+                    "to": [15, 10, 9],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [1, 0, 7]},
+                    "faces": {
+                        "north": {"uv": [4.5, 7, 8, 12], "texture": "#0"},
+                        "east": {"uv": [4, 7.25, 4.5, 12], "texture": "#0"},
+                        "south": {"uv": [0.5, 7, 4, 12], "texture": "#0"},
+                        "west": {"uv": [0, 7, 0.5, 12], "texture": "#0"},
+                        "up": {"uv": [0.5, 6, 4, 7], "texture": "#0"},
+                        "down": {"uv": [4, 7, 7.5, 6], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [2, 10, 8],
+                    "to": [14, 16, 8],
+                    "rotation": {"angle": 0, "axis": "y", "origin": [2, 10, 8]},
+                    "faces": {
+                        "north": {"uv": [6.5, 3, 3.5, 6], "texture": "#0"},
+                        "south": {"uv": [3.5, 3, 6.5, 6], "texture": "#0"}
+                    }
+                }
+            ]
+        }
+        return res
+
 
 type SpecialModel = Union[
     SpecialModelBed,

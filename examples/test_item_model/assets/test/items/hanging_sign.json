@@ -1,0 +1,10 @@
+{
+    "model": {
+      "type": "minecraft:special",
+      "base": "minecraft:block/oak_sign",
+      "model": {
+        "type": "hanging_sign",
+        "wood_type": "acacia"
+      }
+    }
+  }

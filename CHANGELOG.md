@@ -2,6 +2,17 @@
 
 
 
+## v1.10.0 (2025-07-14)
+
+### Feature
+
+* feat: trident #12 ([`36ae440`](https://github.com/edayot/model_resolver/commit/36ae440dafd4dd01b60a4f04320ace29a975363c))
+
+### Fix
+
+* fix: bed uv mapping ([`9ab1f66`](https://github.com/edayot/model_resolver/commit/9ab1f66d9374eea0cede3a2cd15c9b15bfe6f0c4))
+
+
 ## v1.9.0 (2025-07-13)
 
 ### Chore

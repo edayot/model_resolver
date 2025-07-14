@@ -1055,6 +1055,77 @@ class SpecialModelTrident(SpecialModelBase):
     type: Literal["minecraft:trident", "trident"]
 
 
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        hauteur = -11
+        return {
+            "textures": {
+                "0": "minecraft:entity/trident",
+            },
+            "elements": [
+                {
+                    "from": [-0.5, -16+hauteur, -0.5],
+                    "to": [0.5, 9+hauteur, 0.5],
+                    "faces": {
+                        "north": {"uv": [1.5, 3.5, 2, 16], "texture": "#0"},
+                        "east": {"uv": [1, 3.5, 1.5, 16], "texture": "#0"},
+                        "south": {"uv": [0.5, 3.5, 1, 16], "texture": "#0"},
+                        "west": {"uv": [0, 3.5, 0.5, 16], "texture": "#0"},
+                        "up": {"uv": [0.5, 3, 1, 3.5], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [1, 3, 1.5, 3.5], "rotation": 180, "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [-1.5, 9+hauteur, -0.5],
+                    "to": [1.5, 11+hauteur, 0.5],
+                    "faces": {
+                        "north": {"uv": [4.5, 0.5, 6, 1.5], "texture": "#0"},
+                        "east": {"uv": [4, 0.5, 4.5, 1.5], "texture": "#0"},
+                        "south": {"uv": [2.5, 0.5, 4, 1.5], "texture": "#0"},
+                        "west": {"uv": [2, 0.5, 2.5, 1.5], "texture": "#0"},
+                        "up": {"uv": [2.5, 0, 4, 0.5], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [4, 0, 5.5, 0.5], "rotation": 180, "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [-0.5, 11+hauteur, -0.5],
+                    "to": [0.5, 15+hauteur, 0.5],
+                    "faces": {
+                        "north": {"uv": [1.5, 0.5, 2, 2.5], "texture": "#0"},
+                        "east": {"uv": [1, 0.5, 1.5, 2.5], "texture": "#0"},
+                        "south": {"uv": [0.5, 0.5, 1, 2.5], "texture": "#0"},
+                        "west": {"uv": [0, 0.5, 0.5, 2.5], "texture": "#0"},
+                        "up": {"uv": [0.5, 0, 1, 0.5], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [1, 0, 1.5, 0.5], "rotation": 180, "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [-2.5, 10+hauteur, -0.5],
+                    "to": [-1.5, 14+hauteur, 0.5],
+                    "faces": {
+                        "north": {"uv": [3.5, 2, 4, 4], "texture": "#0"},
+                        "east": {"uv": [3, 2, 3.5, 4], "texture": "#0"},
+                        "south": {"uv": [2.5, 2, 3, 4], "texture": "#0"},
+                        "west": {"uv": [2, 2, 2.5, 4], "texture": "#0"},
+                        "up": {"uv": [2.5, 1.5, 3, 2], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [3, 1.5, 3.5, 2], "rotation": 180, "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [1.5, 10+hauteur, -0.5],
+                    "to": [2.5, 14+hauteur, 0.5],
+                    "faces": {
+                        "north": {"uv": [3.5, 2, 4, 4], "texture": "#0"},
+                        "east": {"uv": [2, 2, 2.5, 4], "texture": "#0"},
+                        "south": {"uv": [2.5, 2, 3, 4], "texture": "#0"},
+                        "west": {"uv": [3, 2, 3.5, 4], "texture": "#0"},
+                        "up": {"uv": [2.5, 1.5, 3, 2], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [3, 1.5, 3.5, 2], "rotation": 180, "texture": "#0"}
+                    }
+                }
+            ]
+        }
+
+
 class SpecialModelDecoratedPot(SpecialModelBase):
     type: Literal["minecraft:decorated_pot", "decorated_pot"]
 

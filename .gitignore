@@ -14,3 +14,4 @@ build
 !example_material/pack.mcmeta
 .env
 .pytest_cache
+node_modules

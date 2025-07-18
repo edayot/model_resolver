@@ -565,7 +565,7 @@ class GenericModelRenderTask(Task):
 
 @dataclass(kw_only=True)
 class Animation:
-    textures: list[dict[str, str | Image.Image]]
+    textures: list[dict[str, TextureSource]]
     getter: PackGetterV2
     animation_framerate: int
 
@@ -590,7 +590,7 @@ class Animation:
         texture_animated: dict[str, tuple[list[int], bool]] = {}
         for textures in self.textures:
             for texture_path in textures.values():
-                if isinstance(texture_path, Image.Image):
+                if isinstance(texture_path, Image.Image) or isinstance(texture_path, tuple):
                     raise RenderError(f"WTF is going on")
                 if resolve_key(texture_path) in texture_animated:
                     continue

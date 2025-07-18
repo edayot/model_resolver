@@ -39,6 +39,17 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install npm dependencies
+        run: npm install
+      - name: Run npm check
+        run: npm run check
+      - name: Check code formatting with black
+        run: poetry run black --check .
       - name: Tests and release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -12,6 +12,7 @@ from model_resolver.minecraft_model import (
     DisplayOptionModel,
     MinecraftModel,
     RotationModel,
+    TextureSource,
     resolve_model,
 )
 from typing import Generator, Optional, Any, TypedDict, Union
@@ -179,7 +180,7 @@ class StructureRenderTask(GenericModelRenderTask):
             resolve_model(model.data, self.getter)
         ).bake()
 
-    def get_all_textures(self) -> Generator[dict[str, str | Image.Image], None, None]:
+    def get_all_textures(self) -> Generator[dict[str, TextureSource], None, None]:
         for block in self.structure.blocks:
             palleted = self.structure.palette[block.state]
             block_state = self.getter.assets.blockstates.get(palleted.Name)

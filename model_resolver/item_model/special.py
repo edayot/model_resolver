@@ -1,5 +1,5 @@
 import math
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from model_resolver.item_model.tint_source import (
     TintSource,
     to_argb,
@@ -72,20 +72,48 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
                         "south": {"uv": [13.25, 5.25, 14, 6], "texture": "#0"},
                         "west": {"uv": [12.5, 5.25, 13.25, 6], "texture": "#0"},
-                        "up": {"uv": [13.25, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [14.75, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [13.25, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14.75, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [0, 3, -16],
                     "to": [16, 9, 0],
                     "faces": {
-                        "north": {"uv": [5.5, 5.5, 9.5, 7], "rotation": 180, "texture": "#0"},
-                        "east": {"uv": [0, 7, 1.5, 11], "rotation": 270, "texture": "#0"},
-                        "west": {"uv": [5.5, 7, 7, 11], "rotation": 90, "texture": "#0"},
-                        "up": {"uv": [1.5, 7, 5.5, 11], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [11, 11, 7, 7], "rotation": 180, "texture": "#0"}
-                    }
+                        "north": {
+                            "uv": [5.5, 5.5, 9.5, 7],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "east": {
+                            "uv": [0, 7, 1.5, 11],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [5.5, 7, 7, 11],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [1.5, 7, 5.5, 11],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [11, 11, 7, 7],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [0, 0, -16],
@@ -95,9 +123,17 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [14.75, 3.75, 15.5, 4.5], "texture": "#0"},
                         "south": {"uv": [14, 3.75, 14.75, 4.5], "texture": "#0"},
                         "west": {"uv": [13.25, 3.75, 14, 4.5], "texture": "#0"},
-                        "up": {"uv": [13.25, 3, 14, 3.75], "rotation": 90, "texture": "#0"},
-                        "down": {"uv": [14.75, 3, 14, 3.75], "rotation": 90, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [13.25, 3, 14, 3.75],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14.75, 3, 14, 3.75],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [13, 0, -16],
@@ -108,19 +144,39 @@ class SpecialModelBed(SpecialModelBase):
                         "south": {"uv": [14.75, 0.75, 15.5, 1.5], "texture": "#0"},
                         "west": {"uv": [14, 0.75, 14.75, 1.5], "texture": "#0"},
                         "up": {"uv": [13.25, 0, 14, 0.75], "texture": "#0"},
-                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"}
-                    }
+                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"},
+                    },
                 },
                 {
                     "from": [0, 3, 0],
                     "to": [16, 9, 16],
                     "faces": {
-                        "east": {"uv": [0, 1.5, 1.5, 5.5], "rotation": 270, "texture": "#0"},
-                        "south": {"uv": [1.5, 0, 5.5, 1.5], "rotation": 180, "texture": "#0"},
-                        "west": {"uv": [5.5, 1.5, 7, 5.5], "rotation": 90, "texture": "#0"},
-                        "up": {"uv": [1.5, 1.5, 5.5, 5.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [11, 5.5, 7, 1.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "east": {
+                            "uv": [0, 1.5, 1.5, 5.5],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "south": {
+                            "uv": [1.5, 0, 5.5, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [5.5, 1.5, 7, 5.5],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [1.5, 1.5, 5.5, 5.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [11, 5.5, 7, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [13, 0, 13],
@@ -130,17 +186,25 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [13.25, 2.25, 14, 3], "texture": "#0"},
                         "south": {"uv": [12.5, 2.25, 13.25, 3], "texture": "#0"},
                         "west": {"uv": [14.75, 2.25, 15.5, 3], "texture": "#0"},
-                        "up": {"uv": [13.25, 1.5, 14, 2.25], "rotation": 270, "texture": "#0"},
-                        "down": {"uv": [14, 1.5, 14.75, 2.25], "rotation": 270, "texture": "#0"}
-                    }
-                }
+                        "up": {
+                            "uv": [13.25, 1.5, 14, 2.25],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14, 1.5, 14.75, 2.25],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                    },
+                },
             ],
         }
         return model
 
 
 class SpecialModelBaseLayer(SpecialModelBase):
-    COLOR_STRING_TO_ARGB: ClassVar[dict[str, int]] ={
+    COLOR_STRING_TO_ARGB: ClassVar[dict[str, int]] = {
         "white": 16383998,
         "orange": 16351261,
         "magenta": 13061821,
@@ -161,7 +225,7 @@ class SpecialModelBaseLayer(SpecialModelBase):
 
     base_texture: ClassVar[str]
     base_texture_nopattern: ClassVar[str]
-    
+
     @property
     def entity_type(self) -> str:
         return resolve_key(self.type).split(":")[-1]
@@ -175,22 +239,28 @@ class SpecialModelBaseLayer(SpecialModelBase):
         argb = self.COLOR_STRING_TO_ARGB[color]
         argb = to_argb(argb)
         return TintSourceConstant(type="constant", value=(argb[1], argb[2], argb[3]))
-    
 
     def get_texture(self, getter: PackGetterV2, item: Item) -> TextureSource:
         if not (base_color := self.get_base_color(item)):
             return self.base_texture_nopattern
         res: list[MultiTexture] = []
         res.append((self.base_texture, None))
-        res.append((f"minecraft:entity/{self.entity_type}/base", self.get_color(base_color)))
+        res.append(
+            (f"minecraft:entity/{self.entity_type}/base", self.get_color(base_color))
+        )
 
         for pattern in item.components.get("minecraft:banner_patterns", []):
             pattern_id = resolve_key(pattern["pattern"])
             namespace, path = pattern_id.split(":")
-            res.append((f"{namespace}:entity/{self.entity_type}/{path}", self.get_color(pattern["color"])))
-
+            res.append(
+                (
+                    f"{namespace}:entity/{self.entity_type}/{path}",
+                    self.get_color(pattern["color"]),
+                )
+            )
 
         return tuple(res)
+
 
 class SpecialModelBanner(SpecialModelBaseLayer):
     type: Literal["minecraft:banner", "banner"]
@@ -201,10 +271,10 @@ class SpecialModelBanner(SpecialModelBaseLayer):
 
     def get_base_color(self, item: Item) -> str | None:
         return self.color
-    
+
     def get_scale(self) -> float:
-        return 0.75/0.5325
-    
+        return 0.75 / 0.5325
+
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.get_texture(getter, item)
         res = {
@@ -221,9 +291,17 @@ class SpecialModelBanner(SpecialModelBaseLayer):
                         "east": {"uv": [12, 0.5, 12.5, 11], "texture": "#0"},
                         "south": {"uv": [11.5, 0.5, 12, 11], "texture": "#0"},
                         "west": {"uv": [11, 0.5, 11.5, 11], "texture": "#0"},
-                        "up": {"uv": [11.5, 0, 12, 0.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [12, 0, 12.5, 0.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [11.5, 0, 12, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [12, 0, 12.5, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [3, 22.5, 7.5],
@@ -235,8 +313,8 @@ class SpecialModelBanner(SpecialModelBaseLayer):
                         "south": {"uv": [0.5, 11, 5.5, 11.5], "texture": "#0"},
                         "west": {"uv": [0, 11, 0.5, 11.5], "texture": "#0"},
                         "up": {"uv": [0.5, 10.5, 5.5, 11], "texture": "#0"},
-                        "down": {"uv": [5.5, 10.5, 10.5, 11], "texture": "#0"}
-                    }
+                        "down": {"uv": [5.5, 10.5, 10.5, 11], "texture": "#0"},
+                    },
                 },
                 {
                     "from": [3, 3.5, 8.5],
@@ -248,12 +326,13 @@ class SpecialModelBanner(SpecialModelBaseLayer):
                         "south": {"uv": [0.25, 0.25, 5.25, 10.25], "texture": "#0"},
                         "west": {"uv": [0, 0.25, 0.25, 10.25], "texture": "#0"},
                         "up": {"uv": [0.25, 0, 5.25, 0.25], "texture": "#0"},
-                        "down": {"uv": [5.25, 0, 10.25, 0.25], "texture": "#0"}
-                    }
-                }
-            ]
+                        "down": {"uv": [5.25, 0, 10.25, 0.25], "texture": "#0"},
+                    },
+                },
+            ],
         }
         return res
+
 
 class SpecialModelShield(SpecialModelBaseLayer):
     type: Literal["minecraft:shield", "shield"]
@@ -265,8 +344,7 @@ class SpecialModelShield(SpecialModelBaseLayer):
         if not (base_color := item.components.get("minecraft:base_color")):
             return None
         return base_color
-        
-    
+
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         texture = self.get_texture(getter, item)
         res = {
@@ -1048,12 +1126,8 @@ class SpecialModelShulkerBox(SpecialModelBase):
                 raise ValueError(f"Invalid orientation {self.orientation}")
 
 
-
-
-
 class SpecialModelTrident(SpecialModelBase):
     type: Literal["minecraft:trident", "trident"]
-
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         hauteur = -11
@@ -1063,73 +1137,112 @@ class SpecialModelTrident(SpecialModelBase):
             },
             "elements": [
                 {
-                    "from": [-0.5, -16+hauteur, -0.5],
-                    "to": [0.5, 9+hauteur, 0.5],
+                    "from": [-0.5, -16 + hauteur, -0.5],
+                    "to": [0.5, 9 + hauteur, 0.5],
                     "faces": {
                         "north": {"uv": [1.5, 3.5, 2, 16], "texture": "#0"},
                         "east": {"uv": [1, 3.5, 1.5, 16], "texture": "#0"},
                         "south": {"uv": [0.5, 3.5, 1, 16], "texture": "#0"},
                         "west": {"uv": [0, 3.5, 0.5, 16], "texture": "#0"},
-                        "up": {"uv": [0.5, 3, 1, 3.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [1, 3, 1.5, 3.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [0.5, 3, 1, 3.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [1, 3, 1.5, 3.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
-                    "from": [-1.5, 9+hauteur, -0.5],
-                    "to": [1.5, 11+hauteur, 0.5],
+                    "from": [-1.5, 9 + hauteur, -0.5],
+                    "to": [1.5, 11 + hauteur, 0.5],
                     "faces": {
                         "north": {"uv": [4.5, 0.5, 6, 1.5], "texture": "#0"},
                         "east": {"uv": [4, 0.5, 4.5, 1.5], "texture": "#0"},
                         "south": {"uv": [2.5, 0.5, 4, 1.5], "texture": "#0"},
                         "west": {"uv": [2, 0.5, 2.5, 1.5], "texture": "#0"},
-                        "up": {"uv": [2.5, 0, 4, 0.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [4, 0, 5.5, 0.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [2.5, 0, 4, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [4, 0, 5.5, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
-                    "from": [-0.5, 11+hauteur, -0.5],
-                    "to": [0.5, 15+hauteur, 0.5],
+                    "from": [-0.5, 11 + hauteur, -0.5],
+                    "to": [0.5, 15 + hauteur, 0.5],
                     "faces": {
                         "north": {"uv": [1.5, 0.5, 2, 2.5], "texture": "#0"},
                         "east": {"uv": [1, 0.5, 1.5, 2.5], "texture": "#0"},
                         "south": {"uv": [0.5, 0.5, 1, 2.5], "texture": "#0"},
                         "west": {"uv": [0, 0.5, 0.5, 2.5], "texture": "#0"},
-                        "up": {"uv": [0.5, 0, 1, 0.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [1, 0, 1.5, 0.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [0.5, 0, 1, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [1, 0, 1.5, 0.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
-                    "from": [-2.5, 10+hauteur, -0.5],
-                    "to": [-1.5, 14+hauteur, 0.5],
+                    "from": [-2.5, 10 + hauteur, -0.5],
+                    "to": [-1.5, 14 + hauteur, 0.5],
                     "faces": {
                         "north": {"uv": [3.5, 2, 4, 4], "texture": "#0"},
                         "east": {"uv": [3, 2, 3.5, 4], "texture": "#0"},
                         "south": {"uv": [2.5, 2, 3, 4], "texture": "#0"},
                         "west": {"uv": [2, 2, 2.5, 4], "texture": "#0"},
-                        "up": {"uv": [2.5, 1.5, 3, 2], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [3, 1.5, 3.5, 2], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [2.5, 1.5, 3, 2],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [3, 1.5, 3.5, 2],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
-                    "from": [1.5, 10+hauteur, -0.5],
-                    "to": [2.5, 14+hauteur, 0.5],
+                    "from": [1.5, 10 + hauteur, -0.5],
+                    "to": [2.5, 14 + hauteur, 0.5],
                     "faces": {
                         "north": {"uv": [3.5, 2, 4, 4], "texture": "#0"},
                         "east": {"uv": [2, 2, 2.5, 4], "texture": "#0"},
                         "south": {"uv": [2.5, 2, 3, 4], "texture": "#0"},
                         "west": {"uv": [3, 2, 3.5, 4], "texture": "#0"},
-                        "up": {"uv": [2.5, 1.5, 3, 2], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [3, 1.5, 3.5, 2], "rotation": 180, "texture": "#0"}
-                    }
-                }
-            ]
+                        "up": {
+                            "uv": [2.5, 1.5, 3, 2],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [3, 1.5, 3.5, 2],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
+                },
+            ],
         }
 
 
 class SpecialModelDecoratedPot(SpecialModelBase):
     type: Literal["minecraft:decorated_pot", "decorated_pot"]
 
-    
     def get_texture(self, pot_decorations: list[str] | None, index: int) -> str:
         if pot_decorations is None or index >= len(pot_decorations):
             return "minecraft:entity/decorated_pot/decorated_pot_side"
@@ -1138,57 +1251,56 @@ class SpecialModelDecoratedPot(SpecialModelBase):
             return "minecraft:entity/decorated_pot/decorated_pot_side"
         namespace, path = decoration.split(":", 1)
         return f"{namespace}:entity/decorated_pot/{path.removesuffix("_sherd")}_pattern"
-        
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         pot_decorations = item.components.get("minecraft:pot_decorations", None)
 
         model: dict[str, Any] = {
-        	"textures": {
-        		"base": "minecraft:entity/decorated_pot/decorated_pot_base",
-        		"north": self.get_texture(pot_decorations, 0),
+            "textures": {
+                "base": "minecraft:entity/decorated_pot/decorated_pot_base",
+                "north": self.get_texture(pot_decorations, 0),
                 "east": self.get_texture(pot_decorations, 2),
                 "south": self.get_texture(pot_decorations, 3),
                 "west": self.get_texture(pot_decorations, 1),
-        	},
-        	"elements": [
-        		{
-        			"from": [4.1, 17.1, 4.1],
-        			"to": [11.9, 19.9, 11.9],
-        			"faces": {
-        				"north": {"uv": [12, 4, 16, 5.5], "texture": "#base"},
-        				"east": {"uv": [8, 4, 12, 5.5], "texture": "#base"},
-        				"south": {"uv": [4, 4, 8, 5.5], "texture": "#base"},
-        				"west": {"uv": [0, 4, 3.5, 5.5], "texture": "#base"},
-        				"up": {"uv": [4, 0, 8, 4], "texture": "#base"},
-        				"down": {"uv": [8, 4, 12, 0], "texture": "#base"}
-        			}
-        		},
-        		{
-        			"from": [4.8, 15.8, 4.8],
-        			"to": [11.2, 17.2, 11.2],
-        			"faces": {
-        				"north": {"uv": [9, 5.5, 12, 6], "texture": "#base"},
-        				"east": {"uv": [6, 5.5, 9, 6], "texture": "#base"},
-        				"south": {"uv": [3, 5.5, 6, 6], "texture": "#base"},
-        				"west": {"uv": [0, 5.5, 3, 6], "texture": "#base"},
-        				"up": {"uv": [3, 2.5, 6, 5.5], "texture": "#base"},
-        				"down": {"uv": [6, 5.5, 9, 2.5], "texture": "#base"}
-        			}
-        		},
-        		{
-        			"from": [1, 0, 1],
-        			"to": [15, 16, 15],
-        			"faces": {
-        				"north": {"uv": [1, 0, 15, 16], "texture": "#north"},
-        				"east": {"uv": [1, 0, 15, 16], "texture": "#east"},
-        				"south": {"uv": [1, 0, 15, 16], "texture": "#south"},
-        				"west": {"uv": [1, 0, 15, 16], "texture": "#west"},
-        				"up": {"uv": [7, 13.5, 14, 6.5], "texture": "#base"},
-        				"down": {"uv": [0, 6.5, 7, 13.5], "texture": "#base"}
-        			}
-        		}
-        	]
+            },
+            "elements": [
+                {
+                    "from": [4.1, 17.1, 4.1],
+                    "to": [11.9, 19.9, 11.9],
+                    "faces": {
+                        "north": {"uv": [12, 4, 16, 5.5], "texture": "#base"},
+                        "east": {"uv": [8, 4, 12, 5.5], "texture": "#base"},
+                        "south": {"uv": [4, 4, 8, 5.5], "texture": "#base"},
+                        "west": {"uv": [0, 4, 3.5, 5.5], "texture": "#base"},
+                        "up": {"uv": [4, 0, 8, 4], "texture": "#base"},
+                        "down": {"uv": [8, 4, 12, 0], "texture": "#base"},
+                    },
+                },
+                {
+                    "from": [4.8, 15.8, 4.8],
+                    "to": [11.2, 17.2, 11.2],
+                    "faces": {
+                        "north": {"uv": [9, 5.5, 12, 6], "texture": "#base"},
+                        "east": {"uv": [6, 5.5, 9, 6], "texture": "#base"},
+                        "south": {"uv": [3, 5.5, 6, 6], "texture": "#base"},
+                        "west": {"uv": [0, 5.5, 3, 6], "texture": "#base"},
+                        "up": {"uv": [3, 2.5, 6, 5.5], "texture": "#base"},
+                        "down": {"uv": [6, 5.5, 9, 2.5], "texture": "#base"},
+                    },
+                },
+                {
+                    "from": [1, 0, 1],
+                    "to": [15, 16, 15],
+                    "faces": {
+                        "north": {"uv": [1, 0, 15, 16], "texture": "#north"},
+                        "east": {"uv": [1, 0, 15, 16], "texture": "#east"},
+                        "south": {"uv": [1, 0, 15, 16], "texture": "#south"},
+                        "west": {"uv": [1, 0, 15, 16], "texture": "#west"},
+                        "up": {"uv": [7, 13.5, 14, 6.5], "texture": "#base"},
+                        "down": {"uv": [0, 6.5, 7, 13.5], "texture": "#base"},
+                    },
+                },
+            ],
         }
         return model
 
@@ -1286,8 +1398,8 @@ class SpecialModelHangingSign(SpecialModelSignBase):
                         "south": {"uv": [0.5, 7, 4, 12], "texture": "#0"},
                         "west": {"uv": [0, 7, 0.5, 12], "texture": "#0"},
                         "up": {"uv": [0.5, 6, 4, 7], "texture": "#0"},
-                        "down": {"uv": [4, 7, 7.5, 6], "texture": "#0"}
-                    }
+                        "down": {"uv": [4, 7, 7.5, 6], "texture": "#0"},
+                    },
                 },
                 {
                     "from": [2, 10, 8],
@@ -1295,10 +1407,10 @@ class SpecialModelHangingSign(SpecialModelSignBase):
                     "rotation": {"angle": 0, "axis": "y", "origin": [2, 10, 8]},
                     "faces": {
                         "north": {"uv": [6.5, 3, 3.5, 6], "texture": "#0"},
-                        "south": {"uv": [3.5, 3, 6.5, 6], "texture": "#0"}
-                    }
-                }
-            ]
+                        "south": {"uv": [3.5, 3, 6.5, 6], "texture": "#0"},
+                    },
+                },
+            ],
         }
         return res
 

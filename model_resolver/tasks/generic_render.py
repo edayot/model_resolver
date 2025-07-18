@@ -35,6 +35,7 @@ from rich import print  # noqa
 type TextureBindingsValue = tuple[tuple[tuple[int, TintSource | None], ...], str]
 type TextureBindings = dict[str, TextureBindingsValue]
 
+
 class FrameModel(BaseModel):
     index: int
     time: int
@@ -134,7 +135,7 @@ class GenericModelRenderTask(Task):
                 return value
         else:
             raise RenderError(f"Unknown texture type {type(value)} for key {key}")
-    
+
     def get_missingno(self) -> Image.Image:
         """Returns a missingno image for debugging purposes."""
         if self.getter.opts.transparent_missingno:
@@ -169,7 +170,7 @@ class GenericModelRenderTask(Task):
                     else:
                         img = self.get_missingno()
                         log.warning(f"Texture {key} not found at {path}")
-                        
+
                     img = img.convert("RGBA")
                     textures.append((img, tint))
                 res[key] = (tuple(textures), key)
@@ -188,9 +189,7 @@ class GenericModelRenderTask(Task):
                 res[key] = (img, path)
         return res
 
-    def generate_textures_bindings(
-        self, model: MinecraftModel
-    ):
+    def generate_textures_bindings(self, model: MinecraftModel):
         res: TextureBindings = {}
         textures = self.load_textures(model)
         for key, (value, path) in textures.items():
@@ -271,7 +270,6 @@ class GenericModelRenderTask(Task):
         textures_bindings: TextureBindings,
         tints: list[TintSource],
     ):
-        
 
         from_element_centered, to_element_centered = self.center_element(
             element.from_, element.to
@@ -318,6 +316,7 @@ class GenericModelRenderTask(Task):
                 tints,
                 textures_bindings[textvar],
             )
+
     def center_element(
         self,
         from_element: tuple[float, float, float],
@@ -493,11 +492,11 @@ class GenericModelRenderTask(Task):
         # self.set_uniforms(self.program)
 
         glEnable(GL_TEXTURE_2D)
-        
+
         # Save current blend function
         blend_src = glGetIntegerv(GL_BLEND_SRC)
         blend_dst = glGetIntegerv(GL_BLEND_DST)
-        
+
         depht_coef = 0.1
 
         for layer_index, (tex_id, tint) in enumerate(bindings[0]):
@@ -508,15 +507,15 @@ class GenericModelRenderTask(Task):
                 real_tint = tints[data.tintindex]
             if real_tint is not None:
                 color = real_tint.resolve(self.getter, item=self.item)
-                color = (color[0] / 255, color[1] / 255, color[2] / 255)  
-            
+                color = (color[0] / 255, color[1] / 255, color[2] / 255)
+
             # Apply depth offset for layering by modifying polygon offset
             if layer_index > 0:
                 glEnable(GL_POLYGON_OFFSET_FILL)
                 glPolygonOffset(-layer_index * depht_coef, -layer_index * depht_coef)
                 # Change blend function for layered textures
                 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-            
+
             glBegin(GL_QUADS)
             for i, (v0, v1, v2) in enumerate(triangulated_vertices):
                 normal = normals[i]
@@ -526,14 +525,14 @@ class GenericModelRenderTask(Task):
                 glTexCoord2f(uv[uv0], uv[uv1])
                 glVertex3fv(rotated_vertices[i])
             glEnd()
-            
+
             # Disable polygon offset after use
             if layer_index > 0:
                 glDisable(GL_POLYGON_OFFSET_FILL)
-        
+
         # Restore previous blend function
         glBlendFunc(blend_src, blend_dst)
-        
+
         glDisable(GL_TEXTURE_2D)
 
     def get_uv(
@@ -590,7 +589,9 @@ class Animation:
         texture_animated: dict[str, tuple[list[int], bool]] = {}
         for textures in self.textures:
             for texture_path in textures.values():
-                if isinstance(texture_path, Image.Image) or isinstance(texture_path, tuple):
+                if isinstance(texture_path, Image.Image) or isinstance(
+                    texture_path, tuple
+                ):
                     raise RenderError(f"WTF is going on")
                 if resolve_key(texture_path) in texture_animated:
                     continue

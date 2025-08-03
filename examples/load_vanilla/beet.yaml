@@ -9,5 +9,6 @@ output: ../../dist
 meta:
   model_resolver:
     # load vanilla item models
-    minecraft_version: "1.21.4"
+    minecraft_version: "25w31a"
     special_rendering: true
+    preferred_minecraft_generated: "java"

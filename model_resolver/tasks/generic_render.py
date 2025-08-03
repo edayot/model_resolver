@@ -146,14 +146,14 @@ class GenericModelRenderTask(Task):
         return Image.open(path).convert("RGBA")
 
     def load_textures(
-        self, model: MinecraftModel
+        self, model: MinecraftModel, source: Optional[str] = None
     ) -> dict[str, tuple[ResolvedTexture, str]]:
         res: dict[str, tuple[ResolvedTexture, str]] = {}
         for key in model.textures.keys():
             value = self.get_real_key(key, model.textures)
             if value is None:
                 res[key] = (self.get_missingno(), "empty")
-                log.warning(f"Texture {key} not found in model")
+                log.warning(f"Texture {key} not found in {source}")
             elif isinstance(value, Image.Image):
                 res[key] = (value, "dynamic")
             elif isinstance(value, tuple):
@@ -189,9 +189,9 @@ class GenericModelRenderTask(Task):
                 res[key] = (img, path)
         return res
 
-    def generate_textures_bindings(self, model: MinecraftModel):
+    def generate_textures_bindings(self, model: MinecraftModel, source: Optional[str] = None):
         res: TextureBindings = {}
-        textures = self.load_textures(model)
+        textures = self.load_textures(model, source)
         for key, (value, path) in textures.items():
             if isinstance(value, Image.Image):
                 tex_id: int = glGenTextures(1)
@@ -238,9 +238,9 @@ class GenericModelRenderTask(Task):
                 raise RenderError(f"Unknown texture type {type(value)} for key {key}")
         return res
 
-    def render_model(self, model: MinecraftModel, tints: list[TintSource]):
+    def render_model(self, model: MinecraftModel, tints: list[TintSource], source: Optional[str] = None):
         self.rotate_camera(model)
-        textures_bindings = self.generate_textures_bindings(model)
+        textures_bindings = self.generate_textures_bindings(model, source)
         if model.gui_light == "side":
             activate_light = GL_LIGHT0
             deactivate_light = GL_LIGHT1
@@ -568,6 +568,8 @@ class Animation:
     getter: PackGetterV2
     animation_framerate: int
 
+    source: Optional[str] = None
+
     cache_texture_animated: Any = None
 
     @property
@@ -592,7 +594,7 @@ class Animation:
                 if isinstance(texture_path, Image.Image) or isinstance(
                     texture_path, tuple
                 ):
-                    raise RenderError(f"WTF is going on")
+                    continue
                 if resolve_key(texture_path) in texture_animated:
                     continue
                 texture = self.texture(texture_path)

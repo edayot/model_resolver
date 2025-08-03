@@ -40,6 +40,8 @@ class SpecialModelBase(BaseModel):
         "standing_sign",
         "minecraft:hanging_sign",
         "hanging_sign",
+        "minecraft:copper_golem_statue",
+        "copper_golem_statue",
     ]
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
@@ -53,6 +55,9 @@ class SpecialModelBase(BaseModel):
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return []
+
+class SpecialModelCopperGolemStatue(SpecialModelBase):
+    texture: str
 
 
 class SpecialModelBed(SpecialModelBase):
@@ -1428,4 +1433,5 @@ type SpecialModel = Union[
     SpecialModelDecoratedPot,
     SpecialModelStandingSign,
     SpecialModelHangingSign,
+    SpecialModelCopperGolemStatue,
 ]

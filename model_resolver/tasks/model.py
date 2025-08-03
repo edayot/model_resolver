@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 import io
 import os
+
+from typing import Optional
 from model_resolver.item_model.item import Item
 from model_resolver.minecraft_model import (
     MinecraftModel,
@@ -20,12 +22,13 @@ class ModelRenderTask(GenericModelRenderTask):
     model: MinecraftModel
     tints: list[TintSource] = field(default_factory=list)
     item: Item = field(default_factory=lambda: Item(id="do_not_use"))
+    source: Optional[str] = None
 
     def resolve(self) -> Generator[Task, None, None]:
         yield self
 
     def run(self):
-        self.render_model(self.model, self.tints)
+        self.render_model(self.model, self.tints, self.source)
 
     def flush(self):
         super().flush()
@@ -116,7 +119,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
         if len(self.tints) > 0:
             assert self.item, "Tints are only available if you provide an item"
         model = self.get_parsed_model()
-        self.render_model(model, self.tints)
+        self.render_model(model, self.tints, self.model)
 
     def get_parsed_model(self) -> MinecraftModel:
         model = self.getter.assets.models.get(self.model)
@@ -137,6 +140,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             textures=[model.textures],
             getter=self.getter,
             animation_framerate=self.animation_framerate,
+            source=self.model,
         )
         if not animation.is_animated:
             self.animation_mode = "multi_files"
@@ -178,6 +182,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
+                source=self.model
             )
             yield task
             tasks.append(task)

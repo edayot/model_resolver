@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+from typing import Optional
 from model_resolver.tasks.model import AnimatedResultTask
 from model_resolver.minecraft_model import (
     MinecraftModel,
@@ -14,13 +16,14 @@ from rich import print  # noqa
 @dataclass(kw_only=True)
 class ItemModelModelRenderTask(GenericModelRenderTask):
     models: list[tuple[MinecraftModel, list[TintSource]]]
+    source: Optional[str] = None
 
     def resolve(self) -> Generator[Task, None, None]:
         yield self
 
     def run(self):
         for model, tints in self.models:
-            self.render_model(model, tints)
+            self.render_model(model, tints, self.source)
 
 
 @dataclass(kw_only=True)
@@ -46,7 +49,7 @@ class ItemRenderTask(GenericModelRenderTask):
         parsed_item_model = self.get_parsed_item_model()
         for model in parsed_item_model.resolve(self.getter, self.item):
             model_def = model.get_model(self.getter, self.item).bake()
-            self.render_model(model_def, model.get_tints(self.getter, self.item))
+            self.render_model(model_def, model.get_tints(self.getter, self.item), source=str(self.item))
 
     def resolve(self) -> Generator[Task, None, None]:
         parsed_item_model = self.get_parsed_item_model()
@@ -59,6 +62,7 @@ class ItemRenderTask(GenericModelRenderTask):
             ],
             getter=self.getter,
             animation_framerate=self.animation_framerate,
+            source=str(self.item),
         )
         if not animation.is_animated:
             self.animation_mode = "multi_files"
@@ -104,6 +108,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
+                source=str(self.item)
             )
             yield task
             tasks.append(task)

@@ -197,6 +197,7 @@ class StructureRenderTask(GenericModelRenderTask):
             textures=list(self.get_all_textures()),
             getter=self.getter,
             animation_framerate=self.animation_framerate,
+            source=self.structure_key,
         )
         if not animation.is_animated:
             self.animation_mode = "multi_files"

@@ -56,6 +56,7 @@ class SpecialModelBase(BaseModel):
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return []
 
+
 class SpecialModelCopperGolemStatue(SpecialModelBase):
     texture: str
 

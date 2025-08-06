@@ -189,7 +189,9 @@ class GenericModelRenderTask(Task):
                 res[key] = (img, path)
         return res
 
-    def generate_textures_bindings(self, model: MinecraftModel, source: Optional[str] = None):
+    def generate_textures_bindings(
+        self, model: MinecraftModel, source: Optional[str] = None
+    ):
         res: TextureBindings = {}
         textures = self.load_textures(model, source)
         for key, (value, path) in textures.items():
@@ -238,7 +240,12 @@ class GenericModelRenderTask(Task):
                 raise RenderError(f"Unknown texture type {type(value)} for key {key}")
         return res
 
-    def render_model(self, model: MinecraftModel, tints: list[TintSource], source: Optional[str] = None):
+    def render_model(
+        self,
+        model: MinecraftModel,
+        tints: list[TintSource],
+        source: Optional[str] = None,
+    ):
         self.rotate_camera(model)
         textures_bindings = self.generate_textures_bindings(model, source)
         if model.gui_light == "side":

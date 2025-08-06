@@ -182,7 +182,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 zoom=self.zoom,
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
-                source=self.model
+                source=self.model,
             )
             yield task
             tasks.append(task)

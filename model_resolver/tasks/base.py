@@ -82,7 +82,7 @@ class Task:
         elif self.path_save and self.animation_mode in ["one_file", "multi_files"]:
             os.makedirs(self.path_save.parent, exist_ok=True)
             img.save(self.path_save)
-        elif self.animation_mode == "webp":
+        elif self.animation_mode == "webp" or (self.path_save is None and self.path_ctx is None):
             self.saved_img = img
             return
         self.flush()

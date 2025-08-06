@@ -2,6 +2,29 @@
 
 
 
+## v1.11.0 (2025-08-06)
+
+### Chore
+
+* chore: black ([`208c721`](https://github.com/edayot/model_resolver/commit/208c721c1d302ca7aaa4da745516f55a5c22c5bf))
+
+* chore: setup java on windows ([`93be86d`](https://github.com/edayot/model_resolver/commit/93be86dc45a7932a22bf230ffcd40d4e670320e8))
+
+* chore: pyright and black ([`12dd0ff`](https://github.com/edayot/model_resolver/commit/12dd0ffc63346d66a60635665a5cc3fbdee78fe7))
+
+### Feature
+
+* feat: source field and new copper golem statue ([`f4df149`](https://github.com/edayot/model_resolver/commit/f4df149eeaa5b00f122d3d6e0b6c5f6ae8d94005))
+
+### Style
+
+* style: black ([`9fc7985`](https://github.com/edayot/model_resolver/commit/9fc7985985361f052af8afb337fe6a82c94f192d))
+
+* style: black ([`ac3da65`](https://github.com/edayot/model_resolver/commit/ac3da65f0d9ee68242942d00f17d6a786fb60343))
+
+* style: run black ([`384c68e`](https://github.com/edayot/model_resolver/commit/384c68e932ab6abe01410176010d4a1d5d786d95))
+
+
 ## v1.10.0 (2025-07-14)
 
 ### Feature

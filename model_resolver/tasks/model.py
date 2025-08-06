@@ -28,7 +28,7 @@ class ModelRenderTask(GenericModelRenderTask):
         yield self
 
     def run(self):
-        self.render_model(self.model, self.tints, self.source)
+        self.render_model(self.model.bake(), self.tints, self.source)
 
     def flush(self):
         super().flush()

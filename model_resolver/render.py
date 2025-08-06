@@ -1,14 +1,14 @@
 from OpenGL.GL import *  # type: ignore
 from OpenGL.GLUT import *  # type: ignore
 from OpenGL.GLU import *  # type: ignore
-from model_resolver.minecraft_model import DisplayOptionModel
+from model_resolver.minecraft_model import DisplayOptionModel, MinecraftModel
 from model_resolver.my_glut_init import glutInit
 
 from beet import Context, Atlas
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.tasks.item import ItemRenderTask
-from model_resolver.tasks.model import ModelPathRenderTask
+from model_resolver.tasks.model import ModelPathRenderTask, ModelRenderTask
 from model_resolver.tasks.structure import StructureRenderTask
 from model_resolver.utils import (
     LightOptions,
@@ -96,6 +96,34 @@ class Render:
             path_save = Path(path_save)
         self.tasks.append(
             ModelPathRenderTask(
+                getter=self.getter,
+                model=model,
+                path_ctx=path_ctx,
+                path_save=path_save,
+                render_size=render_size,
+                animation_mode=animation_mode,
+                animation_framerate=animation_framerate,
+            )
+        )
+
+    def add_model_dict_task(
+        self,
+        model: dict[str, Any] | MinecraftModel,
+        *,
+        path_ctx: Optional[str] = None,
+        path_save: Optional[Path | str] = None,
+        render_size: Optional[int] = None,
+        animation_mode: AnimationType = "multi_files",
+        animation_framerate: int = 20,
+    ):
+        if render_size is None:
+            render_size = self.default_render_size
+        if isinstance(path_save, str):
+            path_save = Path(path_save)
+        if isinstance(model, dict):
+            model = MinecraftModel.model_validate(model)
+        self.tasks.append(
+            ModelRenderTask(
                 getter=self.getter,
                 model=model,
                 path_ctx=path_ctx,

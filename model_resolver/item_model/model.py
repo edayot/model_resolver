@@ -1,13 +1,15 @@
 from functools import cached_property
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, ValidationError
 from model_resolver.item_model.data_component_predicate import DataComponent
 from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
-from typing import Optional, Literal, ClassVar, Generator, Union, Any
+from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
 from model_resolver.item_model.item import Item
 from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
 from rich import print  # noqa
+
+ItemModelBaseClass: list[Type["ItemModelBase"]] = []
 
 
 class ItemModelBase(BaseModel):
@@ -34,6 +36,12 @@ class ItemModelBase(BaseModel):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from []
+
+    def __init_subclass__(cls, **kwargs):
+        # not in the list, not this base class and not any base class
+        if cls not in ItemModelBaseClass and not cls is ItemModelBase and not cls.__name__.endswith("Base"):
+            ItemModelBaseClass.append(cls)
+        return super().__init_subclass__(**kwargs)
 
 
 class ItemModelModel(ItemModelBase):
@@ -245,23 +253,6 @@ class ItemModelConditionViewEntity(ItemModelConditionBase):
         # Not possible to implement
         return False
 
-
-type ItemModelCondition = Union[
-    ItemModelConditionUsingItem,
-    ItemModelConditionBroken,
-    ItemModelConditionComponent,
-    ItemModelConditionDamaged,
-    ItemModelConditionHasComponent,
-    ItemModelConditionFishingRodCast,
-    ItemModelConditionBundleHasSelectedItem,
-    ItemModelConditionSelected,
-    ItemModelConditionCarried,
-    ItemModelConditionExtendedView,
-    ItemModelConditionCustomModelData,
-    ItemModelConditionKeybindDown,
-]
-
-
 class SelectCase(BaseModel):
     when: Any | list[Any]
     model: "ItemModelRecursive"
@@ -441,20 +432,6 @@ class ItemModelSelectContextDimension(ItemModelSelectBase):
         return self.resolve_case("minecraft:overworld")
 
 
-type ItemModelSelect = Union[
-    ItemModelSelectMainHand,
-    ItemModelSelectChargeType,
-    ItemModelSelectComponent,
-    ItemModelSelectTrimMaterial,
-    ItemModelSelectBlockState,
-    ItemModelSelectDisplayContext,
-    ItemModelSelectCustomModelData,
-    ItemModelSelectLocalTime,
-    ItemModelSelectContextEntityType,
-    ItemModelSelectContextDimension,
-]
-
-
 class RangeDispatchEntry(BaseModel):
     threshold: float
     model: "ItemModelRecursive"
@@ -495,10 +472,16 @@ class ItemModelRangeDispatchBase(ItemModelBase):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         value = self.resolve_range_dispatch(getter, item)
-        for entry in self.entries:
-            if value >= entry.threshold:
-                yield from entry.model.resolve(getter, item)
-                return
+        max_threshold = 0
+        good_entry: Optional[RangeDispatchEntry] = None
+        for entry in sorted(self.entries, key=lambda x: x.threshold):
+            if entry.threshold >= max_threshold and entry.threshold <= value:
+                good_entry = entry
+                max_threshold = entry.threshold
+
+        if good_entry:
+            yield from good_entry.model.resolve(getter, item)
+            return
         if self.fallback:
             yield from self.fallback.resolve(getter, item)
 
@@ -618,20 +601,6 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
         return 0.0
 
 
-type ItemModelRangeDispatch = Union[
-    ItemModelRangeDispatchCustomModelData,
-    ItemModelRangeDispatchBundleFullness,
-    ItemModelRangeDispatchDamage,
-    ItemModelRangeDispatchCount,
-    ItemModelRangeDispatchCooldown,
-    ItemModelRangeDispatchTime,
-    ItemModelRangeDispatchCompass,
-    ItemModelRangeDispatchCrossbowPull,
-    ItemModelRangeDispatchUseDuration,
-    ItemModelRangeDispatchUseCycle,
-]
-
-
 class ItemModelBundleSelectedItem(ItemModelBase):
     type: Literal["minecraft:bundle/selected_item", "bundle/selected_item"]
 
@@ -695,30 +664,24 @@ class ItemModelEmpty(ItemModelBase):
 type ItemModelResolvable = Union[ItemModelModel, ItemModelSpecial]
 
 
-class ItemModelAll(RootModel):
-    root: Union[
-        ItemModelModel,
-        ItemModelComposite,
-        ItemModelCondition,
-        ItemModelSelect,
-        ItemModelRangeDispatch,
-        ItemModelBundleSelectedItem,
-        ItemModelSpecial,
-        ItemModelEmpty,
-    ]
-
-
 class ItemModelRecursive(RootModel[Any]):
     root: Any
 
     @cached_property
-    def model(self) -> ItemModelAll:
-        return ItemModelAll.model_validate(self.root)
+    def model(self) -> ItemModelBase:
+        errors = []
+        for cls in reversed(ItemModelBaseClass):
+            try:
+                return cls.model_validate(self.root)
+            except ValidationError as e:
+                errors.append(e)
+        raise ValidationError(errors)
+
 
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        yield from self.model.root.resolve(getter, item)
+        yield from self.model.resolve(getter, item)
 
 
 class ItemModel(BaseModel):

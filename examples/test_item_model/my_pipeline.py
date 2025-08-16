@@ -1,5 +1,15 @@
 from beet import Context
 from model_resolver import Item, Render
+from model_resolver.item_model.model import ItemModelRangeDispatchCompass, ItemModelRecursive
+
+
+class MyImpl(ItemModelRangeDispatchCompass):
+    def resolve_range_dispatch(self, getter, item):
+        comp = item.components.get("model_resolver:myimpl")
+        if comp is not None:
+            return comp
+        return super().resolve_range_dispatch(getter, item)
+MyImpl.model_rebuild()
 
 
 def beet_default(ctx: Context):
@@ -198,6 +208,17 @@ def beet_default(ctx: Context):
     render.add_item_task(
         Item(id="stone", components={"minecraft:item_model": "test:sign"}),
         path_ctx="test:render/sign",
+        render_size=512,
+    )
+
+    render.add_item_task(
+        Item(id="compass"),
+        path_ctx="test:render/compass",
+        render_size=512,
+    )
+    render.add_item_task(
+        Item(id="compass", components={"model_resolver:myimpl": 10}),
+        path_ctx="test:render/compass_my_impl",
         render_size=512,
     )
 

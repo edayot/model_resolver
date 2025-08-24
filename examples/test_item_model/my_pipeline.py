@@ -222,4 +222,11 @@ def beet_default(ctx: Context):
         render_size=512,
     )
 
+    test = render.add_item_task(
+        Item(id="compass"),
+        render_size=512,
+    )
+
     render.run()
+
+    print(test.saved_img)

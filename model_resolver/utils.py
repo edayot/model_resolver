@@ -71,14 +71,13 @@ class PackGetterV2[T: Pack]:
             assets.merge(rp)
         assets.merge(self._ctx.assets)
         return assets
-    
+
     @cached_property
     def data(self) -> DataPack:
         data = DataPack()
         data.merge(self._vanilla.data)
         data.merge(self._ctx.data)
         return data
-
 
     @classmethod
     def from_context(cls, ctx: Context) -> Self:

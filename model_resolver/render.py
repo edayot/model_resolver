@@ -33,11 +33,17 @@ class AtlasDict(TypedDict):
     permutations: dict[str, str]
 
 
+class AppendList[T: Any](list[T]):
+    def append(self, object: T) -> T:
+        super().append(object)
+        return object
+
+
 @dataclass
 class Render:
     ctx: Context
 
-    tasks: list[Task] = field(default_factory=list)
+    tasks: AppendList[Task] = field(default_factory=AppendList)
     tasks_index: int = 0
     light: LightOptions = field(default_factory=LightOptions)
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
@@ -68,7 +74,7 @@ class Render:
             render_size = self.default_render_size
         if isinstance(path_save, str):
             path_save = Path(path_save)
-        self.tasks.append(
+        return self.tasks.append(
             ItemRenderTask(
                 getter=self.getter,
                 item=item.fill(self.ctx),
@@ -94,7 +100,7 @@ class Render:
             render_size = self.default_render_size
         if isinstance(path_save, str):
             path_save = Path(path_save)
-        self.tasks.append(
+        return self.tasks.append(
             ModelPathRenderTask(
                 getter=self.getter,
                 model=model,
@@ -122,7 +128,7 @@ class Render:
             path_save = Path(path_save)
         if isinstance(model, dict):
             model = MinecraftModel.model_validate(model)
-        self.tasks.append(
+        return self.tasks.append(
             ModelRenderTask(
                 getter=self.getter,
                 model=model,
@@ -287,7 +293,7 @@ class Render:
         glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
         glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
 
-        new_tasks = []
+        new_tasks = AppendList[Task]()
         for task in self.tasks:
             new_tasks.extend(task.resolve())
         self.tasks = new_tasks

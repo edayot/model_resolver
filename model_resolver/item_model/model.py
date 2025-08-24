@@ -39,7 +39,11 @@ class ItemModelBase(BaseModel):
 
     def __init_subclass__(cls, **kwargs):
         # not in the list, not this base class and not any base class
-        if cls not in ItemModelBaseClass and not cls is ItemModelBase and not cls.__name__.endswith("Base"):
+        if (
+            cls not in ItemModelBaseClass
+            and not cls is ItemModelBase
+            and not cls.__name__.endswith("Base")
+        ):
             ItemModelBaseClass.append(cls)
         return super().__init_subclass__(**kwargs)
 
@@ -252,6 +256,7 @@ class ItemModelConditionViewEntity(ItemModelConditionBase):
     def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
         # Not possible to implement
         return False
+
 
 class SelectCase(BaseModel):
     when: Any | list[Any]
@@ -676,7 +681,6 @@ class ItemModelRecursive(RootModel[Any]):
             except ValidationError as e:
                 errors.append(e)
         raise ValidationError(errors)
-
 
     def resolve(
         self, getter: PackGetterV2, item: Item

@@ -25,9 +25,11 @@ def compare_range(predicate: NumberOrRange, value: Any) -> bool:
     return False
 
 
-def iter_tagged_id[T: NamespaceFile](
-    value: TaggedID, proxy: NamespaceProxy[T] | None = None
-) -> Generator[str, None, None]:
+def iter_tagged_id[
+    T: NamespaceFile
+](value: TaggedID, proxy: NamespaceProxy[T] | None = None) -> Generator[
+    str, None, None
+]:
     """
     A generator that yields all the ids in a tagged id.
     If # prefixed value is encountered, it will resolve the tag

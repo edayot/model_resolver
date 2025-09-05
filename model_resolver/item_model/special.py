@@ -1,11 +1,12 @@
+from functools import cached_property
 import math
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel, ValidationError
 from model_resolver.item_model.tint_source import (
     TintSource,
     to_argb,
     TintSourceConstant,
 )
-from typing import ClassVar, Optional, Literal, Union, Any
+from typing import ClassVar, Optional, Literal, Type, Any
 from model_resolver.item_model.item import Item
 from model_resolver.minecraft_model import MultiTexture, TextureSource
 from model_resolver.utils import PackGetterV2, clamp, resolve_key
@@ -14,6 +15,9 @@ from uuid import UUID
 import json
 import base64
 from rich import print  # noqa
+
+
+SpecialModelBaseClass: list[Type["SpecialModelBase"]] = []
 
 
 class SpecialModelBase(BaseModel):
@@ -55,6 +59,16 @@ class SpecialModelBase(BaseModel):
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return []
+
+    def __init_subclass__(cls, **kwargs):
+        # not in the list, not this base class and not any base class
+        if (
+            cls not in SpecialModelBaseClass
+            and not cls is SpecialModelBase
+            and not cls.__name__.endswith("Base")
+        ):
+            SpecialModelBaseClass.append(cls)
+        return super().__init_subclass__(**kwargs)
 
 
 class SpecialModelCopperGolemStatue(SpecialModelBase):
@@ -563,7 +577,7 @@ class ProfileComponent(BaseModel):
     properties: Optional[list[PropertiesModel]] = None
 
 
-class SpecialModelBaseHead(SpecialModelBase):
+class SpecialModelHeadBase(SpecialModelBase):
 
     @staticmethod
     def get_model_player(
@@ -607,7 +621,7 @@ class SpecialModelBaseHead(SpecialModelBase):
         return model
 
 
-class SpecialModelPlayerHead(SpecialModelBaseHead):
+class SpecialModelPlayerHead(SpecialModelHeadBase):
     type: Literal["minecraft:player_head", "player_head"]
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
@@ -666,7 +680,7 @@ class SpecialModelPlayerHead(SpecialModelBaseHead):
         return img
 
 
-class SpecialModelHead(SpecialModelBaseHead):
+class SpecialModelHead(SpecialModelHeadBase):
     type: Literal["minecraft:head", "head"]
     kind: Literal[
         "skeleton", "wither_skeleton", "player", "zombie", "creeper", "piglin", "dragon"
@@ -1421,18 +1435,15 @@ class SpecialModelHangingSign(SpecialModelSignBase):
         return res
 
 
-type SpecialModel = Union[
-    SpecialModelBed,
-    SpecialModelBanner,
-    SpecialModelConduit,
-    SpecialModelChest,
-    SpecialModelPlayerHead,
-    SpecialModelHead,
-    SpecialModelShulkerBox,
-    SpecialModelShield,
-    SpecialModelTrident,
-    SpecialModelDecoratedPot,
-    SpecialModelStandingSign,
-    SpecialModelHangingSign,
-    SpecialModelCopperGolemStatue,
-]
+class SpecialModel(RootModel[Any]):
+    root: Any
+
+    @cached_property
+    def special_model(self) -> SpecialModelBase:
+        errors = []
+        for cls in reversed(SpecialModelBaseClass):
+            try:
+                return cls.model_validate(self.root)
+            except ValidationError as e:
+                errors.append(e)
+        raise ValidationError(errors)

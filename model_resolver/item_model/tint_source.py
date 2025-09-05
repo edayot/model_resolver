@@ -93,7 +93,9 @@ class TintSourceGrass(TintSourceBase):
         color = img.getpixel((x, y))
         if not color:
             raise ValueError(f"Color not found at {temperature}, {downfall}")
-        return color  # type: ignore
+        assert type(color) is tuple
+        assert len(color) == 3
+        return color
 
 
 class TintSourceFirework(TintSourceBase):

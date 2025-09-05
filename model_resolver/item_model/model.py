@@ -619,9 +619,9 @@ class ItemModelSpecial(ItemModelBase):
         opts = getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.special_rendering:
             return MinecraftModel()
-        child = self.model.get_model(getter, item)
-        scale = self.model.get_scale()
-        rotations = self.model.get_additional_rotations()
+        child = self.model.special_model.get_model(getter, item)
+        scale = self.model.special_model.get_scale()
+        rotations = self.model.special_model.get_additional_rotations()
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, getter, delete_parent_elements=True)
         res = MinecraftModel.model_validate(merged).bake()
@@ -647,7 +647,7 @@ class ItemModelSpecial(ItemModelBase):
         yield self
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
-        return self.model.get_tints(getter, item)
+        return self.model.special_model.get_tints(getter, item)
 
 
 class ItemModelEmpty(ItemModelBase):

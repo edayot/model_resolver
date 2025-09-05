@@ -1,6 +1,6 @@
-from OpenGL.GL import *  # type: ignore
-from OpenGL.GLUT import *  # type: ignore
-from OpenGL.GLU import *  # type: ignore
+from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
+from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
+from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
 from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item

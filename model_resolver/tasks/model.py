@@ -188,6 +188,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             tasks.append(task)
             if self.animation_mode == "one_file":
                 break
+        self.tasks = tasks
 
         if self.animation_mode == "webp":
             yield AnimatedResultTask(

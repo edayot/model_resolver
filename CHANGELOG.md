@@ -2,6 +2,39 @@
 
 
 
+## v1.11.1 (2025-10-12)
+
+### Chore
+
+* chore: update deps ([`b1dfa8c`](https://github.com/edayot/model_resolver/commit/b1dfa8c4b9533748774c2c903122aeaa33313781))
+
+* chore: update tests ([`938ce55`](https://github.com/edayot/model_resolver/commit/938ce55d277524f770860649340787ecfa77984f))
+
+* chore: py.typed ([`cf82c58`](https://github.com/edayot/model_resolver/commit/cf82c58af8ec3ab9ddb143f0c6e781c5bf24a6e2))
+
+### Feature
+
+* feat: return the task when adding it to the render ([`1e8f77d`](https://github.com/edayot/model_resolver/commit/1e8f77d04576257efaa42319ceee46db895ccfac))
+
+* feat: customize item model resolving ([`fb6e1c5`](https://github.com/edayot/model_resolver/commit/fb6e1c52e33870fc40d92b6f9737074368f0975c))
+
+### Fix
+
+* fix: #18 ([`48e9269`](https://github.com/edayot/model_resolver/commit/48e926906a1d442ab31f2cdac606d013933a010e))
+
+* fix: getter class #17 ([`1a42d3b`](https://github.com/edayot/model_resolver/commit/1a42d3bcae7dc659e39fb086e06e6621df8f3b51))
+
+### Style
+
+* style: better typing ([`7a1f2ad`](https://github.com/edayot/model_resolver/commit/7a1f2ad73b20f953044c7147fa76bea6badef150))
+
+### Unknown
+
+* save animated task in parent class ([`ef921c0`](https://github.com/edayot/model_resolver/commit/ef921c0f3c129a077c7f99956cc1508a09103b77))
+
+* #16 ([`f48c8dc`](https://github.com/edayot/model_resolver/commit/f48c8dce7492eeff59bcbdf9aed3902156b874cd))
+
+
 ## v1.11.0 (2025-08-06)
 
 ### Chore

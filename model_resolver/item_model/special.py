@@ -72,7 +72,16 @@ class SpecialModelBase(BaseModel):
 
 
 class SpecialModelCopperGolemStatue(SpecialModelBase):
+    type: Literal["minecraft:copper_golem_statue", "copper_golem_statue"]
     texture: str
+    pose: Literal["sitting", "running", "star", "standing"]
+
+    def get_texture_path(self) -> str:
+        namespace, path = resolve_key(self.texture).split(":")
+        return f"{namespace}:{path.removeprefix("textures/")}"
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        ...
 
 
 class SpecialModelBed(SpecialModelBase):

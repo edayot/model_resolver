@@ -227,6 +227,12 @@ def beet_default(ctx: Context):
         render_size=512,
     )
 
+    test = render.add_item_task(
+        Item(id="copper_golem_statue"),
+        render_size=512,
+    )
+    
+
     render.run()
 
     print(test.saved_img)

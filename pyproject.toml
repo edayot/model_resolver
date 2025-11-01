@@ -13,6 +13,7 @@ tqdm = "^4.66.2"
 rich = "^13.7.1"
 pillow = ">10.3.0"
 pyopengl = "^3.1.9"
+click = "8.2.1"
 
 [tool.poetry.dev-dependencies]
 pytest-insta = "^0.3.0"

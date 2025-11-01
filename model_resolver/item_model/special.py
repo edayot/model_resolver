@@ -232,7 +232,7 @@ class SpecialModelBed(SpecialModelBase):
         return model
 
 
-class SpecialModelBaseLayer(SpecialModelBase):
+class SpecialModelLayerBase(SpecialModelBase):
     COLOR_STRING_TO_ARGB: ClassVar[dict[str, int]] = {
         "white": 16383998,
         "orange": 16351261,
@@ -291,7 +291,7 @@ class SpecialModelBaseLayer(SpecialModelBase):
         return tuple(res)
 
 
-class SpecialModelBanner(SpecialModelBaseLayer):
+class SpecialModelBanner(SpecialModelLayerBase):
     type: Literal["minecraft:banner", "banner"]
     color: str
 
@@ -363,7 +363,7 @@ class SpecialModelBanner(SpecialModelBaseLayer):
         return res
 
 
-class SpecialModelShield(SpecialModelBaseLayer):
+class SpecialModelShield(SpecialModelLayerBase):
     type: Literal["minecraft:shield", "shield"]
 
     base_texture: ClassVar[str] = "minecraft:entity/shield_base"

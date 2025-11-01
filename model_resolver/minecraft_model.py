@@ -101,12 +101,16 @@ class MinecraftModel(BaseModel):
         if not self.textures:
             return self
         max = 0
+        found = False
         for key in self.textures.keys():
             if not key.startswith("layer"):
                 continue
+            found = True
             index = int(key.removeprefix("layer"))
             if index > max:
                 max = index
+        if not found:
+            return self
         for i in range(0, max + 1):
             if not f"layer{i}" in self.textures:
                 continue

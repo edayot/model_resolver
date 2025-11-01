@@ -231,8 +231,11 @@ def beet_default(ctx: Context):
         Item(id="copper_golem_statue"),
         render_size=512,
     )
+
+    render.add_model_task(
+        "test:item/donut_holer", path_ctx="test:render/donut_holer", render_size=512
+    )
     
 
     render.run()
 
-    print(test.saved_img)

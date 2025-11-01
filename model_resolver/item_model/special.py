@@ -81,7 +81,7 @@ class SpecialModelCopperGolemStatue(SpecialModelBase):
         return f"{namespace}:{path.removeprefix("textures/")}"
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        ...
+        return {}
 
 
 class SpecialModelBed(SpecialModelBase):

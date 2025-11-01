@@ -2,6 +2,21 @@
 
 
 
+## v1.11.2 (2025-11-01)
+
+### Fix
+
+* fix: bed rendering ([`67db714`](https://github.com/edayot/model_resolver/commit/67db71446d341b84b0759add3a0cf3489ca847e8))
+
+* fix: item generated with layer conflit ([`6783a2d`](https://github.com/edayot/model_resolver/commit/6783a2d81d8ed87e9d5fbe3585ba4f13f578a3a9))
+
+### Unknown
+
+* o ([`65eb959`](https://github.com/edayot/model_resolver/commit/65eb959b92b527bb66706dc257e16506df67b18e))
+
+* wip copper golem ([`ea660ee`](https://github.com/edayot/model_resolver/commit/ea660eefa669a06b6935f195b0a8e1ea0c650224))
+
+
 ## v1.11.1 (2025-10-12)
 
 ### Chore

@@ -56,7 +56,7 @@ class ModelResolverOptions(BaseModel):
 
 
 @dataclass
-class PackGetterV2[T: Pack]:
+class PackGetterV2:
     opts: ModelResolverOptions
     _ctx: Context
     _vanilla: Vanilla

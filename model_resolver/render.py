@@ -237,9 +237,9 @@ class Render:
 
     def resolve_altas(self, key: str, atlas: Atlas):
         for source in atlas.data["sources"]:
-            source_type = resolve_key(source["type"])
             source: AtlasDict
 
+            source_type = resolve_key(source["type"])
             # Handle single texture mapping
             if source_type == "minecraft:single":
                 resource = resolve_key(source["resource"])
@@ -247,14 +247,12 @@ class Render:
                 if resource in self.getter.assets.textures:
                     self.dynamic_textures[sprite] = self.getter.assets.textures[resource].image
                 continue
-
-            if source_type != "minecraft:paletted_permutations":
-                continue
-            for texture in source["textures"]:
-                for variant, color_palette_path in source["permutations"].items():
-                    self.resolve_altas_texture(
-                        texture, variant, source, color_palette_path
-                    )
+            elif source_type == "minecraft:paletted_permutations":
+                for texture in source["textures"]:
+                    for variant, color_palette_path in source["permutations"].items():
+                        self.resolve_altas_texture(
+                            texture, variant, source, color_palette_path
+                        )
 
     def resolve_altas_texture(
         self, texture: str, variant: str, source: AtlasDict, color_palette_path: str

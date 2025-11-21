@@ -2,6 +2,25 @@
 
 
 
+## v1.12.0 (2025-11-21)
+
+### Feature
+
+* feat: add `minecraft:single` type in resolve_altas (#20)
+
+* feat: add resource and sprite fields to AtlasDict; enhance texture mapping in resolve_altas
+
+* refactor code
+
+---------
+
+Co-authored-by: edayot &lt;pro.e.dayot@gmail.com&gt; ([`f804b57`](https://github.com/edayot/model_resolver/commit/f804b57401f4ebffbe48f8b78300363c82054423))
+
+### Fix
+
+* fix: remove useless generics ([`1021cbf`](https://github.com/edayot/model_resolver/commit/1021cbfbefb3205febe3fe4bc9bca6e9af83f378))
+
+
 ## v1.11.2 (2025-11-01)
 
 ### Fix

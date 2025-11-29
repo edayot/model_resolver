@@ -1,4 +1,5 @@
-# Model Resolver
+![logo](https://github.com/edayot/model_resolver/blob/master/rp_logo/logo.png?raw=true)
+
 
 A beet plugin that render all models in the beet project.
 

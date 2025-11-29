@@ -2,6 +2,13 @@
 
 
 
+## v1.12.2 (2025-11-29)
+
+### Unknown
+
+* woosh ([`aed14a6`](https://github.com/edayot/model_resolver/commit/aed14a6da049243a9af1be3d0b507aada2f7ff5b))
+
+
 ## v1.12.1 (2025-11-29)
 
 ### Chore

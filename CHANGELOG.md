@@ -2,6 +2,19 @@
 
 
 
+## v1.12.1 (2025-11-29)
+
+### Chore
+
+* chore: deps ([`c4370fc`](https://github.com/edayot/model_resolver/commit/c4370fca5e4779186fbde0e81e16ee77e5e1c467))
+
+### Unknown
+
+* Insert logo image in README
+
+Added a logo image to enhance the README visual appeal. ([`bffc138`](https://github.com/edayot/model_resolver/commit/bffc1381438d49e93e5b0d345a5fa83eb4840b22))
+
+
 ## v1.12.0 (2025-11-21)
 
 ### Feature

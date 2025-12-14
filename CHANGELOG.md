@@ -2,6 +2,17 @@
 
 
 
+## v1.13.0 (2025-12-14)
+
+### Chore
+
+* chore: update python ([`35011a2`](https://github.com/edayot/model_resolver/commit/35011a2a26f6697d0b00bf19f065407687996576))
+
+### Unknown
+
+* update ([`9419e01`](https://github.com/edayot/model_resolver/commit/9419e01ece1c49a797c414079be5760dc4db44fa))
+
+
 ## v1.12.2 (2025-11-29)
 
 ### Unknown

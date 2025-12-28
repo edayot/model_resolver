@@ -7,7 +7,6 @@ from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
 from model_resolver.item_model.item import Item
 from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
-from rich import print  # noqa
 
 ItemModelBaseClass: list[Type["ItemModelBase"]] = []
 

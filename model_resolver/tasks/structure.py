@@ -17,7 +17,6 @@ from model_resolver.minecraft_model import (
 )
 from typing import Generator, Optional, Any, TypedDict, Union
 from pydantic import BaseModel, Field
-from rich import print  # noqa
 from functools import cached_property
 import random
 from model_resolver.tasks.base import Task, RenderError

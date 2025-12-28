@@ -10,7 +10,6 @@ from model_resolver.item_model.tint_source import TintSource
 from typing import Generator
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
-from rich import print  # noqa
 
 
 @dataclass(kw_only=True)

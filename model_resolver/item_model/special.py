@@ -14,7 +14,6 @@ from PIL import Image
 from uuid import UUID
 import json
 import base64
-from rich import print  # noqa
 
 
 SpecialModelBaseClass: list[Type["SpecialModelBase"]] = []

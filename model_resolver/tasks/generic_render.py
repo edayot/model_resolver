@@ -29,7 +29,6 @@ from typing import Any, Optional, Generator, Literal
 from PIL import Image
 from model_resolver.tasks.base import Task, RenderError
 from math import pi, cos, sin, sqrt
-from rich import print  # noqa
 
 
 type TextureBindingsValue = tuple[tuple[tuple[int, TintSource | None], ...], str]

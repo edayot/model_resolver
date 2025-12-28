@@ -21,7 +21,6 @@ from model_resolver.utils import (
 from typing import Any, Literal, Optional, TypedDict
 from pathlib import Path
 from PIL import Image
-from rich import print  # noqa
 
 from model_resolver.tasks.base import AnimationType, Task, RenderError
 

@@ -9,7 +9,6 @@ from model_resolver.minecraft_model import (
     resolve_model,
 )
 from typing import ClassVar, Generator
-from rich import print  # noqa
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.item_model.tint_source import TintSource

@@ -139,11 +139,11 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
                     cwd=path,
                     check=True,
                 )
-            with open(path / "generated" / "reports" / "items.json") as file:
-                components = json.load(file)
-            return {
-                resolve_key(key): value["components"]
-                for key, value in components.items()
-            }
+            # examples/load_vanilla/.beet_cache/model_resolver_components/0x0/generated/reports/minecraft/components/item
+            components = {}
+            for item in (path / "generated" / "reports" / "minecraft" / "components" / "item").glob("*.json"):
+                with open(item) as file:
+                    components[resolve_key(item.name.removesuffix(".json"))] = json.load(file)["components"]
+            return components
         case _:
             raise ValueError(f"Unknown preferred_minecraft_generated: {prefered}")

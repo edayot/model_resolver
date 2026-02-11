@@ -2,6 +2,19 @@
 
 
 
+## v1.14.0 (2026-02-11)
+
+### Fix
+
+* fix: account for new snapshot components location ([`5965686`](https://github.com/edayot/model_resolver/commit/596568694cbbde8b0e907803e1ef95f849c1cc3d))
+
+### Unknown
+
+* ds ([`995c5da`](https://github.com/edayot/model_resolver/commit/995c5da3abdea99b6a2fa3456531920881e65937))
+
+* remove uneccesarry deps ([`c95772c`](https://github.com/edayot/model_resolver/commit/c95772c829a147ec6c92d0524e80ffd8000bba57))
+
+
 ## v1.13.0 (2025-12-14)
 
 ### Chore

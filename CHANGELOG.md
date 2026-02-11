@@ -2,6 +2,13 @@
 
 
 
+## v1.14.1 (2026-02-11)
+
+### Fix
+
+* fix: adding as a fallback ([`56eb9a5`](https://github.com/edayot/model_resolver/commit/56eb9a589fb39f0e00fb42f595fb3b4bc1f8bc3b))
+
+
 ## v1.14.0 (2026-02-11)
 
 ### Fix

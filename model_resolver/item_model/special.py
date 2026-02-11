@@ -274,7 +274,7 @@ class SpecialModelLayerBase(SpecialModelBase):
         res: list[MultiTexture] = []
         res.append((self.base_texture, None))
         res.append(
-            (f"minecraft:entity/{self.entity_type}/base", self.get_color(base_color))
+            (self.base_texture, self.get_color(base_color))
         )
 
         for pattern in item.components.get("minecraft:banner_patterns", []):
@@ -294,8 +294,8 @@ class SpecialModelBanner(SpecialModelLayerBase):
     type: Literal["minecraft:banner", "banner"]
     color: str
 
-    base_texture: ClassVar[str] = "minecraft:entity/banner_base"
-    base_texture_nopattern: ClassVar[str] = "minecraft:entity/banner_base"
+    base_texture: ClassVar[str] = "minecraft:entity/banner/banner_base"
+    base_texture_nopattern: ClassVar[str] = "minecraft:entity/banner/banner_base"
 
     def get_base_color(self, item: Item) -> str | None:
         return self.color
@@ -365,8 +365,8 @@ class SpecialModelBanner(SpecialModelLayerBase):
 class SpecialModelShield(SpecialModelLayerBase):
     type: Literal["minecraft:shield", "shield"]
 
-    base_texture: ClassVar[str] = "minecraft:entity/shield_base"
-    base_texture_nopattern: ClassVar[str] = "minecraft:entity/shield_base_nopattern"
+    base_texture: ClassVar[str] = "minecraft:entity/shield/shield_base"
+    base_texture_nopattern: ClassVar[str] = "minecraft:entity/shield/shield_base_nopattern"
 
     def get_base_color(self, item: Item) -> str | None:
         if not (base_color := item.components.get("minecraft:base_color")):

@@ -2,6 +2,13 @@
 
 
 
+## v1.14.2 (2026-02-11)
+
+### Fix
+
+* fix: changes according to 26-1-snapshot-2 ([`3a6f5b0`](https://github.com/edayot/model_resolver/commit/3a6f5b058a08cb26ff7f3513bd9a6b64e1a931e8))
+
+
 ## v1.14.1 (2026-02-11)
 
 ### Fix

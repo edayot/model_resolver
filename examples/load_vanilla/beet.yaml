@@ -9,6 +9,6 @@ output: ../../dist
 meta:
   model_resolver:
     # load vanilla item models
-    minecraft_version: "26.1-snapshot-3"
+    minecraft_version: "26.1-snapshot-2"
     special_rendering: true
     preferred_minecraft_generated: "java"

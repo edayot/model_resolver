@@ -176,11 +176,13 @@ class Render:
         )
 
     def resolve_dynamic_textures(self):
+        log.info(f"Resolving dynamic textures")
         # first, resolve all vanilla altas
         cache = self.ctx.cache.get("model_resolver_dynamic_textures")
         assert cache
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
         if "dynamic_textures" in cache.json and opts.use_cache:
+            log.info("Using cached dynamic textures")
             for key, path in cache.json["dynamic_textures"].items():
                 self.dynamic_textures[key] = Image.open(path)
             return
@@ -192,9 +194,11 @@ class Render:
             **{key: value for key, value in self.getter.assets.atlases.items()},
         }
         for key, atlas in atlases.items():
+            log.info(f"Creating atlas {key}")
             self.resolve_altas(key, atlas)
         if not opts.use_cache:
             return
+        log.info("Caching dynamic textures")
         # construct the cache
         cache.json["dynamic_textures"] = {}
         for key, value in self.dynamic_textures.items():

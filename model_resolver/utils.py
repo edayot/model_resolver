@@ -139,6 +139,14 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
                     cwd=path,
                     check=True,
                 )
+            items_json = path / "generated" / "reports" / "items.json"
+            if items_json.exists():
+                with open(items_json) as file:
+                    components = json.load(file)
+                return {
+                    resolve_key(key): value["components"]
+                    for key, value in components.items()
+                }
             # examples/load_vanilla/.beet_cache/model_resolver_components/0x0/generated/reports/minecraft/components/item
             components = {}
             for item in (path / "generated" / "reports" / "minecraft" / "components" / "item").glob("*.json"):

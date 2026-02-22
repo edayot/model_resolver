@@ -24,21 +24,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.14
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          version: 1.8.1
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: Setup cache for dependencies
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{  runner.os }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install
+          enable-cache: true
+      - name: Sync Python dependencies
+        run: uv sync --dev
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -59,18 +50,18 @@ jobs:
           # print the version bump
           echo "Version bump: $VERSION_BUMP"
           if [ "$VERSION_BUMP" = "automatic" ]; then
-            poetry run semantic-release -v version
+            uv run semantic-release -v version
           fi
           if [ "$VERSION_BUMP" = "patch" ]; then
-            poetry run semantic-release -v version --patch
+            uv run semantic-release -v version --patch
           fi
           if [ "$VERSION_BUMP" = "minor" ]; then
-            poetry run semantic-release -v version --minor
+            uv run semantic-release -v version --minor
           fi
           if [ "$VERSION_BUMP" = "major" ]; then
-            poetry run semantic-release -v version --major
+            uv run semantic-release -v version --major
           fi
-          poetry run semantic-release -v publish
-          poetry publish --username __token__ --password $PYPI_TOKEN
+          uv run semantic-release -v publish
+          uv publish --token "$PYPI_TOKEN"
 
           

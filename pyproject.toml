@@ -1,31 +1,31 @@
-[tool.poetry]
+[project]
 name = "model-resolver"
 version = "1.14.2"
 description = ""
-authors = ["edayot <pro.e.dayot@gmail.com>"]
-license = "MIT"
 readme = "README.md"
+license = "MIT"
+authors = [
+	{ name = "edayot", email = "pro.e.dayot@gmail.com" },
+]
+requires-python = ">=3.14,<4.0"
+dependencies = [
+	"beet>=0.113.0-beta.10",
+	"pillow>10.3.0",
+	"pyopengl>=3.1.9,<4.0.0",
+	"click>=8.1.7",
+]
 
-[tool.poetry.dependencies]
-python = "^3.14"
-beet = ">=0.113.0-beta.10"
-pillow = ">10.3.0"
-pyopengl = "^3.1.9"
-click = ">=8.1.7"
-
-[tool.poetry.dev-dependencies]
-pytest-insta = "^0.3.0"
-python-semantic-release = "^8.7.0"
-autoflake = "^2.3.1"
-black = "^24.4.2"
-
-[tool.poetry.scripts]
-
+[dependency-groups]
+dev = [
+	"pytest-insta>=0.3.0,<1.0.0",
+	"python-semantic-release>=8.7.0,<9.0.0",
+	"autoflake>=2.3.1,<3.0.0",
+	"black>=24.4.2,<25.0.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
 
 
 [tool.pyright]
@@ -35,9 +35,9 @@ typeCheckingMode = "basic"
 
 [tool.semantic_release]
 major_on_zero = false
-version_toml = ["pyproject.toml:tool.poetry.version"]
+version_toml = ["pyproject.toml:project.version"]
 tag_format = "{version}"
-build_command = "poetry build"
+build_command = "uv build"
 remove_dist = false
 
 

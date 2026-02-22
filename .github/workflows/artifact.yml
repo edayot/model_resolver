@@ -20,21 +20,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.14
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: Setup cache for dependencies
-        id: cached-poetry-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install
+          enable-cache: true
+      - name: Sync Python dependencies
+        run: uv sync --dev
       - name: Setup OpenGL and Run Tests
         uses: edayot/model_resolver@master
         env:
@@ -42,7 +33,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         with:
           commands: |
-            poetry run beet
+            uv run beet
       - name: Upload dist folder
         run: tar -czvf dist-ubuntu.tar.gz dist/
       - name: Upload compressed dist folder
@@ -66,15 +57,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.14
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - name: Install dependencies
-        run: |
-          C:\Users\runneradmin\.local\bin\poetry install
+          enable-cache: true
+      - name: Sync Python dependencies
+        run: uv sync --dev
       - uses: ssciwr/setup-mesa-dist-win@v2
       - name: Setup OpenGL and Run Tests
         uses: edayot/model_resolver@master
@@ -83,7 +71,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         with:
           commands: |
-            C:\Users\runneradmin\.local\bin\poetry run beet
+            uv run beet
       - name: Upload dist folder
         run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
       - name: Upload compressed dist folder
@@ -103,21 +91,12 @@ jobs:
   #       uses: actions/setup-python@v2
   #       with:
   #         python-version: 3.14
-  #     - name: Install Poetry
-  #       uses: snok/install-poetry@v1
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@v7
   #       with:
-  #         version: 1.8.3
-  #         virtualenvs-create: true
-  #         virtualenvs-in-project: true
-  #     - name: Setup cache for dependencies
-  #       id: cached-poetry-dependencies
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: .venv
-  #         key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-  #     - name: Install dependencies
-  #       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-  #       run: poetry install
+  #         enable-cache: true
+  #     - name: Sync Python dependencies
+  #       run: uv sync --dev
   #     - name: Setup OpenGL (macOS)
   #       run: |
   #         # macOS comes with OpenGL support built-in.
@@ -134,7 +113,7 @@ jobs:
 
   #         cd examples/all_white
 
-  #         poetry run beet
+  #         uv run beet
 
   #         cd ../..
 

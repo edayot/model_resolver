@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "watch": "poetry run pyright -w",
-    "check": "poetry run pyright"
+    "watch": "uv run pyright -w",
+    "check": "uv run pyright"
   },
   "devDependencies": {
     "pyright": "^1.1.293"

@@ -1,15 +1,15 @@
 from functools import cached_property
 import math
 from pydantic import BaseModel, RootModel, ValidationError
-from model_resolver.v1item_model.tint_source import (
+from model_resolver.v1.item_model.tint_source import (
     TintSource,
     to_argb,
     TintSourceConstant,
 )
 from typing import ClassVar, Optional, Literal, Type, Any
-from model_resolver.v1item_model.item import Item
-from model_resolver.v1minecraft_model import MultiTexture, TextureSource
-from model_resolver.v1utils import PackGetterV2, clamp, resolve_key
+from model_resolver.v1.item_model.item import Item
+from model_resolver.v1.minecraft_model import MultiTexture, TextureSource
+from model_resolver.v1.utils import PackGetterV2, clamp, resolve_key
 from PIL import Image
 from uuid import UUID
 import json

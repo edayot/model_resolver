@@ -1,15 +1,15 @@
 from dataclasses import dataclass
 
 from typing import Optional
-from model_resolver.v1tasks.model import AnimatedResultTask
-from model_resolver.v1minecraft_model import (
+from model_resolver.v1.tasks.model import AnimatedResultTask
+from model_resolver.v1.minecraft_model import (
     MinecraftModel,
 )
-from model_resolver.v1item_model.model import ItemModel
-from model_resolver.v1item_model.tint_source import TintSource
+from model_resolver.v1.item_model.model import ItemModel
+from model_resolver.v1.item_model.tint_source import TintSource
 from typing import Generator
-from model_resolver.v1tasks.generic_render import Animation, GenericModelRenderTask
-from model_resolver.v1tasks.base import Task, RenderError
+from model_resolver.v1.tasks.generic_render import Animation, GenericModelRenderTask
+from model_resolver.v1.tasks.base import Task, RenderError
 
 
 @dataclass(kw_only=True)

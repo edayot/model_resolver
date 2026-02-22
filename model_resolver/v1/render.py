@@ -1,16 +1,16 @@
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
-from model_resolver.v1minecraft_model import DisplayOptionModel, MinecraftModel
-from model_resolver.v1my_glut_init import glutInit
+from model_resolver.v1.minecraft_model import DisplayOptionModel, MinecraftModel
+from model_resolver.v1.my_glut_init import glutInit
 
 from beet import Context, Atlas
 from dataclasses import dataclass, field
-from model_resolver.v1item_model.item import Item
-from model_resolver.v1tasks.item import ItemRenderTask
-from model_resolver.v1tasks.model import ModelPathRenderTask, ModelRenderTask
-from model_resolver.v1tasks.structure import StructureRenderTask
-from model_resolver.v1utils import (
+from model_resolver.v1.item_model.item import Item
+from model_resolver.v1.tasks.item import ItemRenderTask
+from model_resolver.v1.tasks.model import ModelPathRenderTask, ModelRenderTask
+from model_resolver.v1.tasks.structure import StructureRenderTask
+from model_resolver.v1.utils import (
     LightOptions,
     ModelResolverOptions,
     PackGetterV2,
@@ -22,7 +22,7 @@ from typing import Any, Literal, Optional, TypedDict
 from pathlib import Path
 from PIL import Image
 
-from model_resolver.v1tasks.base import AnimationType, Task, RenderError
+from model_resolver.v1.tasks.base import AnimationType, Task, RenderError
 
 
 class AtlasDict(TypedDict):

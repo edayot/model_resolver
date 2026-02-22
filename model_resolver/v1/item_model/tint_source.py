@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 from typing import Literal, Optional, Union
-from model_resolver.v1utils import clamp
+from model_resolver.v1.utils import clamp
 from PIL import Image
-from model_resolver.v1item_model.item import Item
-from model_resolver.v1utils import PackGetterV2
+from model_resolver.v1.item_model.item import Item
+from model_resolver.v1.utils import PackGetterV2
 
 type Color = int | tuple[int, int, int]
 

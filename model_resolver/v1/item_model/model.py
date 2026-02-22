@@ -1,12 +1,12 @@
 from functools import cached_property
 from pydantic import BaseModel, Field, RootModel, ValidationError
-from model_resolver.v1item_model.data_component_predicate import DataComponent
-from model_resolver.v1item_model.tint_source import TintSource
-from model_resolver.v1item_model.special import SpecialModel
+from model_resolver.v1.item_model.data_component_predicate import DataComponent
+from model_resolver.v1.item_model.tint_source import TintSource
+from model_resolver.v1.item_model.special import SpecialModel
 from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
-from model_resolver.v1item_model.item import Item
-from model_resolver.v1utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
-from model_resolver.v1minecraft_model import MinecraftModel, resolve_model
+from model_resolver.v1.item_model.item import Item
+from model_resolver.v1.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
+from model_resolver.v1.minecraft_model import MinecraftModel, resolve_model
 
 ItemModelBaseClass: list[Type["ItemModelBase"]] = []
 

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Self
 from beet import Context
-from model_resolver.utils import get_default_components, resolve_key
+from model_resolver.v1utils import get_default_components, resolve_key
 
 
 class Item(BaseModel):

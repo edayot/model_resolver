@@ -8,13 +8,13 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from pydantic import BaseModel
-from model_resolver.item_model.item import Item
-from model_resolver.utils import (
+from model_resolver.v1item_model.item import Item
+from model_resolver.v1utils import (
     PackGetterV2,
     resolve_key,
     log,
 )
-from model_resolver.minecraft_model import (
+from model_resolver.v1minecraft_model import (
     MinecraftModel,
     ElementModel,
     MultiTextureResolved,
@@ -24,10 +24,10 @@ from model_resolver.minecraft_model import (
     FaceModel,
     TextureSource,
 )
-from model_resolver.item_model.tint_source import TintSource
+from model_resolver.v1item_model.tint_source import TintSource
 from typing import Any, Optional, Generator, Literal
 from PIL import Image
-from model_resolver.tasks.base import Task, RenderError
+from model_resolver.v1tasks.base import Task, RenderError
 from math import pi, cos, sin, sqrt
 
 

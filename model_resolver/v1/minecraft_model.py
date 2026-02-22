@@ -1,6 +1,6 @@
 from typing import Any
-from model_resolver.item_model.tint_source import TintSource
-from model_resolver.utils import PackGetterV2, resolve_key
+from model_resolver.v1item_model.tint_source import TintSource
+from model_resolver.v1utils import PackGetterV2, resolve_key
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from typing import Annotated, Literal, Optional

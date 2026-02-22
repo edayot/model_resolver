@@ -3,15 +3,15 @@ import io
 import os
 
 from typing import Optional
-from model_resolver.item_model.item import Item
-from model_resolver.minecraft_model import (
+from model_resolver.v1item_model.item import Item
+from model_resolver.v1minecraft_model import (
     MinecraftModel,
     resolve_model,
 )
 from typing import ClassVar, Generator
-from model_resolver.tasks.base import Task, RenderError
-from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
-from model_resolver.item_model.tint_source import TintSource
+from model_resolver.v1tasks.base import Task, RenderError
+from model_resolver.v1tasks.generic_render import Animation, GenericModelRenderTask
+from model_resolver.v1item_model.tint_source import TintSource
 from PIL import Image
 from beet import BinaryFileBase, NamespaceFileScope
 

@@ -3,8 +3,8 @@ from beet import NamespaceFile, NamespaceProxy, TagFile
 from pydantic import AliasChoices, Field, RootModel, BaseModel
 from nbtlib import parse_nbt, Compound
 
-from model_resolver.item_model.item import Item
-from model_resolver.utils import PackGetterV2, resolve_key
+from model_resolver.v1item_model.item import Item
+from model_resolver.v1utils import PackGetterV2, resolve_key
 
 
 class MinMax(BaseModel):

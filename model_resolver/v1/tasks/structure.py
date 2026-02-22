@@ -3,12 +3,12 @@ from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
 from dataclasses import dataclass, field
-from model_resolver.item_model.item import Item
-from model_resolver.item_model.special import SpecialModelShulkerBox
-from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
-from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
-from model_resolver.utils import ModelResolverOptions, resolve_key
-from model_resolver.minecraft_model import (
+from model_resolver.v1item_model.item import Item
+from model_resolver.v1item_model.special import SpecialModelShulkerBox
+from model_resolver.v1item_model.tint_source import TintSource, TintSourceConstant
+from model_resolver.v1tasks.generic_render import Animation, GenericModelRenderTask
+from model_resolver.v1utils import ModelResolverOptions, resolve_key
+from model_resolver.v1minecraft_model import (
     DisplayOptionModel,
     MinecraftModel,
     RotationModel,
@@ -19,8 +19,8 @@ from typing import Generator, Optional, Any, TypedDict, Union
 from pydantic import BaseModel, Field
 from functools import cached_property
 import random
-from model_resolver.tasks.base import Task, RenderError
-from model_resolver.tasks.model import AnimatedResultTask, ModelRenderTask
+from model_resolver.v1tasks.base import Task, RenderError
+from model_resolver.v1tasks.model import AnimatedResultTask, ModelRenderTask
 from PIL import Image
 
 

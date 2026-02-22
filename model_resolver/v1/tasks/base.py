@@ -5,7 +5,7 @@ from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
 from beet import Texture
 from dataclasses import dataclass, field
-from model_resolver.utils import (
+from model_resolver.v1utils import (
     DEFAULT_RENDER_SIZE,
     PackGetterV2,
 )

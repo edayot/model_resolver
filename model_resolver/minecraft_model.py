@@ -68,7 +68,11 @@ type MultiTextureResolved = tuple[Image.Image, TintSource | None]
 type ResolvableTexture = None | str | Image.Image | tuple[MultiTexture, ...]
 type ResolvedTexture = Image.Image | tuple[MultiTextureResolved, ...]
 
-type TextureSource = str | Image.Image | tuple[MultiTexture, ...]
+class TextureDict(BaseModel):
+    sprite: str
+    force_translucent: bool = False
+
+type TextureSource = str | Image.Image | tuple[MultiTexture, ...] | TextureDict
 
 
 class MinecraftModel(BaseModel):

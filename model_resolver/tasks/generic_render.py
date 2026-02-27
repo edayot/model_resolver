@@ -22,6 +22,7 @@ from model_resolver.minecraft_model import (
     ResolvedTexture,
     RotationModel,
     FaceModel,
+    TextureDict,
     TextureSource,
 )
 from model_resolver.item_model.tint_source import TintSource
@@ -127,7 +128,9 @@ class GenericModelRenderTask(Task):
             return value
         if isinstance(value, tuple):
             return value
-        elif isinstance(value, str):
+        if isinstance(value, TextureDict):
+            value = value.sprite
+        if isinstance(value, str):
             if value[0] == "#":
                 return self.get_real_key(value[1:], textures, max_depth - 1)
             else:
@@ -148,8 +151,14 @@ class GenericModelRenderTask(Task):
         self, model: MinecraftModel, source: Optional[str] = None
     ) -> dict[str, tuple[ResolvedTexture, str]]:
         res: dict[str, tuple[ResolvedTexture, str]] = {}
+        used_textures = set()
+        for elem in model.elements:
+            for face in elem.faces.values():
+                used_textures.add(face.texture.removeprefix("#"))
         for key in model.textures.keys():
             value = self.get_real_key(key, model.textures)
+            if not key in used_textures:
+                continue
             if value is None:
                 res[key] = (self.get_missingno(), "empty")
                 log.warning(f"Texture {key} not found in {source}")

@@ -12,6 +12,7 @@ from model_resolver.minecraft_model import (
     DisplayOptionModel,
     MinecraftModel,
     RotationModel,
+    SingleAxisRotationModel,
     TextureSource,
     resolve_model,
 )
@@ -353,11 +354,11 @@ class StructureRenderTask(GenericModelRenderTask):
         ):
             return
 
-        rots = [
-            RotationModel(
+        rots: list[RotationModel] = [
+            SingleAxisRotationModel(
                 origin=(8, 8, 8), axis="x", angle=resolved_variant.x, rescale=False
             ),
-            RotationModel(
+            SingleAxisRotationModel(
                 origin=(8, 8, 8), axis="y", angle=-resolved_variant.y, rescale=False
             ),
         ]

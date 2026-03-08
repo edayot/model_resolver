@@ -393,34 +393,38 @@ class GenericModelRenderTask(Task):
         origin = [x - 8 for x in rotation.origin]
         origin = [x - self.center_offset[i] for i, x in enumerate(origin)]
         origin = [x + self.offset[i] for i, x in enumerate(origin)]
-        angle = rotation.angle * pi / 180
-        for point in vertices:
-            x, y, z = point
-            x -= origin[0]
-            y -= origin[1]
-            z -= origin[2]
-            if rotation.axis == "x":
-                y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
-            elif rotation.axis == "y":
-                x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
-                    -angle
-                )
-            elif rotation.axis == "z":
-                x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
+        rotation = rotation.to_multi_axis()
+        for angle, axis in zip((rotation.x, rotation.y, rotation.z), ("x", "y", "z")):
+            if angle == 0:
+                continue
+            angle = angle * pi / 180
+            for point in vertices:
+                x, y, z = point
+                x -= origin[0]
+                y -= origin[1]
+                z -= origin[2]
+                if axis == "x":
+                    y, z = y * cos(angle) - z * sin(angle), y * sin(angle) + z * cos(angle)
+                elif axis == "y":
+                    x, z = x * cos(-angle) - z * sin(-angle), x * sin(-angle) + z * cos(
+                        -angle
+                    )
+                elif axis == "z":
+                    x, y = x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle)
 
-            if rotation.rescale:
-                factor = sqrt(2)
-                if rotation.axis != "x":
-                    x = x * factor
-                if rotation.axis != "y":
-                    y = y * factor
-                if rotation.axis != "z":
-                    z = z * factor
+                if rotation.rescale:
+                    factor = sqrt(2)
+                    if axis != "x":
+                        x = x * factor
+                    if axis != "y":
+                        y = y * factor
+                    if axis != "z":
+                        z = z * factor
 
-            x += origin[0]
-            y += origin[1]
-            z += origin[2]
-            point[0], point[1], point[2] = x, y, z
+                x += origin[0]
+                y += origin[1]
+                z += origin[2]
+                point[0], point[1], point[2] = x, y, z
 
         return vertices
 

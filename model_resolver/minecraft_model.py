@@ -35,12 +35,32 @@ class DisplayModel(BaseModel):
     fixed: DisplayOptionModel = Field(default_factory=_gen)
 
 
-class RotationModel(BaseModel):
+class SingleAxisRotationModel(BaseModel):
     origin: tuple[float, float, float]
     axis: Literal["x", "y", "z"]
     angle: float
     rescale: bool = False
 
+    def to_multi_axis(self) -> MultiAxisRotationModel:
+        x = self.angle if self.axis == "x" else 0
+        y = self.angle if self.axis == "y" else 0
+        z = self.angle if self.axis == "z" else 0
+        return MultiAxisRotationModel(
+            origin=self.origin, x=x, y=y, z=z, rescale=self.rescale
+        )
+
+class MultiAxisRotationModel(BaseModel):
+    origin: tuple[float, float, float]
+    x: float = 0
+    y: float = 0
+    z: float = 0
+    rescale: bool = False
+
+    def to_multi_axis(self) -> MultiAxisRotationModel:
+        return self
+
+
+type RotationModel = SingleAxisRotationModel | MultiAxisRotationModel
 
 class FaceModel(BaseModel):
     uv: Optional[tuple[float, float, float, float]] = None
@@ -55,7 +75,7 @@ class ElementModel(BaseModel):
         validation_alias=AliasChoices("from", "from_")
     )
     to: tuple[float, float, float]
-    rotation: Optional[RotationModel] = None
+    rotation: Optional[RotationModel] = Field(default=None, union_mode="left_to_right")
     shade: bool = True
     light_emission: int = 0
     faces: dict[faces_keys, FaceModel]

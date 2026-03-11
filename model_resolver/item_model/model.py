@@ -5,6 +5,7 @@ from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
 from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
 
@@ -30,6 +31,7 @@ class ItemModelBase(BaseModel):
         "minecraft:empty",
         "empty",
     ]
+    transformation: Optional[Transformation] = None
 
     def resolve(
         self, getter: PackGetterV2, item: Item
@@ -45,6 +47,20 @@ class ItemModelBase(BaseModel):
         ):
             ItemModelBaseClass.append(cls)
         return super().__init_subclass__(**kwargs)
+    
+    def resolve_with_compose(self, getter: PackGetterV2, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+        for res in self.resolve(getter, item):
+            yield res.with_compose(parent_transformation)
+    
+
+    def with_compose(self, parent_transformation: Optional[Transformation]):
+        if parent_transformation is None:
+            return self
+        if self.transformation is None:
+            self.transformation = parent_transformation
+            return self
+        self.transformation = parent_transformation.compose(self.transformation)
+        return self
 
 
 class ItemModelModel(ItemModelBase):
@@ -77,7 +93,7 @@ class ItemModelComposite(ItemModelBase):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         for model in self.models:
-            yield from model.resolve(getter, item)
+            yield from model.resolve_with_compose(getter, item, self.transformation)
 
 
 class ItemModelConditionBase(ItemModelBase):
@@ -118,9 +134,9 @@ class ItemModelConditionBase(ItemModelBase):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         if self.resolve_condition(getter, item):
-            yield from self.on_true.resolve(getter, item)
+            yield from self.on_true.resolve_with_compose(getter, item, self.transformation)
         else:
-            yield from self.on_false.resolve(getter, item)
+            yield from self.on_false.resolve_with_compose(getter, item, self.transformation)
 
 
 class ItemModelConditionUsingItem(ItemModelConditionBase):
@@ -306,7 +322,7 @@ class ItemModelSelectBase(ItemModelBase):
     def resolve(
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        yield from self.resolve_select(getter, item).resolve(getter, item)
+        yield from self.resolve_select(getter, item).resolve_with_compose(getter, item, self.transformation)
 
 
 class ItemModelSelectMainHand(ItemModelSelectBase):
@@ -484,10 +500,10 @@ class ItemModelRangeDispatchBase(ItemModelBase):
                 max_threshold = entry.threshold
 
         if good_entry:
-            yield from good_entry.model.resolve(getter, item)
+            yield from good_entry.model.resolve_with_compose(getter, item, self.transformation)
             return
         if self.fallback:
-            yield from self.fallback.resolve(getter, item)
+            yield from self.fallback.resolve_with_compose(getter, item, self.transformation)
 
 
 class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
@@ -685,6 +701,9 @@ class ItemModelRecursive(RootModel[Any]):
         self, getter: PackGetterV2, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve(getter, item)
+
+    def resolve_with_compose(self, getter: PackGetterV2, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+        yield from self.model.resolve_with_compose(getter, item, parent_transformation)
 
 
 class ItemModel(BaseModel):

@@ -16,5 +16,5 @@ meta:
     # load vanilla item models
     load_vanilla: false
     render_size: 1024
-    minecraft_version: "26.1-snapshot-7"
+    minecraft_version: "26.1-pre-1"
     special_rendering: true

@@ -12,5 +12,5 @@ output: ../../dist
 meta:
   model_resolver:
     # load vanilla item models
-    minecraft_version: "26.1-snapshot-7"
+    minecraft_version: "26.1-pre-1"
     use_cache: true

@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import (
     PackGetterV2,
     resolve_key,
@@ -93,13 +94,15 @@ class GenericModelRenderTask(Task):
             elif isinstance(value, tuple):
                 for texture, tint in value:
                     ...
+            elif isinstance(value, TextureDict):
+                textures[key] = images[value.sprite]
             elif resolve_key(value) in [resolve_key(k) for k in images.keys()]:
                 textures[key] = images[value]
             else:
                 textures[key] = value
         return textures
 
-    def rotate_camera(self, model: MinecraftModel):
+    def rotate_camera(self, model: MinecraftModel, transformation: Optional[Transformation] = None):
         if not self.do_rotate_camera:
             return
         # transform the vertices
@@ -115,6 +118,9 @@ class GenericModelRenderTask(Task):
         glRotatef(rotation[1] + 180, 0, 1, 0)
         glRotatef(rotation[2], 0, 0, 1)
         glScalef(scale[0], scale[1], scale[2])
+        if transformation is not None:
+            matrix = transformation.get_matrix()
+            glMultMatrixf(matrix)
 
     def get_real_key(
         self, key: str, textures: dict[str, TextureSource], max_depth: int = 10
@@ -253,8 +259,9 @@ class GenericModelRenderTask(Task):
         model: MinecraftModel,
         tints: list[TintSource],
         source: Optional[str] = None,
+        transformation: Optional[Transformation] = None,
     ):
-        self.rotate_camera(model)
+        self.rotate_camera(model, transformation)
         textures_bindings = self.generate_textures_bindings(model, source)
         if model.gui_light == "side":
             activate_light = GL_LIGHT0
@@ -614,6 +621,8 @@ class Animation:
                     texture_path, tuple
                 ):
                     continue
+                if isinstance(texture_path, TextureDict):
+                    texture_path = texture_path.sprite
                 if resolve_key(texture_path) in texture_animated:
                     continue
                 texture = self.texture(texture_path)

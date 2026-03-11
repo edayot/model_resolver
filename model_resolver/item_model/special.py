@@ -45,6 +45,10 @@ class SpecialModelBase(BaseModel):
         "hanging_sign",
         "minecraft:copper_golem_statue",
         "copper_golem_statue",
+        "minecraft:bell",
+        "bell",
+        "minecraft:book",
+        "book",
     ]
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
@@ -86,32 +90,11 @@ class SpecialModelCopperGolemStatue(SpecialModelBase):
 class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed", "bed"]
     texture: str
+    part: Literal["head", "foot"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        namespace, path = resolve_key(self.texture).split(":")
-        model: dict[str, Any] = {
-            "textures": {"0": f"{namespace}:entity/bed/{path}"},
-            "elements": [
-                {
-                    "from": [0, 0, 13],
-                    "to": [3, 3, 16],
-                    "faces": {
-                        "north": {"uv": [14.75, 5.25, 15.5, 6], "texture": "#0"},
-                        "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
-                        "south": {"uv": [13.25, 5.25, 14, 6], "texture": "#0"},
-                        "west": {"uv": [12.5, 5.25, 13.25, 6], "texture": "#0"},
-                        "up": {
-                            "uv": [13.25, 4.5, 14, 5.25],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [14.75, 4.5, 14, 5.25],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                    },
-                },
+    def elements(self) -> list[dict[str, Any]]:
+        if self.part == "foot":
+            return [
                 {
                     "from": [0, 3, -16],
                     "to": [16, 9, 0],
@@ -175,6 +158,30 @@ class SpecialModelBed(SpecialModelBase):
                         "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"},
                     },
                 },
+                
+            ]
+        elif self.part == "head":
+             return [
+                 {
+                    "from": [0, 0, 13],
+                    "to": [3, 3, 16],
+                    "faces": {
+                        "north": {"uv": [14.75, 5.25, 15.5, 6], "texture": "#0"},
+                        "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
+                        "south": {"uv": [13.25, 5.25, 14, 6], "texture": "#0"},
+                        "west": {"uv": [12.5, 5.25, 13.25, 6], "texture": "#0"},
+                        "up": {
+                            "uv": [13.25, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14.75, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
+                },
                 {
                     "from": [0, 3, 0],
                     "to": [16, 9, 16],
@@ -226,7 +233,14 @@ class SpecialModelBed(SpecialModelBase):
                         },
                     },
                 },
-            ],
+             ]
+        raise ValueError(f"Invalid bed part {self.part}")
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        namespace, path = resolve_key(self.texture).split(":")
+        model: dict[str, Any] = {
+            "textures": {"0": f"{namespace}:entity/bed/{path}"},
+            "elements": self.elements(),
         }
         return model
 
@@ -293,17 +307,19 @@ class SpecialModelLayerBase(SpecialModelBase):
 class SpecialModelBanner(SpecialModelLayerBase):
     type: Literal["minecraft:banner", "banner"]
     color: str
+    attachment: Literal["wall", "ground"] = "ground"
 
     base_texture: ClassVar[str] = "minecraft:entity/banner/banner_base"
     base_texture_nopattern: ClassVar[str] = "minecraft:entity/banner/banner_base"
 
     def get_base_color(self, item: Item) -> str | None:
         return self.color
-
+    
     def get_scale(self) -> float:
         return 0.75 / 0.5325
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        assert self.attachment == "ground", "Wall banners are not supported yet"
         texture = self.get_texture(getter, item)
         res = {
             "textures": {
@@ -455,8 +471,10 @@ class SpecialModelChest(SpecialModelBase):
     type: Literal["minecraft:chest", "chest"]
     texture: str
     openness: float = 0.0
+    chest_type: Literal["single", "left", "right"] = "single"
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        assert self.chest_type == "single", "Only single chests are supported for now"
         openness = clamp(0.0, self.openness, 1.0)
         angle = openness * 90
         namespace, path = resolve_key(self.texture).split(":")
@@ -568,9 +586,6 @@ class SpecialModelChest(SpecialModelBase):
             "textures": {"0": f"{namespace}:entity/chest/{path}"},
         }
         return model
-
-    def get_scale(self) -> float:
-        return 0.75
 
 
 class PropertiesModel(BaseModel):
@@ -988,17 +1003,12 @@ class SpecialModelHead(SpecialModelHeadBase):
         }
         return model
 
-    def get_scale(self) -> float:
-        if self.kind == "dragon":
-            return 0.75
-        return 1
 
 
 class SpecialModelShulkerBox(SpecialModelBase):
     type: Literal["minecraft:shulker_box", "shulker_box"]
     texture: str
     openness: float = 0.0
-    orientation: Literal["down", "east", "north", "south", "up", "west"] = "up"
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
@@ -1136,22 +1146,6 @@ class SpecialModelShulkerBox(SpecialModelBase):
 
         return model
 
-    def get_additional_rotations(self) -> tuple[float, float, float] | None:
-        match self.orientation:
-            case "up":
-                return (0, -90, 0)
-            case "down":
-                return (0, 90, -180)
-            case "north":
-                return (0, 90, -90)
-            case "south":
-                return (0, -90, -90)
-            case "west":
-                return (0, 180, -90)
-            case "east":
-                return (0, -90, -90)
-            case _:
-                raise ValueError(f"Invalid orientation {self.orientation}")
 
 
 class SpecialModelTrident(SpecialModelBase):
@@ -1367,15 +1361,14 @@ class SpecialModelSignBase(SpecialModelBase):
 
 class SpecialModelStandingSign(SpecialModelSignBase):
     type: Literal["minecraft:standing_sign", "standing_sign"]
+    attachment: Literal["ground", "wall"] = "ground"
 
-    def get_scale(self) -> float:
-        return 0.75
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        self.used_texture
+        assert self.attachment == "ground", "Only ground standing signs are supported"
         return {
             "credit": "Made with Blockbench",
-            "textures": {"0": "entity/signs/jungle", "particle": "entity/signs/jungle"},
+            "textures": {"0": self.used_texture},
             "elements": [
                 {
                     "from": [7, -6, 7],
@@ -1409,8 +1402,10 @@ class SpecialModelStandingSign(SpecialModelSignBase):
 
 class SpecialModelHangingSign(SpecialModelSignBase):
     type: Literal["minecraft:hanging_sign", "hanging_sign"]
+    attachment: Literal["wall", "ceiling", "ceiling_middle"] = "ceiling_middle" 
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        assert self.attachment == "ceiling_middle", "Only ceiling_middle hanging signs are supported"
         res = {
             "textures": {
                 "0": self.used_texture,
@@ -1442,16 +1437,27 @@ class SpecialModelHangingSign(SpecialModelSignBase):
         }
         return res
 
+class SpecialModelBell(SpecialModelBase):
+    type: Literal["minecraft:bell", "bell"]
+
+class SpecialModelBook(SpecialModelBase):
+    type: Literal["minecraft:book", "book"]
+    open_angle: float
+    """Angle (in degrees) between book cover and book centerline (0 means closed, 90 means open flat)."""
+    page1: float
+    """The positions of two pages inside the book. 0.0 means the page is in the leftmost position, 1.0 means the page in the rightmost position."""
+    page2: float
+    """The positions of two pages inside the book. 0.0 means the page is in the leftmost position, 1.0 means the page in the rightmost position."""
+
 
 class SpecialModel(RootModel[Any]):
     root: Any
 
     @cached_property
     def special_model(self) -> SpecialModelBase:
-        errors = []
         for cls in reversed(SpecialModelBaseClass):
             try:
                 return cls.model_validate(self.root)
             except ValidationError as e:
-                errors.append(e)
-        raise ValidationError(errors)
+                pass
+        raise ValueError("No valid special model found for root: " + str(self.root))

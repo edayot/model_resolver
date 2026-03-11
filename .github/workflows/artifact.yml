@@ -33,7 +33,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         with:
           commands: |
-            uv run beet
+            uv run pytest
       - name: Upload dist folder
         run: tar -czvf dist-ubuntu.tar.gz dist/
       - name: Upload compressed dist folder
@@ -71,7 +71,7 @@ jobs:
           GIT_HASH: ${{ github.sha }}
         with:
           commands: |
-            uv run beet
+            uv run pytest
       - name: Upload dist folder
         run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
       - name: Upload compressed dist folder

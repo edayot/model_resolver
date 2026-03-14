@@ -43,16 +43,11 @@ runs:
       if: runner.os == 'macOS'
       run: |
         brew install freeglut || echo "freeglut already installed"
-        brew install xorg-server || echo "xorg-server already installed"
         brew install --cask xquartz || echo "xquartz already installed"
         # Persist environment variables to subsequent steps via $GITHUB_ENV.
-        echo "DYLD_LIBRARY_PATH=$(brew --prefix mesa)/lib:$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
-        echo "LIBGL_DRIVERS_PATH=$(brew --prefix mesa)/lib/dri" >> $GITHUB_ENV
-        echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
-        echo "GALLIUM_DRIVER=llvmpipe" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-        # Add Homebrew/XQuartz X11 binaries to PATH for subsequent steps.
-        echo "$(brew --prefix)/bin" >> $GITHUB_PATH
+        # Add XQuartz binaries (including Xvfb/xdpyinfo) to PATH for subsequent steps.
         echo "/opt/X11/bin" >> $GITHUB_PATH
       shell: bash
 
@@ -80,22 +75,12 @@ runs:
       run: |
         set -euo pipefail
 
-        X11_BIN="/opt/X11/bin"
-        BREW_BIN="$(brew --prefix)/bin"
-        XVFB_BIN="$X11_BIN/Xvfb"
-        XDPYINFO_BIN="$X11_BIN/xdpyinfo"
-        if [ -x "$BREW_BIN/Xvfb" ]; then
-          XVFB_BIN="$BREW_BIN/Xvfb"
-        fi
-        if [ -x "$BREW_BIN/xdpyinfo" ]; then
-          XDPYINFO_BIN="$BREW_BIN/xdpyinfo"
-        fi
+        XVFB_BIN="/opt/X11/bin/Xvfb"
+        XDPYINFO_BIN="/opt/X11/bin/xdpyinfo"
 
         export DISPLAY=:99
         export LIBGL_ALWAYS_SOFTWARE=1
         export LIBGL_ALWAYS_INDIRECT=1
-        export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
-        export GALLIUM_DRIVER=llvmpipe
         # Start a headless X server for OpenGL contexts on CI.
         "$XVFB_BIN" "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
         XVFB_PID=$!

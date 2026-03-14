@@ -73,13 +73,34 @@ runs:
     - name: Execute Commands (macOS)
       if: runner.os == 'macOS'
       run: |
+        set -euo pipefail
         export DISPLAY=:99
+        export LIBGL_ALWAYS_SOFTWARE=1
         export LIBGL_ALWAYS_INDIRECT=1
         # Start a headless X server for OpenGL contexts on CI.
         /opt/X11/bin/Xvfb "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
         XVFB_PID=$!
         trap 'kill "$XVFB_PID" >/dev/null 2>&1 || true' EXIT
-        sleep 3
+
+        # Wait for Xvfb to accept connections before starting OpenGL clients.
+        for _ in $(seq 1 30); do
+          if /opt/X11/bin/xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+            break
+          fi
+          sleep 1
+        done
+
+        if ! /opt/X11/bin/xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+          echo "Xvfb did not become ready on $DISPLAY"
+          exit 1
+        fi
+
+        if ! /opt/X11/bin/xdpyinfo -display "$DISPLAY" | grep -q "GLX"; then
+          echo "GLX extension is not available on $DISPLAY"
+          /opt/X11/bin/xdpyinfo -display "$DISPLAY" || true
+          exit 1
+        fi
+
         echo "set -e" > /tmp/commands.sh
         echo "${{ inputs.commands }}" >> /tmp/commands.sh
         chmod +x /tmp/commands.sh

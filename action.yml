@@ -42,18 +42,13 @@ runs:
     - name: Setup OpenGL (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew update
         brew install freeglut || echo "freeglut already installed"
         brew install --cask xquartz || echo "xquartz already installed"
-        # Persist environment variables to subsequent steps via $GITHUB_ENV
+        # Persist environment variables to subsequent steps via $GITHUB_ENV.
         echo "DYLD_LIBRARY_PATH=$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
-        echo "DISPLAY=:0" >> $GITHUB_ENV
         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-        # Add XQuartz binaries to PATH for subsequent steps
+        # Add XQuartz binaries (including Xvfb) to PATH for subsequent steps.
         echo "/opt/X11/bin" >> $GITHUB_PATH
-        # Start XQuartz X server
-        /opt/X11/bin/Xquartz :0 -screen 0 2560x1440x24 &
-        sleep 5
       shell: bash
 
     - name: Execute Commands (Linux)
@@ -78,6 +73,12 @@ runs:
     - name: Execute Commands (macOS)
       if: runner.os == 'macOS'
       run: |
+        export DISPLAY=:99
+        # Start a headless X server for OpenGL contexts on CI.
+        /opt/X11/bin/Xvfb "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+        XVFB_PID=$!
+        trap 'kill "$XVFB_PID" >/dev/null 2>&1 || true' EXIT
+        sleep 3
         echo "set -e" > /tmp/commands.sh
         echo "${{ inputs.commands }}" >> /tmp/commands.sh
         chmod +x /tmp/commands.sh

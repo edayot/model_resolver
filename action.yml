@@ -74,8 +74,9 @@ runs:
       if: runner.os == 'macOS'
       run: |
         export DISPLAY=:99
+        export LIBGL_ALWAYS_INDIRECT=1
         # Start a headless X server for OpenGL contexts on CI.
-        /opt/X11/bin/Xvfb "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER &
+        /opt/X11/bin/Xvfb "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
         XVFB_PID=$!
         trap 'kill "$XVFB_PID" >/dev/null 2>&1 || true' EXIT
         sleep 3

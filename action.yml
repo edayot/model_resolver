@@ -43,11 +43,16 @@ runs:
       if: runner.os == 'macOS'
       run: |
         brew install freeglut || echo "freeglut already installed"
+        brew install xorg-server || echo "xorg-server already installed"
         brew install --cask xquartz || echo "xquartz already installed"
         # Persist environment variables to subsequent steps via $GITHUB_ENV.
-        echo "DYLD_LIBRARY_PATH=$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+        echo "DYLD_LIBRARY_PATH=$(brew --prefix mesa)/lib:$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
+        echo "LIBGL_DRIVERS_PATH=$(brew --prefix mesa)/lib/dri" >> $GITHUB_ENV
+        echo "MESA_LOADER_DRIVER_OVERRIDE=llvmpipe" >> $GITHUB_ENV
+        echo "GALLIUM_DRIVER=llvmpipe" >> $GITHUB_ENV
         echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-        # Add XQuartz binaries (including Xvfb) to PATH for subsequent steps.
+        # Add Homebrew/XQuartz X11 binaries to PATH for subsequent steps.
+        echo "$(brew --prefix)/bin" >> $GITHUB_PATH
         echo "/opt/X11/bin" >> $GITHUB_PATH
       shell: bash
 
@@ -74,31 +79,49 @@ runs:
       if: runner.os == 'macOS'
       run: |
         set -euo pipefail
+
+        X11_BIN="/opt/X11/bin"
+        BREW_BIN="$(brew --prefix)/bin"
+        XVFB_BIN="$X11_BIN/Xvfb"
+        XDPYINFO_BIN="$X11_BIN/xdpyinfo"
+        if [ -x "$BREW_BIN/Xvfb" ]; then
+          XVFB_BIN="$BREW_BIN/Xvfb"
+        fi
+        if [ -x "$BREW_BIN/xdpyinfo" ]; then
+          XDPYINFO_BIN="$BREW_BIN/xdpyinfo"
+        fi
+
         export DISPLAY=:99
         export LIBGL_ALWAYS_SOFTWARE=1
         export LIBGL_ALWAYS_INDIRECT=1
+        export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+        export GALLIUM_DRIVER=llvmpipe
         # Start a headless X server for OpenGL contexts on CI.
-        /opt/X11/bin/Xvfb "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
+        "$XVFB_BIN" "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
         XVFB_PID=$!
         trap 'kill "$XVFB_PID" >/dev/null 2>&1 || true' EXIT
 
         # Wait for Xvfb to accept connections before starting OpenGL clients.
         for _ in $(seq 1 30); do
-          if /opt/X11/bin/xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+          if "$XDPYINFO_BIN" -display "$DISPLAY" >/dev/null 2>&1; then
             break
           fi
           sleep 1
         done
 
-        if ! /opt/X11/bin/xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+        if ! "$XDPYINFO_BIN" -display "$DISPLAY" >/dev/null 2>&1; then
           echo "Xvfb did not become ready on $DISPLAY"
           exit 1
         fi
 
-        if ! /opt/X11/bin/xdpyinfo -display "$DISPLAY" | grep -q "GLX"; then
+        if ! "$XDPYINFO_BIN" -display "$DISPLAY" | grep -q "GLX"; then
           echo "GLX extension is not available on $DISPLAY"
-          /opt/X11/bin/xdpyinfo -display "$DISPLAY" || true
+          "$XDPYINFO_BIN" -display "$DISPLAY" || true
           exit 1
+        fi
+
+        if command -v glxinfo >/dev/null 2>&1; then
+          glxinfo -B || true
         fi
 
         echo "set -e" > /tmp/commands.sh

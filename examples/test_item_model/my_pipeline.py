@@ -18,7 +18,23 @@ def beet_default(ctx: Context):
     item = Item(id="minecraft:player_head", components={"minecraft:profile": "AirDox_"})
     # render.add_item_task(item, path_ctx="test:head", render_size=512)
 
-    # render.add_item_task(Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512)
+    render.add_item_task(Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512)
+    render.add_item_task(
+        Item(
+            id="minecraft:chest",
+            components={"minecraft:item_model": "test:right_chest"},
+        ),
+        path_ctx="test:right_chest",
+        render_size=512,
+    )
+    render.add_item_task(
+        Item(
+            id="minecraft:chest",
+            components={"minecraft:item_model": "test:left_chest"},
+        ),
+        path_ctx="test:left_chest",
+        render_size=512,
+    )
 
     # render.add_item_task(Item(id="minecraft:creeper_head"), path_ctx="test:creeper_head", render_size=512)
     # render.add_item_task(Item(id="minecraft:zombie_head"), path_ctx="test:zombie_head", render_size=512)

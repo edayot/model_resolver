@@ -473,13 +473,11 @@ class SpecialModelChest(SpecialModelBase):
     openness: float = 0.0
     chest_type: Literal["single", "left", "right"] = "single"
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        assert self.chest_type == "single", "Only single chests are supported for now"
+    def get_elements(self) -> list[Any]:
         openness = clamp(0.0, self.openness, 1.0)
         angle = openness * 90
-        namespace, path = resolve_key(self.texture).split(":")
-        model: dict[str, Any] = {
-            "elements": [
+        if self.chest_type == "single":
+            return [
                 {
                     "from": [1, 0, 1],
                     "to": [15, 10, 15],
@@ -582,7 +580,94 @@ class SpecialModelChest(SpecialModelBase):
                         "down": {"uv": [0.75, 0, 1.25, 0.25], "texture": "#0"},
                     },
                 },
-            ],
+            ]
+        elif self.chest_type == "left":
+            return [
+                {
+                    "from": [1, 0, 17],
+                    "to": [16, 10, 31],
+                    "rotation": {"x": 0, "y": -180, "z": 0, "origin": [8, -1, 16]},
+                    "faces": {
+                        "north": {"uv": [10.75, 8.25, 14.5, 10.75], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [3.5, 8.25, 7.25, 10.75], "rotation": 180, "texture": "#0"},
+                        "west": {"uv": [7.25, 8.25, 10.75, 10.75], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [11, 4.75, 7.25, 8.25], "texture": "#0"},
+                        "down": {"uv": [7.25, 8.25, 3.5, 4.75], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [1, 10, -13],
+                    "to": [16, 14, 1],
+                    "rotation": {"x": angle, "y": -180, "z": 0, "origin": [8, 10, 1]},
+                    "faces": {
+                        "north": {"uv": [10.75, 3.75, 14.5, 4.75], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 0, 0, 0], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [3.5, 3.75, 7.25, 4.75], "rotation": 180, "texture": "#0"},
+                        "west": {"uv": [7.25, 3.75, 10.75, 4.75], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [11, 0, 7.25, 3.5], "texture": "#0"},
+                        "down": {"uv": [7.25, 3.5, 3.5, 0], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [15, 7, -14],
+                    "to": [16, 11, -12],
+                    "rotation": {"x": angle, "y": -180, "z": 0, "origin": [8, 10, 1]},
+                    "faces": {
+                        "north": {"uv": [0.5, 0.25, 0.75, 1.25], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 0.25, 0.25, 1.25], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [1.25, 0.25, 1.5, 1.25], "rotation": 180, "texture": "#0"},
+                        "west": {"uv": [0.75, 0.25, 1, 1.25], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [0.25, 0, 0.5, 0.25], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [0.5, 0, 0.75, 0.25], "rotation": 180, "texture": "#0"}
+                    }
+                }
+            ]
+        elif self.chest_type == "right":
+            return [
+                {
+                    "from": [8, 0, 8],
+                    "to": [23, 10, 22],
+                    "rotation": {"x": 0, "y": -180, "z": 0, "origin": [12, 8.5, 11.5]},
+                    "faces": {
+                        "north": {"uv": [10.75, 8.25, 14.5, 10.75], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 8.25, 3.5, 10.75], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [3.5, 8.25, 7.25, 10.75], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [11, 4.75, 7.25, 8.25], "texture": "#0"},
+                        "down": {"uv": [7.25, 8.25, 3.5, 4.75], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [0, 10, -13],
+                    "to": [15, 14, 1],
+                    "rotation": {"x": angle, "y": -180, "z": 0, "origin": [8, 10, 1]},
+                    "faces": {
+                        "north": {"uv": [10.75, 3.75, 14.5, 4.75], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 3.75, 3.5, 4.75], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [3.5, 3.75, 7.25, 4.75], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [11, 0, 7.25, 3.5], "texture": "#0"},
+                        "down": {"uv": [7, 3.5, 3.5, 0], "texture": "#0"}
+                    }
+                },
+                {
+                    "from": [0, 7, -14],
+                    "to": [1, 11, -12],
+                    "rotation": {"x": angle, "y": -180, "z": 0, "origin": [8, 10, 1]},
+                    "faces": {
+                        "north": {"uv": [0.25, 0.25, 0.5, 1.25], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 0.25, 0.25, 1.25], "rotation": 180, "texture": "#0"},
+                        "south": {"uv": [1, 0.25, 1.5, 1.25], "rotation": 180, "texture": "#0"},
+                        "west": {"uv": [0.75, 0.25, 1, 1.25], "rotation": 180, "texture": "#0"},
+                        "up": {"uv": [0.25, 0, 0.5, 0.25], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [0.5, 0, 0.75, 0.25], "rotation": 180, "texture": "#0"}
+                    }
+                }
+            ]
+        raise ValueError(f"Invalid chest type {self.chest_type}")
+
+    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+        namespace, path = resolve_key(self.texture).split(":")
+        model: dict[str, Any] = {
+            "elements": self.get_elements(),
             "textures": {"0": f"{namespace}:entity/chest/{path}"},
         }
         return model

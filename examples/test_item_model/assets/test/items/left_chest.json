@@ -1,0 +1,12 @@
+{
+  "model": {
+      "type": "minecraft:special",
+      "base": "minecraft:item/chest",
+      "model": {
+        "type": "minecraft:chest",
+        "texture": "minecraft:normal_left",
+        "chest_type": "left",
+        "openness": 0.5
+      }
+    }
+}

@@ -222,6 +222,12 @@ def beet_default(ctx: Context):
         "test:item/conduit", path_ctx="test:render/conduit", render_size=512
     )
     render.add_item_task(
+        Item(id="stone", components={"minecraft:item_model": "test:conduit"}),
+        path_ctx="test:render/conduit_item",
+        render_size=512,
+    )
+
+    render.add_item_task(
         Item(id="stone", components={"minecraft:item_model": "test:sign"}),
         path_ctx="test:render/sign",
         render_size=512,

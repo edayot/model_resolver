@@ -461,6 +461,7 @@ class SpecialModelConduit(SpecialModelBase):
                 {
                     "from": [5, 5, 5],
                     "to": [11, 11, 11],
+                    "rotation": {"x": 0, "y": -180, "z": 0, "origin": [8, 8, 8]},
                     "faces": {
                         "north": {"uv": [12, 12, 9, 6], "texture": "#0"},
                         "east": {"uv": [3, 12, 0, 6], "texture": "#0"},
@@ -1103,6 +1104,139 @@ class SpecialModelShulkerBox(SpecialModelBase):
     texture: str
     openness: float = 0.0
 
+    def get_elements(self) -> list[dict[str, Any]]:
+        x = clamp(0, self.openness * 8, 8)
+        rotation = -clamp(0, self.openness * 90 * 3, 90 * 3)
+        res= [
+		{
+			"name": "down_down",
+			"from": [0, -3, 0],
+			"to": [16, -3, 16],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"up": {"uv": [8, 7, 12, 11], "texture": "#0"},
+				"down": {"uv": [8, 7, 12, 11], "texture": "#0"}
+			}
+		},
+		{
+			"name": "down_north",
+			"from": [0, -3, 0],
+			"to": [16, 5, 0],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"north": {"uv": [8, 11, 12, 13], "texture": "#0"},
+				"south": {"uv": [8, 11, 12, 13], "texture": "#0"}
+			}
+		},
+		{
+			"name": "down_south",
+			"from": [0, -3, 16],
+			"to": [16, 5, 16],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"north": {"uv": [0, 11, 4, 13], "texture": "#0"},
+				"south": {"uv": [0, 11, 4, 13], "texture": "#0"}
+			}
+		},
+		{
+			"name": "down_east",
+			"from": [16, -3, 0],
+			"to": [16, 5, 16],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"east": {"uv": [4, 11, 8, 13], "texture": "#0"},
+				"west": {"uv": [4, 11, 8, 13], "texture": "#0"}
+			}
+		},
+		{
+			"name": "down_west",
+			"from": [0, -3, 0],
+			"to": [0, 5, 16],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"east": {"uv": [12, 11, 16, 13], "texture": "#0"},
+				"west": {"uv": [12, 11, 16, 13], "texture": "#0"}
+			}
+		},
+		{
+			"name": "down_up",
+			"from": [0, 5, 0],
+			"to": [16, 5, 16],
+			"rotation": {"x": -180, "y": 0, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"up": {"uv": [4, 7, 8, 11], "texture": "#0"},
+				"down": {"uv": [4, 7, 8, 11], "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_north",
+			"from": [0, 6, 0],
+			"to": [16, 18, 0],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"north": {"uv": [8, 4, 12, 7], "texture": "#0"},
+				"south": {"uv": [8, 4, 12, 7], "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_south",
+			"from": [0, 6, 16],
+			"to": [16, 18, 16],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"north": {"uv": [0, 4, 4, 7], "texture": "#0"},
+				"south": {"uv": [0, 4, 4, 7], "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_west",
+			"from": [0, 6, 0],
+			"to": [0, 18, 16],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"east": {"uv": [12, 4, 16, 7], "texture": "#0"},
+				"west": {"uv": [12, 4, 16, 7], "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_east",
+			"from": [16, 6, 0],
+			"to": [16, 18, 16],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"east": {"uv": [4, 4, 8, 7], "texture": "#0"},
+				"west": {"uv": [4, 4, 8, 7], "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_up",
+			"from": [0, 18, 0],
+			"to": [16, 18, 16],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
+				"down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"}
+			}
+		},
+		{
+			"name": "up_down",
+			"from": [0, 6, 0],
+			"to": [16, 6, 16],
+			"rotation": {"x": -180, "y": -22.5, "z": 0, "origin": [8, 7.5, 8]},
+			"faces": {
+				"up": {"uv": [8, 0, 12, 4], "texture": "#0"},
+				"down": {"uv": [8, 0, 12, 4], "texture": "#0"}
+			}
+		}
+	]
+        for element in res:
+            # convertion from test model rotation to user provided rotation
+            if element["name"].startswith("up_"):
+                element["from"][1] = (element["from"][1] - 5) + x
+                element["to"][1] = (element["to"][1] - 5)+ x 
+                element["rotation"]["y"] = (rotation + element["rotation"]["y"]) + 22.5
+        return res
+
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
@@ -1113,128 +1247,7 @@ class SpecialModelShulkerBox(SpecialModelBase):
             "textures": {
                 "0": texture,
             },
-            "elements": [
-                {
-                    "name": "down_down",
-                    "from": [0, 0, 0],
-                    "to": [16, 0, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "up": {"uv": [8, 7, 12, 11], "texture": "#0"},
-                        "down": {"uv": [8, 7, 12, 11], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "down_north",
-                    "from": [0, 0, 0],
-                    "to": [16, 8, 0],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [8, 11, 12, 13], "texture": "#0"},
-                        "south": {"uv": [8, 11, 12, 13], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "down_south",
-                    "from": [0, 0, 16],
-                    "to": [16, 8, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [0, 11, 4, 13], "texture": "#0"},
-                        "south": {"uv": [0, 11, 4, 13], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "down_east",
-                    "from": [16, 0, 0],
-                    "to": [16, 8, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "east": {"uv": [4, 11, 8, 13], "texture": "#0"},
-                        "west": {"uv": [4, 11, 8, 13], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "down_west",
-                    "from": [0, 0, 0],
-                    "to": [0, 8, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "east": {"uv": [12, 11, 16, 13], "texture": "#0"},
-                        "west": {"uv": [12, 11, 16, 13], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "down_up",
-                    "from": [0, 8, 0],
-                    "to": [16, 8, 16],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "up": {"uv": [4, 7, 8, 11], "texture": "#0"},
-                        "down": {"uv": [4, 7, 8, 11], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_north",
-                    "from": [0, 4 + x, 0],
-                    "to": [16, 16 + x, 0],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [8, 4, 12, 7], "texture": "#0"},
-                        "south": {"uv": [8, 4, 12, 7], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_south",
-                    "from": [0, 4 + x, 16],
-                    "to": [16, 16 + x, 16],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "north": {"uv": [0, 4, 4, 7], "texture": "#0"},
-                        "south": {"uv": [0, 4, 4, 7], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_west",
-                    "from": [0, 4 + x, 0],
-                    "to": [0, 16 + x, 16],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "east": {"uv": [12, 4, 16, 7], "texture": "#0"},
-                        "west": {"uv": [12, 4, 16, 7], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_east",
-                    "from": [16, 4 + x, 0],
-                    "to": [16, 16 + x, 16],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "east": {"uv": [4, 4, 8, 7], "texture": "#0"},
-                        "west": {"uv": [4, 4, 8, 7], "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_up",
-                    "from": [0, 16 + x, 0],
-                    "to": [16, 16 + x, 16],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
-                        "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
-                    },
-                },
-                {
-                    "name": "up_down",
-                    "from": [0, 4 + x, 0],
-                    "to": [16, 4 + x, 16],
-                    "rotation": {"angle": rotation, "axis": "y", "origin": [8, 8, 8]},
-                    "faces": {
-                        "up": {"uv": [8, 0, 12, 4], "texture": "#0"},
-                        "down": {"uv": [8, 0, 12, 4], "texture": "#0"},
-                    },
-                },
-            ],
+            "elements": self.get_elements(),
         }
 
         return model

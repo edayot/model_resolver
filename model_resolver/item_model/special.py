@@ -59,6 +59,9 @@ class SpecialModelBase(BaseModel):
 
     def get_additional_rotations(self) -> tuple[float, float, float] | None:
         return None
+    
+    def get_additional_translations(self) -> tuple[float, float, float] | None:
+        return None
 
     def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
         return []
@@ -315,67 +318,72 @@ class SpecialModelBanner(SpecialModelLayerBase):
     def get_base_color(self, item: Item) -> str | None:
         return self.color
     
-    def get_scale(self) -> float:
-        return 0.75 / 0.5325
+    
+    def get_elements(self) -> list[dict[str, Any]]:
+        elements = [
+            {
+                "from": [-1, -15.5, -1],
+                "to": [1, 26.5, 1],
+                "rotation": {"x": 0, "y": 0, "z": -180, "origin": [0, -7.75, -1.5]},
+                "faces": {
+                    "north": {"uv": [12.5, 0.5, 13, 11], "texture": "#0"},
+                    "east": {"uv": [12, 0.5, 12.5, 11], "texture": "#0"},
+                    "south": {"uv": [11.5, 0.5, 12, 11], "texture": "#0"},
+                    "west": {"uv": [11, 0.5, 11.5, 11], "texture": "#0"},
+                    "up": {"uv": [11.5, 0, 12, 0.5], "rotation": 180, "texture": "#0"},
+                    "down": {"uv": [12, 0, 12.5, 0.5], "rotation": 180, "texture": "#0"}
+                }
+            },
+            {
+                "from": [-10, 26.5, -1],
+                "to": [10, 28.5, 1],
+                "rotation": {"x": 0, "y": 0, "z": -180, "origin": [0, -7.75, -1.5]},
+                "faces": {
+                    "north": {"uv": [6, 11, 11, 11.5], "texture": "#0"},
+                    "east": {"uv": [5.5, 11, 6, 11.5], "texture": "#0"},
+                    "south": {"uv": [0.5, 11, 5.5, 11.5], "texture": "#0"},
+                    "west": {"uv": [0, 11, 0.5, 11.5], "texture": "#0"},
+                    "up": {"uv": [0.5, 10.5, 5.5, 11], "texture": "#0"},
+                    "down": {"uv": [5.5, 10.5, 10.5, 11], "texture": "#0"}
+                }
+            },
+            {
+                "from": [-10, -11.5, -2],
+                "to": [10, 28.5, -1],
+                "rotation": {"x": 0, "y": 0, "z": -180, "origin": [0, -7.75, -0.5]},
+                "faces": {
+                    "north": {"uv": [5.5, 0.25, 10.5, 10.25], "texture": "#0"},
+                    "east": {"uv": [5.25, 0.25, 5.5, 10.25], "texture": "#0"},
+                    "south": {"uv": [0.25, 0.25, 5.25, 10.25], "texture": "#0"},
+                    "west": {"uv": [0, 0.25, 0.25, 10.25], "texture": "#0"},
+                    "up": {"uv": [0.25, 0, 5.25, 0.25], "texture": "#0"},
+                    "down": {"uv": [5.25, 0, 10.25, 0.25], "texture": "#0"}
+                }
+            }
+        ]
+
+        if self.attachment == "wall":
+            spacing = 8
+            for elem in elements:
+                elem["from"][2] += spacing
+                elem["to"][2] += spacing
+            return elements[1:3]
+        elif self.attachment == "ground":
+            return elements
+        raise ValueError(f"Invalid banner attachment {self.attachment}")
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
-        assert self.attachment == "ground", "Wall banners are not supported yet"
         texture = self.get_texture(getter, item)
         res = {
             "textures": {
                 "0": texture,
             },
-            "elements": [
-                {
-                    "from": [7.5, 1.5, 7.5],
-                    "to": [8.5, 22.5, 8.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 2, 8]},
-                    "faces": {
-                        "north": {"uv": [12.5, 0.5, 13, 11], "texture": "#0"},
-                        "east": {"uv": [12, 0.5, 12.5, 11], "texture": "#0"},
-                        "south": {"uv": [11.5, 0.5, 12, 11], "texture": "#0"},
-                        "west": {"uv": [11, 0.5, 11.5, 11], "texture": "#0"},
-                        "up": {
-                            "uv": [11.5, 0, 12, 0.5],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [12, 0, 12.5, 0.5],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                    },
-                },
-                {
-                    "from": [3, 22.5, 7.5],
-                    "to": [13, 23.5, 8.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [8, 24, 8]},
-                    "faces": {
-                        "north": {"uv": [6, 11, 11, 11.5], "texture": "#0"},
-                        "east": {"uv": [5.5, 11, 6, 11.5], "texture": "#0"},
-                        "south": {"uv": [0.5, 11, 5.5, 11.5], "texture": "#0"},
-                        "west": {"uv": [0, 11, 0.5, 11.5], "texture": "#0"},
-                        "up": {"uv": [0.5, 10.5, 5.5, 11], "texture": "#0"},
-                        "down": {"uv": [5.5, 10.5, 10.5, 11], "texture": "#0"},
-                    },
-                },
-                {
-                    "from": [3, 3.5, 8.5],
-                    "to": [13, 23.5, 9.5],
-                    "rotation": {"angle": 0, "axis": "y", "origin": [9, 4, 9]},
-                    "faces": {
-                        "north": {"uv": [5.5, 0.25, 10.5, 10.25], "texture": "#0"},
-                        "east": {"uv": [5.25, 0.25, 5.5, 10.25], "texture": "#0"},
-                        "south": {"uv": [0.25, 0.25, 5.25, 10.25], "texture": "#0"},
-                        "west": {"uv": [0, 0.25, 0.25, 10.25], "texture": "#0"},
-                        "up": {"uv": [0.25, 0, 5.25, 0.25], "texture": "#0"},
-                        "down": {"uv": [5.25, 0, 10.25, 0.25], "texture": "#0"},
-                    },
-                },
-            ],
+            "elements": self.get_elements(),
         }
         return res
+    
+    def get_additional_translations(self) -> tuple[float, float, float] | None:
+        return (0, -4, 0)
 
 
 class SpecialModelShield(SpecialModelLayerBase):

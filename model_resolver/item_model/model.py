@@ -637,6 +637,7 @@ class ItemModelSpecial(ItemModelBase):
         child = self.model.special_model.get_model(getter, item)
         scale = self.model.special_model.get_scale()
         rotations = self.model.special_model.get_additional_rotations()
+        translations = self.model.special_model.get_additional_translations()
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, getter, delete_parent_elements=True)
         res = MinecraftModel.model_validate(merged).bake()
@@ -653,6 +654,13 @@ class ItemModelSpecial(ItemModelBase):
                 init_rotation[0] + rotations[0],
                 init_rotation[1] + rotations[1],
                 init_rotation[2] + rotations[2],
+            )
+        init_translation = res.display.gui.translation
+        if translations:
+            res.display.gui.translation = (
+                init_translation[0] + translations[0],
+                init_translation[1] + translations[1],
+                init_translation[2] + translations[2],
             )
         return res
 

@@ -52,6 +52,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 model_def,
                 model.get_tints(self.getter, self.item),
                 source=str(self.item),
+                transformation=model.transformation,
             )
 
     def resolve(self) -> Generator[Task, None, None]:

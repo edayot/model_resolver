@@ -16,7 +16,7 @@ def beet_default(ctx: Context):
     render = Render(ctx)
 
     item = Item(id="minecraft:player_head", components={"minecraft:profile": "AirDox_"})
-    # render.add_item_task(item, path_ctx="test:head", render_size=512)
+    render.add_item_task(item, path_ctx="test:head", render_size=512)
 
     render.add_item_task(Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512)
     render.add_item_task(

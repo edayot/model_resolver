@@ -94,149 +94,94 @@ class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed", "bed"]
     texture: str
     part: Literal["head", "foot"]
+    
+    def get_additional_translations(self) -> tuple[float, float, float] | None:
+        return (0, -4, 0)
 
     def elements(self) -> list[dict[str, Any]]:
         if self.part == "foot":
+            x = 15
             return [
                 {
-                    "from": [0, 3, -16],
-                    "to": [16, 9, 0],
+                    "from": [0, 10 + x, 0],
+                    "to": [16, 16 + x, 16],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 11 + x, 5]},
                     "faces": {
-                        "north": {
-                            "uv": [5.5, 5.5, 9.5, 7],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "east": {
-                            "uv": [0, 7, 1.5, 11],
-                            "rotation": 270,
-                            "texture": "#0",
-                        },
-                        "west": {
-                            "uv": [5.5, 7, 7, 11],
-                            "rotation": 90,
-                            "texture": "#0",
-                        },
-                        "up": {
-                            "uv": [1.5, 7, 5.5, 11],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [11, 11, 7, 7],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                    },
+                        "north": {"uv": [5.5, 5.5, 9.5, 7], "rotation": 180, "texture": "#0"},
+                        "east": {"uv": [0, 7, 1.5, 11], "rotation": 270, "texture": "#0"},
+                        "west": {"uv": [5.5, 7, 7, 11], "rotation": 90, "texture": "#0"},
+                        "up": {"uv": [1.5, 7, 5.5, 11], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [11, 11, 7, 7], "rotation": 180, "texture": "#0"}
+                    }
                 },
                 {
-                    "from": [0, 0, -16],
-                    "to": [3, 3, -13],
+                    "from": [0, 7 + x, 0],
+                    "to": [3, 10 + x, 3],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 11 + x, 5]},
                     "faces": {
                         "north": {"uv": [12.5, 3.75, 13.25, 4.5], "texture": "#0"},
                         "east": {"uv": [14.75, 3.75, 15.5, 4.5], "texture": "#0"},
                         "south": {"uv": [14, 3.75, 14.75, 4.5], "texture": "#0"},
                         "west": {"uv": [13.25, 3.75, 14, 4.5], "texture": "#0"},
-                        "up": {
-                            "uv": [13.25, 3, 14, 3.75],
-                            "rotation": 90,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [14.75, 3, 14, 3.75],
-                            "rotation": 90,
-                            "texture": "#0",
-                        },
-                    },
+                        "up": {"uv": [13.25, 3, 14, 3.75], "rotation": 90, "texture": "#0"},
+                        "down": {"uv": [14.75, 3, 14, 3.75], "rotation": 90, "texture": "#0"}
+                    }
                 },
                 {
-                    "from": [13, 0, -16],
-                    "to": [16, 3, -13],
+                    "from": [13, 7 + x, 0],
+                    "to": [16, 10 + x, 3],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 11 + x, 5]},
                     "faces": {
                         "north": {"uv": [13.25, 0.75, 14, 1.5], "texture": "#0"},
                         "east": {"uv": [12.5, 0.75, 13.25, 1.5], "texture": "#0"},
                         "south": {"uv": [14.75, 0.75, 15.5, 1.5], "texture": "#0"},
                         "west": {"uv": [14, 0.75, 14.75, 1.5], "texture": "#0"},
                         "up": {"uv": [13.25, 0, 14, 0.75], "texture": "#0"},
-                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"},
-                    },
-                },
-                
+                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"}
+                    }
+                }
             ]
         elif self.part == "head":
              return [
-                 {
-                    "from": [0, 0, 13],
-                    "to": [3, 3, 16],
+                {
+                    "from": [0, 1, 7],
+                    "to": [3, 4, 10],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 4.75, 5.25]},
                     "faces": {
                         "north": {"uv": [14.75, 5.25, 15.5, 6], "texture": "#0"},
                         "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
                         "south": {"uv": [13.25, 5.25, 14, 6], "texture": "#0"},
                         "west": {"uv": [12.5, 5.25, 13.25, 6], "texture": "#0"},
-                        "up": {
-                            "uv": [13.25, 4.5, 14, 5.25],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [14.75, 4.5, 14, 5.25],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                    },
+                        "up": {"uv": [13.25, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [14.75, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"}
+                    }
                 },
                 {
-                    "from": [0, 3, 0],
-                    "to": [16, 9, 16],
+                    "from": [0, 4, -6],
+                    "to": [16, 10, 10],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 4.75, 5.25]},
                     "faces": {
-                        "east": {
-                            "uv": [0, 1.5, 1.5, 5.5],
-                            "rotation": 270,
-                            "texture": "#0",
-                        },
-                        "south": {
-                            "uv": [1.5, 0, 5.5, 1.5],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "west": {
-                            "uv": [5.5, 1.5, 7, 5.5],
-                            "rotation": 90,
-                            "texture": "#0",
-                        },
-                        "up": {
-                            "uv": [1.5, 1.5, 5.5, 5.5],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [11, 5.5, 7, 1.5],
-                            "rotation": 180,
-                            "texture": "#0",
-                        },
-                    },
+                        "east": {"uv": [0, 1.5, 1.5, 5.5], "rotation": 270, "texture": "#0"},
+                        "south": {"uv": [1.5, 0, 5.5, 1.5], "rotation": 180, "texture": "#0"},
+                        "west": {"uv": [5.5, 1.5, 7, 5.5], "rotation": 90, "texture": "#0"},
+                        "up": {"uv": [1.5, 1.5, 5.5, 5.5], "rotation": 180, "texture": "#0"},
+                        "down": {"uv": [11, 5.5, 7, 1.5], "rotation": 180, "texture": "#0"}
+                    }
                 },
                 {
-                    "from": [13, 0, 13],
-                    "to": [16, 3, 16],
+                    "from": [13, 1, 7],
+                    "to": [16, 4, 10],
+                    "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 4.75, 5.25]},
                     "faces": {
                         "north": {"uv": [14, 2.25, 14.75, 3], "texture": "#0"},
                         "east": {"uv": [13.25, 2.25, 14, 3], "texture": "#0"},
                         "south": {"uv": [12.5, 2.25, 13.25, 3], "texture": "#0"},
                         "west": {"uv": [14.75, 2.25, 15.5, 3], "texture": "#0"},
-                        "up": {
-                            "uv": [13.25, 1.5, 14, 2.25],
-                            "rotation": 270,
-                            "texture": "#0",
-                        },
-                        "down": {
-                            "uv": [14, 1.5, 14.75, 2.25],
-                            "rotation": 270,
-                            "texture": "#0",
-                        },
-                    },
-                },
-             ]
+                        "up": {"uv": [13.25, 1.5, 14, 2.25], "rotation": 270, "texture": "#0"},
+                        "down": {"uv": [14, 1.5, 14.75, 2.25], "rotation": 270, "texture": "#0"}
+                    }
+                }
+            ]
         raise ValueError(f"Invalid bed part {self.part}")
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
@@ -289,6 +234,7 @@ class SpecialModelLayerBase(SpecialModelBase):
         if not (base_color := self.get_base_color(item)):
             return self.base_texture_nopattern
         res: list[MultiTexture] = []
+        res.append((self.base_texture_nopattern, None))
         res.append((self.base_texture, None))
         res.append(
             (self.base_texture, self.get_color(base_color))
@@ -312,7 +258,7 @@ class SpecialModelBanner(SpecialModelLayerBase):
     color: str
     attachment: Literal["wall", "ground"] = "ground"
 
-    base_texture: ClassVar[str] = "minecraft:entity/banner/banner_base"
+    base_texture: ClassVar[str] = "minecraft:entity/banner/base"
     base_texture_nopattern: ClassVar[str] = "minecraft:entity/banner/banner_base"
 
     def get_base_color(self, item: Item) -> str | None:
@@ -391,6 +337,9 @@ class SpecialModelShield(SpecialModelLayerBase):
 
     base_texture: ClassVar[str] = "minecraft:entity/shield/shield_base"
     base_texture_nopattern: ClassVar[str] = "minecraft:entity/shield/shield_base_nopattern"
+    """
+    Represents the base texture for the shield model without a pattern.
+    """
 
     def get_base_color(self, item: Item) -> str | None:
         if not (base_color := item.components.get("minecraft:base_color")):
@@ -738,6 +687,12 @@ class SpecialModelHeadBase(SpecialModelBase):
         return model
 
 
+    def get_additional_rotations(self) -> tuple[float, float, float] | None:
+        return (180, -90, 0)
+    
+    def get_additional_translations(self) -> tuple[float, float, float] | None:
+        return (0, 0, 0)
+
 class SpecialModelPlayerHead(SpecialModelHeadBase):
     type: Literal["minecraft:player_head", "player_head"]
 
@@ -804,6 +759,12 @@ class SpecialModelHead(SpecialModelHeadBase):
     ]
     texture: Optional[str] = None
     animation: float = 0.0
+
+
+    def get_scale(self) -> float:
+        if self.kind == "dragon":
+            return 0.75
+        return 1.0
 
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         match self.kind:

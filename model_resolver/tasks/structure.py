@@ -278,17 +278,162 @@ class StructureRenderTask(GenericModelRenderTask):
         }
         if resolve_key(palleted.Name) in shulker_block_to_textures.keys():
             orientation = palleted.Properties.get("facing", "up")
-            model = SpecialModelShulkerBox(
-                type="minecraft:shulker_box",
-                texture=shulker_block_to_textures[resolve_key(palleted.Name)],
-                openness=0,
-                orientation=orientation,  # type: ignore[call-arg]
-            ).get_model(
-                getter=self.getter,
-                item=self.item,
+            match orientation:
+                case "up":
+                    rot = (0, -90, 0)
+                case "down":
+                    rot = (0, 90, -180)
+                case "north":
+                    rot = (0, 90, -90)
+                case "south":
+                    rot = (0, -90, -90)
+                case "west":
+                    rot = (0, 180, -90)
+                case "east":
+                    rot = (0, -90, -90)
+                case _:
+                    raise ValueError(f"Invalid orientation {orientation}")
+                
+            
+            namespace, path = resolve_key(shulker_block_to_textures[resolve_key(palleted.Name)]).split(":")
+            texture = f"{namespace}:entity/shulker/{path}"
+            model = MinecraftModel.model_validate({
+                "credit": "Made with Blockbench",
+                "textures": {
+                    "0": texture,
+                },
+                "elements": [
+                    {
+                        "name": "down_down",
+                        "from": [0, 0, 0],
+                        "to": [16, 0, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "up": {"uv": [8, 7, 12, 11], "texture": "#0"},
+                            "down": {"uv": [8, 7, 12, 11], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "down_north",
+                        "from": [0, 0, 0],
+                        "to": [16, 8, 0],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "north": {"uv": [8, 11, 12, 13], "texture": "#0"},
+                            "south": {"uv": [8, 11, 12, 13], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "down_south",
+                        "from": [0, 0, 16],
+                        "to": [16, 8, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "north": {"uv": [0, 11, 4, 13], "texture": "#0"},
+                            "south": {"uv": [0, 11, 4, 13], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "down_east",
+                        "from": [16, 0, 0],
+                        "to": [16, 8, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "east": {"uv": [4, 11, 8, 13], "texture": "#0"},
+                            "west": {"uv": [4, 11, 8, 13], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "down_west",
+                        "from": [0, 0, 0],
+                        "to": [0, 8, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "east": {"uv": [12, 11, 16, 13], "texture": "#0"},
+                            "west": {"uv": [12, 11, 16, 13], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "down_up",
+                        "from": [0, 8, 0],
+                        "to": [16, 8, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "up": {"uv": [4, 7, 8, 11], "texture": "#0"},
+                            "down": {"uv": [4, 7, 8, 11], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_north",
+                        "from": [0, 4, 0],
+                        "to": [16, 16, 0],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "north": {"uv": [8, 4, 12, 7], "texture": "#0"},
+                            "south": {"uv": [8, 4, 12, 7], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_south",
+                        "from": [0, 4, 16],
+                        "to": [16, 16, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "north": {"uv": [0, 4, 4, 7], "texture": "#0"},
+                            "south": {"uv": [0, 4, 4, 7], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_west",
+                        "from": [0, 4, 0],
+                        "to": [0, 16, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "east": {"uv": [12, 4, 16, 7], "texture": "#0"},
+                            "west": {"uv": [12, 4, 16, 7], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_east",
+                        "from": [16, 4, 0],
+                        "to": [16, 16, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "east": {"uv": [4, 4, 8, 7], "texture": "#0"},
+                            "west": {"uv": [4, 4, 8, 7], "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_up",
+                        "from": [0, 16, 0],
+                        "to": [16, 16, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
+                            "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
+                        },
+                    },
+                    {
+                        "name": "up_down",
+                        "from": [0, 4, 0],
+                        "to": [16, 4, 16],
+                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
+                        "faces": {
+                            "up": {"uv": [8, 0, 12, 4], "texture": "#0"},
+                            "down": {"uv": [8, 0, 12, 4], "texture": "#0"},
+                        },
+                    },
+                ],
+            }).bake()
+
+            init_rotation = model.display.gui.rotation
+            model.display.gui.rotation = (
+                init_rotation[0] + rot[0],
+                init_rotation[1] + rot[1],
+                init_rotation[2] + rot[2],
             )
             return VariantModel(
-                model=MinecraftModel.model_validate(model).bake(),
+                model=model,
             )
 
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):

@@ -1201,8 +1201,6 @@ class SpecialModelShulkerBox(SpecialModelBase):
     def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
-        x = clamp(0, self.openness * 8, 8)
-        rotation = -clamp(0, self.openness * 90 * 3, 90 * 3)
         model: dict[str, Any] = {
             "credit": "Made with Blockbench",
             "textures": {

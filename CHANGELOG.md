@@ -2,6 +2,55 @@
 
 
 
+## v1.15.0 (2026-03-22)
+
+### Chore
+
+* chore: try macos ([`6fa155e`](https://github.com/edayot/model_resolver/commit/6fa155e55c7c511da44945852b84f116ae1e330e))
+
+* chore: test run in CI and see how it goes ([`667efae`](https://github.com/edayot/model_resolver/commit/667efaee28e48386a0e1e2be01bc4c05fb662fff))
+
+* chore: update to java 25 ([`f5d8bcd`](https://github.com/edayot/model_resolver/commit/f5d8bcd6d879b96eb4a561e99fabf919ee0ce343))
+
+### Feature
+
+* feat: add support for all chest_type ([`e3b34e3`](https://github.com/edayot/model_resolver/commit/e3b34e3d2ecacaf0d1be3b045dbff62d904db70f))
+
+* feat: transformation model ([`a2fd34d`](https://github.com/edayot/model_resolver/commit/a2fd34d6c0948ffd669f0ffa1fb29b35df6e79d4))
+
+* feat: multi rotation using stoupy ray gun ([`2b8bd86`](https://github.com/edayot/model_resolver/commit/2b8bd865c2695d2da445e16df189abef51c4cbbe))
+
+* feat: update to new sprite format ([`d478c31`](https://github.com/edayot/model_resolver/commit/d478c31a9db07265af4f9daafce082eaf6bd929d))
+
+### Unknown
+
+* sulker boxxx ([`8924c83`](https://github.com/edayot/model_resolver/commit/8924c83cc108db34cb2554218a2b206f9636cbe8))
+
+* bed &amp; banner colors ([`d2b1b0c`](https://github.com/edayot/model_resolver/commit/d2b1b0c16c7247ef3158fa2ed728d3fba8ce1742))
+
+* banner &amp;conduit &amp; shulker ([`8e2eab1`](https://github.com/edayot/model_resolver/commit/8e2eab1819ffbf1172d13b56578f628291364d1b))
+
+* feat wall banner and more accurate banners in general ([`04c718d`](https://github.com/edayot/model_resolver/commit/04c718dd60cb2afcdf9f822d8d50f577be3e3636))
+
+* copper chest to structure renders ([`eeb181b`](https://github.com/edayot/model_resolver/commit/eeb181b5a0da912b28a54a0bef03c8f0ac5a58ee))
+
+* disable test ([`8e9611a`](https://github.com/edayot/model_resolver/commit/8e9611a35652bb4620bb2ac62f3321dc71b07b2f))
+
+* encore ([`e41d3b7`](https://github.com/edayot/model_resolver/commit/e41d3b782cad286766770de5d47482eb5af447c3))
+
+* ujuj ([`632d96d`](https://github.com/edayot/model_resolver/commit/632d96de24039280743c11b5ca4dbf45baaac7f9))
+
+* hoping ([`3ba5b6e`](https://github.com/edayot/model_resolver/commit/3ba5b6ead4f0bbaf4bb45b3ca5771acb67e7ee0a))
+
+* trying ([`0a118b2`](https://github.com/edayot/model_resolver/commit/0a118b2e94e5c958017cc328f9249b63de8b57e4))
+
+* macos ([`d719029`](https://github.com/edayot/model_resolver/commit/d719029790a48794f8e726ca65abeaa2c80b793e))
+
+* rollback ([`d673b83`](https://github.com/edayot/model_resolver/commit/d673b83e2ab4f99e278bb76d5a96f45a31e05266))
+
+* uv ([`1b06b2d`](https://github.com/edayot/model_resolver/commit/1b06b2dce42a5b825507966eed28b0d75e08710b))
+
+
 ## v1.14.2 (2026-02-11)
 
 ### Fix

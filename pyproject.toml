@@ -1,6 +1,6 @@
 [project]
 name = "model-resolver"
-version = "1.14.2"
+version = "1.15.0"
 description = ""
 readme = "README.md"
 license = "MIT"

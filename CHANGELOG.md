@@ -2,6 +2,13 @@
 
 
 
+## v1.15.1 (2026-03-24)
+
+### Chore
+
+* chore: exclude test snapshots folder in pypi release ([`f4440a4`](https://github.com/edayot/model_resolver/commit/f4440a479bdf29960161fd46de0004d5056a1105))
+
+
 ## v1.15.0 (2026-03-22)
 
 ### Chore

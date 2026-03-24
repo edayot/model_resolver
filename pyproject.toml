@@ -27,6 +27,10 @@ dev = [
 requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/tests/snapshots",
+]
 
 [tool.pyright]
 typeCheckingMode = "basic"

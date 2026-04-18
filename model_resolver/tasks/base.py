@@ -35,6 +35,7 @@ class Task:
 
     animation_mode: AnimationType = "multi_files"
     animation_framerate: int = 20
+    animated_path_padding: int = 3
     saved_img: Optional[Image.Image] = None
 
     tasks: list["Task"] = field(default_factory=list)

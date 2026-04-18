@@ -49,6 +49,7 @@ class Render:
     light: LightOptions = field(default_factory=LightOptions)
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
     default_render_size: int = DEFAULT_RENDER_SIZE
+    default_animated_path_padding: int = 3
     random_seed: int = 143221
 
     def __post_init__(self):
@@ -70,11 +71,14 @@ class Render:
         render_size: Optional[int] = None,
         animation_mode: AnimationType = "multi_files",
         animation_framerate: int = 20,
+        animated_path_padding: Optional[int] = None,
     ):
         if render_size is None:
             render_size = self.default_render_size
         if isinstance(path_save, str):
             path_save = Path(path_save)
+        if animated_path_padding is None:
+            animated_path_padding = self.default_animated_path_padding
         return self.tasks.append(
             ItemRenderTask(
                 getter=self.getter,
@@ -84,6 +88,7 @@ class Render:
                 render_size=render_size,
                 animation_mode=animation_mode,
                 animation_framerate=animation_framerate,
+                animated_path_padding=animated_path_padding,
             )
         )
 
@@ -96,11 +101,14 @@ class Render:
         render_size: Optional[int] = None,
         animation_mode: AnimationType = "multi_files",
         animation_framerate: int = 20,
+        animated_path_padding: Optional[int] = None,
     ):
         if render_size is None:
             render_size = self.default_render_size
         if isinstance(path_save, str):
             path_save = Path(path_save)
+        if animated_path_padding is None:
+            animated_path_padding = self.default_animated_path_padding
         return self.tasks.append(
             ModelPathRenderTask(
                 getter=self.getter,
@@ -110,6 +118,7 @@ class Render:
                 render_size=render_size,
                 animation_mode=animation_mode,
                 animation_framerate=animation_framerate,
+                animated_path_padding=animated_path_padding,
             )
         )
 
@@ -122,6 +131,7 @@ class Render:
         render_size: Optional[int] = None,
         animation_mode: AnimationType = "multi_files",
         animation_framerate: int = 20,
+        animated_path_padding: Optional[int] = None,
     ):
         if render_size is None:
             render_size = self.default_render_size
@@ -129,6 +139,8 @@ class Render:
             path_save = Path(path_save)
         if isinstance(model, dict):
             model = MinecraftModel.model_validate(model)
+        if animated_path_padding is None:
+            animated_path_padding = self.default_animated_path_padding
         return self.tasks.append(
             ModelRenderTask(
                 getter=self.getter,
@@ -138,6 +150,7 @@ class Render:
                 render_size=render_size,
                 animation_mode=animation_mode,
                 animation_framerate=animation_framerate,
+                animated_path_padding=animated_path_padding,
             )
         )
 
@@ -151,6 +164,7 @@ class Render:
         animation_mode: AnimationType = "one_file",
         animation_framerate: int = 20,
         display_option: Optional[DisplayOptionModel | dict[str, Any]] = None,
+        animated_path_padding: Optional[int] = None,
     ):
         kwargs: dict[Literal["display_option"], DisplayOptionModel] = {}
         if render_size is None:
@@ -161,6 +175,8 @@ class Render:
             kwargs["display_option"] = DisplayOptionModel(**display_option)
         elif isinstance(display_option, DisplayOptionModel):
             kwargs["display_option"] = display_option
+        if animated_path_padding is None:
+            animated_path_padding = self.default_animated_path_padding
         self.tasks.append(
             StructureRenderTask(
                 getter=self.getter,
@@ -171,6 +187,7 @@ class Render:
                 random_seed=self.random_seed,
                 animation_mode=animation_mode,
                 animation_framerate=animation_framerate,
+                animated_path_padding=animated_path_padding,
                 **kwargs,
             )
         )

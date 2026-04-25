@@ -121,6 +121,7 @@ class ItemRenderTask(GenericModelRenderTask):
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
                 source=str(self.item),
+                animation_duration=duration,
             )
             yield task
             tasks.append(task)

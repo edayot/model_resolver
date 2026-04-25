@@ -190,6 +190,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 ensure_params=self.ensure_params,
                 dynamic_textures=self.dynamic_textures,
                 source=self.model,
+                animation_duration=duration,
             )
             yield task
             tasks.append(task)

@@ -251,7 +251,7 @@ wheels = [
 
 [[package]]
 name = "model-resolver"
-version = "1.14.2"
+version = "1.15.2"
 source = { editable = "." }
 dependencies = [
     { name = "beet" },

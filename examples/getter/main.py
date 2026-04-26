@@ -7,15 +7,16 @@ def beet_default(ctx: Context):
     getter = PackGetter.from_ctx(ctx)
 
     # normal access
-    print(getter.release.assets[Texture]["minecraft:item/diamond"])
-    print(getter.release.assets.textures["minecraft:item/diamond"])
-    print(getter.release.assets["minecraft"].textures["item/diamond"])
+    assert getter.lookups[1].assets
+    print(getter.lookups[1].assets[Texture]["minecraft:item/diamond"])
+    print(getter.lookups[1].assets.textures["minecraft:item/diamond"])
+    print(getter.lookups[1].assets["minecraft"].textures["item/diamond"])
 
-    print(getter.release.assets[Texture].get("minecraft:item/diamond"))
-    print(getter.release.assets.textures.get("minecraft:item/diamond"))
-    print(getter.release.assets["minecraft"].textures.get("item/diamond"))
+    print(getter.lookups[1].assets[Texture].get("minecraft:item/diamond"))
+    print(getter.lookups[1].assets.textures.get("minecraft:item/diamond"))
+    print(getter.lookups[1].assets["minecraft"].textures.get("item/diamond"))
 
-    for key in getter.release.assets:
+    for key in getter.lookups[1].assets:
         print(key)
 
 

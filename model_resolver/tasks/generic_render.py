@@ -11,10 +11,10 @@ from pydantic import BaseModel
 from model_resolver.item_model.item import Item
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import (
-    PackGetterV2,
     resolve_key,
     log,
 )
+from model_resolver.pack_getter import PackGetter
 from model_resolver.minecraft_model import (
     MinecraftModel,
     ElementModel,
@@ -591,7 +591,7 @@ class GenericModelRenderTask(Task):
 @dataclass(kw_only=True)
 class Animation:
     textures: list[dict[str, TextureSource]]
-    getter: PackGetterV2
+    getter: PackGetter
     animation_framerate: int
 
     source: Optional[str] = None

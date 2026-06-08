@@ -1,13 +1,11 @@
-from dataclasses import dataclass
 import json
 import os
-import pathlib
 import subprocess
-from beet import Context, DataPack, Pack, ResourcePack
+from beet import Context
 from pydantic import BaseModel
 from typing import TYPE_CHECKING, Any, Literal, Self
-from beet import Context, LATEST_MINECRAFT_VERSION
-from functools import cached_property, lru_cache
+from beet import Context
+from functools import lru_cache
 
 from pydantic import BaseModel
 import logging
@@ -55,50 +53,13 @@ class ModelResolverOptions(BaseModel):
     transparent_missingno: bool = True
 
 
-@dataclass
-class PackGetterV2:
-    opts: ModelResolverOptions
-    _ctx: Context
-    _vanilla: Vanilla
-
-    @cached_property
-    def assets(self) -> ResourcePack:
-        assets = ResourcePack()
-        assets.merge(self._vanilla.assets)
-        if self.opts.special_rendering:
-            static_models = pathlib.Path(__file__).parent / "static_models"
-            rp = ResourcePack(str(static_models))
-            assets.merge(rp)
-        assets.merge(self._ctx.assets)
-        return assets
-
-    @cached_property
-    def data(self) -> DataPack:
-        data = DataPack()
-        data.merge(self._vanilla.data)
-        data.merge(self._ctx.data)
-        return data
-
-    @classmethod
-    def from_context(cls, ctx: Context) -> Self:
-        opts = ctx.validate("model_resolver", ModelResolverOptions)
-        vanilla = Vanilla(
-            ctx,
-            minecraft_version=(
-                opts.minecraft_version
-                if opts.minecraft_version != "latest"
-                else LATEST_MINECRAFT_VERSION
-            ),
-        )
-        return cls(_ctx=ctx, _vanilla=vanilla, opts=opts)
-
 
 @lru_cache
 def get_default_components(ctx: Context) -> dict[str, Any]:
-    getter = PackGetterV2.from_context(ctx)
-    version = getter._vanilla.minecraft_version
-    opts = ctx.validate("model_resolver", ModelResolverOptions)
-    prefered = opts.preferred_minecraft_generated
+    from model_resolver.pack_getter import PackGetter
+    getter = PackGetter.from_context(ctx)
+    version = getter.opts.minecraft_version
+    prefered = getter.opts.preferred_minecraft_generated
     # TODO: if java is not found, fallback to misode/mcmeta
     if prefered == "java":
         # test if java is available
@@ -120,9 +81,8 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
                 components = json.load(file)
             return {resolve_key(key): value for key, value in components.items()}
         case "java":
-            release = getter._vanilla.releases[version]
-            jar = release.cache.download(
-                release.info.data["downloads"]["server"]["url"]
+            jar = getter._vanilla.cache.download(
+                getter._vanilla.info.data["downloads"]["server"]["url"]
             )
             cache = ctx.cache["model_resolver_components"]
             path = cache.get_path("minecraft_reports")

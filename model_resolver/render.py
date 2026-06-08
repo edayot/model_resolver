@@ -13,11 +13,11 @@ from model_resolver.tasks.structure import StructureRenderTask
 from model_resolver.utils import (
     LightOptions,
     ModelResolverOptions,
-    PackGetterV2,
     resolve_key,
     DEFAULT_RENDER_SIZE,
     log,
 )
+from model_resolver.pack_getter import PackGetter
 from typing import Any, Literal, Optional, TypedDict
 from pathlib import Path
 from PIL import Image
@@ -53,7 +53,7 @@ class Render:
     random_seed: int = 143221
 
     def __post_init__(self):
-        self.getter = PackGetterV2.from_context(self.ctx)
+        self.getter = PackGetter.from_context(self.ctx)
 
     def __repr__(self):
         return f"<Render of {len(self.tasks)} tasks>"

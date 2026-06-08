@@ -510,7 +510,7 @@ class StructureRenderTask(GenericModelRenderTask):
 
         rots: list[RotationModel] = [
             SingleAxisRotationModel(
-                origin=(8, 8, 8), axis="x", angle=resolved_variant.x, rescale=False
+                origin=(8, 8, 8), axis="x", angle=-resolved_variant.x, rescale=False
             ),
             SingleAxisRotationModel(
                 origin=(8, 8, 8), axis="y", angle=-resolved_variant.y, rescale=False

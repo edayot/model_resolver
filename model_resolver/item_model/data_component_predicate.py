@@ -4,7 +4,8 @@ from pydantic import AliasChoices, Field, RootModel, BaseModel
 from nbtlib import parse_nbt, Compound
 
 from model_resolver.item_model.item import Item
-from model_resolver.utils import PackGetterV2, resolve_key
+from model_resolver.utils import resolve_key
+from model_resolver.pack_getter import PackGetter
 
 
 class MinMax(BaseModel):
@@ -58,7 +59,7 @@ def iter_tagged_id[
 
 class DataComponentBase(BaseModel):
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool | None:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool | None:
         return False
 
 
@@ -123,7 +124,7 @@ class InventoryLikeDataComponent(DataComponentBase):
     items: Optional[PredicateCollection] = None
 
     def verify_item_condition(
-        self, getter: PackGetterV2, item_condition: ItemCondition, container: list[Item]
+        self, getter: PackGetter, item_condition: ItemCondition, container: list[Item]
     ) -> int:
         """
         Checks the number of times an item condition is met in the container.
@@ -147,7 +148,7 @@ class InventoryLikeDataComponent(DataComponentBase):
             res += 1
         return res
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         container: list[Item] = [
             Item.model_validate(x["item"]) for x in item.get(self.inventory_component)
         ]
@@ -202,7 +203,7 @@ class CustomDataDataComponent(RootModel, DataComponentBase):
             return True
         return predicate == value
 
-    def is_valid(self, getter: PackGetterV2, item: Item):
+    def is_valid(self, getter: PackGetter, item: Item):
         custom_data = item.get("custom_data")
         if custom_data is None:
             return False
@@ -219,7 +220,7 @@ class DamageDataComponent(DataComponentBase):
     damage: NumberOrRange = None
     durability: NumberOrRange = None
 
-    def is_valid(self, getter: PackGetterV2, item: Item):
+    def is_valid(self, getter: PackGetter, item: Item):
         damage = item.get("damage")
         max_damage = item.get("max_damage")
         if max_damage is None:
@@ -236,7 +237,7 @@ class Enchantment(BaseModel):
     enchantments: TaggedID = None
     levels: NumberOrRange = None
 
-    def is_valid(self, enchantments: dict[str, int], getter: PackGetterV2) -> bool:
+    def is_valid(self, enchantments: dict[str, int], getter: PackGetter) -> bool:
         enchantments = {resolve_key(key): value for key, value in enchantments.items()}
         for enchantment in iter_tagged_id(
             self.enchantments, getter.data.enchantment_tags
@@ -252,7 +253,7 @@ class EnchantmentsLikeDataComponent(RootModel, DataComponentBase):
     root: list[Enchantment] | None = None
 
     def is_valid_enchantments(
-        self, getter: PackGetterV2, item: Item, component_name: str
+        self, getter: PackGetter, item: Item, component_name: str
     ) -> bool:
         enchantments: dict[str, int] | None = item.get(component_name)
         if enchantments is None:
@@ -268,7 +269,7 @@ class EnchantmentsLikeDataComponent(RootModel, DataComponentBase):
 
 
 class EnchantmentsDataComponent(EnchantmentsLikeDataComponent):
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         return self.is_valid_enchantments(getter, item, "enchantments")
 
 
@@ -281,7 +282,7 @@ class FireworksDataComponent(DataComponentBase): ...
 class JukeboxPlayableDataComponent(RootModel, DataComponentBase):
     root: TaggedID = None
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         jukebox_playable = item.get("jukebox_playable")
         if jukebox_playable is None:
             return False
@@ -294,7 +295,7 @@ class JukeboxPlayableDataComponent(RootModel, DataComponentBase):
 class PotionContentsDataComponent(DataComponentBase):
     root: TaggedID = None
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         potion = item.get("potion_contents")
         if potion is None:
             return False
@@ -309,7 +310,7 @@ class PotionContentsDataComponent(DataComponentBase):
 
 
 class StoredEnchantmentsDataComponent(EnchantmentsLikeDataComponent):
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         return self.is_valid_enchantments(getter, item, "stored_enchantments")
 
 
@@ -317,7 +318,7 @@ class TrimDataComponent(DataComponentBase):
     material: TaggedID = None
     pattern: TaggedID = None
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         trim = item.get("trim")
         if trim is None:
             return False
@@ -408,7 +409,7 @@ class DataComponent(BaseModel):
         ),
     )
 
-    def is_valid(self, getter: PackGetterV2, item: Item) -> bool:
+    def is_valid(self, getter: PackGetter, item: Item) -> bool:
         valid = []
         components: list[Optional[DataComponentBase]] = [
             self.attibute_modifiers,

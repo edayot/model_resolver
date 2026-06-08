@@ -6,8 +6,9 @@ from model_resolver.item_model.special import SpecialModel
 from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
 from model_resolver.item_model.item import Item
 from model_resolver.item_model.transformation import Transformation
-from model_resolver.utils import ModelResolverOptions, PackGetterV2, clamp, resolve_key
+from model_resolver.utils import ModelResolverOptions, clamp, resolve_key
 from model_resolver.minecraft_model import MinecraftModel, resolve_model
+from model_resolver.pack_getter import PackGetter
 
 ItemModelBaseClass: list[Type["ItemModelBase"]] = []
 
@@ -34,7 +35,7 @@ class ItemModelBase(BaseModel):
     transformation: Optional[Transformation] = None
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from []
 
@@ -48,7 +49,7 @@ class ItemModelBase(BaseModel):
             ItemModelBaseClass.append(cls)
         return super().__init_subclass__(**kwargs)
     
-    def resolve_with_compose(self, getter: PackGetterV2, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+    def resolve_with_compose(self, getter: PackGetter, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
         for res in self.resolve(getter, item):
             yield res.with_compose(parent_transformation)
     
@@ -69,11 +70,11 @@ class ItemModelModel(ItemModelBase):
     tints: list[TintSource] = Field(default_factory=list)
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> MinecraftModel:
+    def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         key = resolve_key(self.model)
         if key in getter.assets.models:
             data = getter.assets.models[key].data
@@ -81,7 +82,7 @@ class ItemModelModel(ItemModelBase):
             raise ValueError(f"Model {key} not found")
         return MinecraftModel.model_validate(resolve_model(data, getter)).bake()
 
-    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+    def get_tints(self, getter: PackGetter, item: Item) -> list[TintSource]:
         return self.tints
 
 
@@ -90,7 +91,7 @@ class ItemModelComposite(ItemModelBase):
     models: list["ItemModelRecursive"]
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         for model in self.models:
             yield from model.resolve_with_compose(getter, item, self.transformation)
@@ -127,11 +128,11 @@ class ItemModelConditionBase(ItemModelBase):
     on_true: "ItemModelRecursive"
     on_false: "ItemModelRecursive"
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         raise NotImplementedError
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         if self.resolve_condition(getter, item):
             yield from self.on_true.resolve_with_compose(getter, item, self.transformation)
@@ -142,7 +143,7 @@ class ItemModelConditionBase(ItemModelBase):
 class ItemModelConditionUsingItem(ItemModelConditionBase):
     property: Literal["minecraft:using_item", "using_item"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -150,7 +151,7 @@ class ItemModelConditionUsingItem(ItemModelConditionBase):
 class ItemModelConditionBroken(ItemModelConditionBase):
     property: Literal["minecraft:broken", "broken"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         if not item.components:
             return False
         if not "minecraft:damage" in item.components:
@@ -169,7 +170,7 @@ class ItemModelConditionComponent(ItemModelConditionBase):
     predicate: str
     value: Any
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         data_component = DataComponent.model_validate({self.predicate: self.value})
         return data_component.is_valid(getter, item) or False
 
@@ -177,7 +178,7 @@ class ItemModelConditionComponent(ItemModelConditionBase):
 class ItemModelConditionDamaged(ItemModelConditionBase):
     property: Literal["minecraft:damaged", "damaged"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         if not item.components:
             return False
         if not "minecraft:damage" in item.components:
@@ -190,7 +191,7 @@ class ItemModelConditionHasComponent(ItemModelConditionBase):
     component: str
     ignore_default: Optional[bool] = False
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         if not item.components:
             return False
         if self.ignore_default:
@@ -202,7 +203,7 @@ class ItemModelConditionHasComponent(ItemModelConditionBase):
 class ItemModelConditionFishingRodCast(ItemModelConditionBase):
     property: Literal["minecraft:fishing_rod/cast", "fishing_rod/cast"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -210,7 +211,7 @@ class ItemModelConditionFishingRodCast(ItemModelConditionBase):
 class ItemModelConditionBundleHasSelectedItem(ItemModelConditionBase):
     property: Literal["minecraft:bundle/has_selected_item", "bundle/has_selected_item"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -218,7 +219,7 @@ class ItemModelConditionBundleHasSelectedItem(ItemModelConditionBase):
 class ItemModelConditionSelected(ItemModelConditionBase):
     property: Literal["minecraft:selected", "selected"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -226,7 +227,7 @@ class ItemModelConditionSelected(ItemModelConditionBase):
 class ItemModelConditionCarried(ItemModelConditionBase):
     property: Literal["minecraft:carried", "carried"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -234,7 +235,7 @@ class ItemModelConditionCarried(ItemModelConditionBase):
 class ItemModelConditionExtendedView(ItemModelConditionBase):
     property: Literal["minecraft:extended_view", "extended_view"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -243,7 +244,7 @@ class ItemModelConditionKeybindDown(ItemModelConditionBase):
     property: Literal["minecraft:keybind_down", "keybind_down"]
     keybind: str
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -252,7 +253,7 @@ class ItemModelConditionCustomModelData(ItemModelConditionBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         if not item.components:
             return False
         if not "minecraft:custom_model_data" in item.components:
@@ -268,7 +269,7 @@ class ItemModelConditionCustomModelData(ItemModelConditionBase):
 class ItemModelConditionViewEntity(ItemModelConditionBase):
     property: Literal["minecraft:view_entity", "view_entity"]
 
-    def resolve_condition(self, getter: PackGetterV2, item: Item) -> bool:
+    def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
         # Not possible to implement
         return False
 
@@ -306,7 +307,7 @@ class ItemModelSelectBase(ItemModelBase):
     fallback: "ItemModelRecursive"
     possible_values: ClassVar[list[str]] = []
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         return self.fallback
 
     def resolve_case(self, value: Any) -> "ItemModelRecursive":
@@ -320,7 +321,7 @@ class ItemModelSelectBase(ItemModelBase):
         return self.fallback
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.resolve_select(getter, item).resolve_with_compose(getter, item, self.transformation)
 
@@ -334,7 +335,7 @@ class ItemModelSelectChargeType(ItemModelSelectBase):
     property: Literal["minecraft:charge_type", "charge_type"]
     possible_values: ClassVar[list[str]] = ["none", "rocket", "arrow"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.resolve_case("none")
         if not "minecraft:charge_type" in item.components:
@@ -354,7 +355,7 @@ class ItemModelSelectComponent(ItemModelSelectBase):
     property: Literal["minecraft:component", "component"]
     component: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         component = item.components.get(resolve_key(self.component))
         if component is not None:
             return self.resolve_case(component)
@@ -367,7 +368,7 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
     time_zone: Optional[str] = None
     pattern: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         # Not possible to implement
         return self.fallback
 
@@ -375,14 +376,14 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
 class ItemModelSelectContextEntityType(ItemModelSelectBase):
     property: Literal["minecraft:context_entity_type", "context_entity_type"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("minecraft:player")
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
     property: Literal["minecraft:trim_material", "trim_material"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:trim" in item.components:
@@ -396,7 +397,7 @@ class ItemModelSelectBlockState(ItemModelSelectBase):
     property: Literal["minecraft:block_state", "block_state"]
     block_state_property: str
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:block_state" in item.components:
@@ -422,7 +423,7 @@ class ItemModelSelectDisplayContext(ItemModelSelectBase):
         "fixed",
     ]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("gui")
 
 
@@ -430,7 +431,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         if not item.components:
             return self.fallback
         if not "minecraft:custom_model_data" in item.components:
@@ -448,7 +449,7 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
 class ItemModelSelectContextDimension(ItemModelSelectBase):
     property: Literal["minecraft:context_dimension", "context_dimension"]
 
-    def resolve_select(self, getter: PackGetterV2, item: Item) -> "ItemModelRecursive":
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("minecraft:overworld")
 
 
@@ -485,11 +486,11 @@ class ItemModelRangeDispatchBase(ItemModelBase):
     entries: list[RangeDispatchEntry] = Field(default_factory=list)
     fallback: Optional["ItemModelRecursive"] = None
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         return 0.0
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         value = self.resolve_range_dispatch(getter, item)
         max_threshold = 0
@@ -510,7 +511,7 @@ class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
     property: Literal["minecraft:custom_model_data", "custom_model_data"]
     index: Optional[int] = 0
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:custom_model_data" in item.components:
@@ -526,7 +527,7 @@ class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchBundleFullness(ItemModelRangeDispatchBase):
     property: Literal["minecraft:bundle/fullness", "bundle/fullness"]
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not implemented for now
         # need to calculate the fullness of the bundle
         return 0.0
@@ -536,7 +537,7 @@ class ItemModelRangeDispatchDamage(ItemModelRangeDispatchBase):
     property: Literal["minecraft:damage", "damage"]
     normalize: Optional[bool] = True
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:damage" in item.components:
@@ -554,7 +555,7 @@ class ItemModelRangeDispatchCount(ItemModelRangeDispatchBase):
     property: Literal["minecraft:count", "count"]
     normalize: Optional[bool] = True
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         if not item.components:
             return 0.0
         if not "minecraft:max_stack_size" in item.components:
@@ -569,7 +570,7 @@ class ItemModelRangeDispatchCount(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchCooldown(ItemModelRangeDispatchBase):
     property: Literal["minecraft:cooldown", "cooldown"]
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -580,7 +581,7 @@ class ItemModelRangeDispatchTime(ItemModelRangeDispatchBase):
     source: Literal["daytime", "moon_phase", "random"]
     # natural_only: Optional[bool] = True
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -590,7 +591,7 @@ class ItemModelRangeDispatchCompass(ItemModelRangeDispatchBase):
     wobble: Optional[bool] = True
     target: Literal["spawn", "lodestone", "recovery", "none"]
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -598,7 +599,7 @@ class ItemModelRangeDispatchCompass(ItemModelRangeDispatchBase):
 class ItemModelRangeDispatchCrossbowPull(ItemModelRangeDispatchBase):
     property: Literal["minecraft:crossbow/pull", "crossbow/pull"]
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -607,7 +608,7 @@ class ItemModelRangeDispatchUseDuration(ItemModelRangeDispatchBase):
     property: Literal["minecraft:use_duration", "use_duration"]
     remaining: Optional[bool] = False
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -616,7 +617,7 @@ class ItemModelRangeDispatchUseCycle(ItemModelRangeDispatchBase):
     property: Literal["minecraft:use_cycle", "use_cycle"]
     period: float = 1.0
 
-    def resolve_range_dispatch(self, getter: PackGetterV2, item: Item) -> float:
+    def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
         # Not possible to implement
         return 0.0
 
@@ -630,7 +631,7 @@ class ItemModelSpecial(ItemModelBase):
     base: str
     model: SpecialModel
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> MinecraftModel:
+    def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         opts = getter._ctx.validate("model_resolver", ModelResolverOptions)
         if not opts.special_rendering:
             return MinecraftModel()
@@ -665,22 +666,22 @@ class ItemModelSpecial(ItemModelBase):
         return res
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
 
-    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+    def get_tints(self, getter: PackGetter, item: Item) -> list[TintSource]:
         return self.model.special_model.get_tints(getter, item)
 
 
 class ItemModelEmpty(ItemModelBase):
     type: Literal["minecraft:empty", "empty"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> MinecraftModel:
+    def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         return MinecraftModel.model_validate({})
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from []
 
@@ -706,11 +707,11 @@ class ItemModelRecursive(RootModel[Any]):
         raise ValidationError(errors)
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve(getter, item)
 
-    def resolve_with_compose(self, getter: PackGetterV2, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+    def resolve_with_compose(self, getter: PackGetter, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve_with_compose(getter, item, parent_transformation)
 
 
@@ -720,6 +721,6 @@ class ItemModel(BaseModel):
     oversized_in_gui: Optional[bool] = False
 
     def resolve(
-        self, getter: PackGetterV2, item: Item
+        self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve(getter, item)

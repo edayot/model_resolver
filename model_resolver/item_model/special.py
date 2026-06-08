@@ -9,7 +9,8 @@ from model_resolver.item_model.tint_source import (
 from typing import ClassVar, Optional, Literal, Type, Any
 from model_resolver.item_model.item import Item
 from model_resolver.minecraft_model import MultiTexture, TextureSource
-from model_resolver.utils import PackGetterV2, clamp, resolve_key
+from model_resolver.utils import clamp, resolve_key
+from model_resolver.pack_getter import PackGetter
 from PIL import Image
 from uuid import UUID
 import json
@@ -51,7 +52,7 @@ class SpecialModelBase(BaseModel):
         "book",
     ]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         return {}
 
     def get_scale(self) -> float:
@@ -63,7 +64,7 @@ class SpecialModelBase(BaseModel):
     def get_additional_translations(self) -> tuple[float, float, float] | None:
         return None
 
-    def get_tints(self, getter: PackGetterV2, item: Item) -> list[TintSource]:
+    def get_tints(self, getter: PackGetter, item: Item) -> list[TintSource]:
         return []
 
     def __init_subclass__(cls, **kwargs):
@@ -86,7 +87,7 @@ class SpecialModelCopperGolemStatue(SpecialModelBase):
         namespace, path = resolve_key(self.texture).split(":")
         return f"{namespace}:{path.removeprefix("textures/")}"
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         return {}
 
 
@@ -184,7 +185,7 @@ class SpecialModelBed(SpecialModelBase):
             ]
         raise ValueError(f"Invalid bed part {self.part}")
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         model: dict[str, Any] = {
             "textures": {"0": f"{namespace}:entity/bed/{path}"},
@@ -230,7 +231,7 @@ class SpecialModelLayerBase(SpecialModelBase):
         argb = to_argb(argb)
         return TintSourceConstant(type="constant", value=(argb[1], argb[2], argb[3]))
 
-    def get_texture(self, getter: PackGetterV2, item: Item) -> TextureSource:
+    def get_texture(self, getter: PackGetter, item: Item) -> TextureSource:
         if not (base_color := self.get_base_color(item)):
             return self.base_texture_nopattern
         res: list[MultiTexture] = []
@@ -318,7 +319,7 @@ class SpecialModelBanner(SpecialModelLayerBase):
             return elements
         raise ValueError(f"Invalid banner attachment {self.attachment}")
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = self.get_texture(getter, item)
         res = {
             "textures": {
@@ -346,7 +347,7 @@ class SpecialModelShield(SpecialModelLayerBase):
             return None
         return base_color
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = self.get_texture(getter, item)
         res = {
             "textures": {"0": texture},
@@ -401,7 +402,7 @@ class SpecialModelShield(SpecialModelLayerBase):
 class SpecialModelConduit(SpecialModelBase):
     type: Literal["minecraft:conduit", "conduit"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         model: dict[str, Any] = {
             "textures": {
                 "0": "entity/conduit/base",
@@ -622,7 +623,7 @@ class SpecialModelChest(SpecialModelBase):
             ]
         raise ValueError(f"Invalid chest type {self.chest_type}")
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         model: dict[str, Any] = {
             "elements": self.get_elements(),
@@ -647,7 +648,7 @@ class SpecialModelHeadBase(SpecialModelBase):
 
     @staticmethod
     def get_model_player(
-        getter: PackGetterV2, item: Item, texture: str | Image.Image
+        getter: PackGetter, item: Item, texture: str | Image.Image
     ) -> dict[str, Any]:
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -696,12 +697,12 @@ class SpecialModelHeadBase(SpecialModelBase):
 class SpecialModelPlayerHead(SpecialModelHeadBase):
     type: Literal["minecraft:player_head", "player_head"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         return self.get_model_player(
             getter, item, self.get_player_texture(getter, item)
         )
 
-    def get_player_texture(self, getter: PackGetterV2, item: Item) -> str | Image.Image:
+    def get_player_texture(self, getter: PackGetter, item: Item) -> str | Image.Image:
         DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
         if not item.components:
             return DEFAULT_TEXTURE
@@ -766,7 +767,7 @@ class SpecialModelHead(SpecialModelHeadBase):
             return 0.75
         return 1.0
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         match self.kind:
             case "player":
                 texture = "minecraft:entity/player/wide/steve"
@@ -789,7 +790,7 @@ class SpecialModelHead(SpecialModelHeadBase):
             case _:
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
 
-    def get_dragon_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_dragon_head(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/enderdragon/dragon"
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -907,7 +908,7 @@ class SpecialModelHead(SpecialModelHeadBase):
         jaw = math.degrees(jaw)
         return jaw
 
-    def get_piglin_head(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_piglin_head(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/piglin/piglin"
         left_ear, right_ear = self.get_piglin_angles()
         model = {
@@ -1014,7 +1015,7 @@ class SpecialModelHead(SpecialModelHeadBase):
         right_ear = math.degrees(right_ear)
         return left_ear, right_ear
 
-    def get_model_zombie(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model_zombie(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = self.texture or "minecraft:entity/zombie/zombie"
         model = {
             "textures": {"1": texture, "particle": texture},
@@ -1037,7 +1038,7 @@ class SpecialModelHead(SpecialModelHeadBase):
         return model
 
     def get_generic_mob_head(
-        self, getter: PackGetterV2, item: Item, texture: str
+        self, getter: PackGetter, item: Item, texture: str
     ) -> dict[str, Any]:
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -1198,7 +1199,7 @@ class SpecialModelShulkerBox(SpecialModelBase):
                 element["rotation"]["y"] = (rotation + element["rotation"]["y"]) + 22.5
         return res
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
         model: dict[str, Any] = {
@@ -1216,7 +1217,7 @@ class SpecialModelShulkerBox(SpecialModelBase):
 class SpecialModelTrident(SpecialModelBase):
     type: Literal["minecraft:trident", "trident"]
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         hauteur = -11
         return {
             "textures": {
@@ -1339,7 +1340,7 @@ class SpecialModelDecoratedPot(SpecialModelBase):
         namespace, path = decoration.split(":", 1)
         return f"{namespace}:entity/decorated_pot/{path.removesuffix("_sherd")}_pattern"
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         pot_decorations = item.components.get("minecraft:pot_decorations", None)
 
         model: dict[str, Any] = {
@@ -1429,7 +1430,7 @@ class SpecialModelStandingSign(SpecialModelSignBase):
     attachment: Literal["ground", "wall"] = "ground"
 
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         assert self.attachment == "ground", "Only ground standing signs are supported"
         return {
             "credit": "Made with Blockbench",
@@ -1469,7 +1470,7 @@ class SpecialModelHangingSign(SpecialModelSignBase):
     type: Literal["minecraft:hanging_sign", "hanging_sign"]
     attachment: Literal["wall", "ceiling", "ceiling_middle"] = "ceiling_middle" 
 
-    def get_model(self, getter: PackGetterV2, item: Item) -> dict[str, Any]:
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         assert self.attachment == "ceiling_middle", "Only ceiling_middle hanging signs are supported"
         res = {
             "textures": {
@@ -1525,4 +1526,5 @@ class SpecialModel(RootModel[Any]):
                 return cls.model_validate(self.root)
             except ValidationError as e:
                 pass
+        print(list(reversed(SpecialModelBaseClass)))
         raise ValueError("No valid special model found for root: " + str(self.root))

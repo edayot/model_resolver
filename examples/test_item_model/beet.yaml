@@ -1,5 +1,7 @@
 
 
+minecraft: "26.1"
+
 resource_pack:
   load: .
 
@@ -13,7 +15,6 @@ meta:
   model_resolver:
     # load vanilla item models
     load_vanilla: false
-    minecraft_version: "26.1-pre-1"
     use_cache: true
     special_rendering: true
     preferred_minecraft_generated: "java"

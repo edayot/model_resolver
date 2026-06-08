@@ -1,6 +1,7 @@
 from typing import Any
 from model_resolver.item_model.tint_source import TintSource
-from model_resolver.utils import PackGetterV2, resolve_key
+from model_resolver.utils import resolve_key
+from model_resolver.pack_getter import PackGetter
 from copy import deepcopy
 from pydantic import BaseModel, Field, ConfigDict, AliasChoices
 from typing import Annotated, Literal, Optional
@@ -160,7 +161,7 @@ class MinecraftModel(BaseModel):
 
 def resolve_model(
     data: dict[str, Any],
-    getter: PackGetterV2,
+    getter: PackGetter,
     delete_parent_elements: bool = False,
 ) -> dict[str, Any]:
     if not "parent" in data:

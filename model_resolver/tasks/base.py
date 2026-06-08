@@ -7,8 +7,8 @@ from beet import Texture
 from dataclasses import dataclass, field
 from model_resolver.utils import (
     DEFAULT_RENDER_SIZE,
-    PackGetterV2,
 )
+from model_resolver.pack_getter import PackGetter
 from typing import Literal, Optional, Generator
 from pathlib import Path
 from PIL import Image
@@ -27,7 +27,7 @@ type AnimationType = Literal[
 
 @dataclass(kw_only=True)
 class Task:
-    getter: PackGetterV2
+    getter: PackGetter
     path_ctx: Optional[str] = None
     path_save: Optional[Path] = None
     render_size: int = DEFAULT_RENDER_SIZE

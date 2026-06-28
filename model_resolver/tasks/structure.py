@@ -244,6 +244,7 @@ class StructureRenderTask(GenericModelRenderTask):
                 dynamic_textures=self.dynamic_textures,
                 images_override=images,
                 animation_duration=duration,
+                display_option=self.display_option,
             )
             yield task
             tasks.append(task)

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Mapping, Protocol, Optional, Sequence, Type, overload, cast
 
-from beet import LATEST_MINECRAFT_VERSION, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
+from beet import LATEST_MINECRAFT_VERSION, Blockstate, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
 from beet.contrib.vanilla import Vanilla, Release
 
 from model_resolver.utils import ModelResolverOptions
@@ -36,17 +36,46 @@ def get_by_namespace_proxy[T: NamespaceFile](context: NamespaceProxy[T] | Namesp
     return res
 
 
+
+def custom_merge[T: NamespaceFile](value: T, other: T):
+    if isinstance(value, Blockstate) and isinstance(other, Blockstate):
+        v1: dict | None = value.data.get("variants")
+        v2: dict | None = other.data.get("variants")
+        merged = {}
+        if v2: merged.update(v2)
+        if v1: merged.update(v1)
+        value.data["variants"] = merged
+
+        m1: list | None = value.data.get("multipart")
+        m2: list | None = other.data.get("multipart")
+        res = []
+        if m1: res.extend(m1)
+        if m2: res.extend(m2)
+        value.data["multipart"] = res
+        return True
+    
+
+    return value.merge(other)
+
+
 @overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]], key: str) -> T: ...
 @overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceContainer[T]], key: str) -> T: ...
 
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]] | list[NamespaceContainer[T]], key: str) -> T:
+    candidates: list[T] = []
     for lookup in lookups:
         res = lookup.get(key)
         if res is not None:
-            return res
-    raise KeyError(key)
+            candidates.append(res)
+    if len(candidates) == 0:
+        raise KeyError(key)
+    candidates.reverse()
+    res = candidates[0]
+    for cand in candidates[1:]:
+        custom_merge(res, cand)
+    return res
 
 
 def iter_lookup_keys(lookups: Sequence[Mapping[str, object]]) -> Iterator[str]:
@@ -171,7 +200,7 @@ class PackGetter():
     opts: ModelResolverOptions
     lookups: list[str]
 
-    if TYPE_CHECKING:
+    if TYPE_CHECKING and False:
         assets: ResourcePack
         data: DataPack
     else:

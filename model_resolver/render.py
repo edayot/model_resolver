@@ -35,7 +35,7 @@ class AtlasDict(TypedDict):
 
 
 class AppendList[T: Any](list[T]):
-    def append(self, object: T) -> T:
+    def append[U: T](self, object: U) -> U:
         super().append(object)
         return object
 
@@ -177,7 +177,7 @@ class Render:
             kwargs["display_option"] = display_option
         if animated_path_padding is None:
             animated_path_padding = self.default_animated_path_padding
-        self.tasks.append(
+        return self.tasks.append(
             StructureRenderTask(
                 getter=self.getter,
                 structure_key=structure,

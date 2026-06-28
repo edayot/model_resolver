@@ -456,30 +456,30 @@ class StructureRenderTask(GenericModelRenderTask):
 
         block_state = BlockState.model_validate(block_state.data)
         if block_state.variants:
+            variant = None
             if "" in block_state.variants:
                 variant = block_state.variants[""]
-            else:
-                parsed_dict: dict[str, dict[str, str]] = {}
-                for key in block_state.variants.keys():
-                    parsed_key: dict[str, str] = {}
-                    key_split = key.split(",")
-                    for key_split_part in key_split:
-                        state, value = key_split_part.split("=")
-                        parsed_key[state] = value
-                    parsed_dict[key] = parsed_key
-                variant = None
-                for key, parsed_key in parsed_dict.items():
-                    if all(
-                        [
-                            parsed_key.get(x, object())
-                            == palleted.Properties.get(x, object())
-                            for x in parsed_key.keys()
-                        ]
-                    ):
-                        variant = block_state.variants[key]
-                        break
-                if variant is None:
-                    raise RenderError("Variant not found")
+            parsed_dict: dict[str, dict[str, str]] = {}
+            for key in block_state.variants.keys():
+                if key == "": continue
+                parsed_key: dict[str, str] = {}
+                key_split = key.split(",")
+                for key_split_part in key_split:
+                    state, value = key_split_part.split("=")
+                    parsed_key[state] = value
+                parsed_dict[key] = parsed_key
+            for key, parsed_key in parsed_dict.items():
+                if all(
+                    [
+                        parsed_key.get(x, object())
+                        == palleted.Properties.get(x, object())
+                        for x in parsed_key.keys()
+                    ]
+                ):
+                    variant = block_state.variants[key]
+                    break
+            if variant is None:
+                raise RenderError(f"Variant not found {parsed_dict=}, {palleted.Properties=}")
             self.render_variant(variant, block, center, palleted)
         elif block_state.multipart:
             for part in block_state.multipart:

@@ -1,0 +1,19 @@
+
+
+resource_pack:
+  load: .
+
+data_pack:
+  load: .
+
+pipeline:
+  - my_plugin
+
+output: ../../dist
+
+meta:
+  model_resolver:
+    # load vanilla item models
+    render_size: 1024
+    minecraft_version: "26.2"
+    special_rendering: true

@@ -424,6 +424,10 @@ class ItemModelSelectDisplayContext(ItemModelSelectBase):
     ]
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
+        if item.components:
+            display_context = item.components.get("minecraft:display_context")
+            if display_context is not None:
+                return self.resolve_case(display_context)
         return self.resolve_case("gui")
 
 

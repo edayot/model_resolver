@@ -16,6 +16,7 @@ from model_resolver.utils import (
 )
 from model_resolver.pack_getter import PackGetter
 from model_resolver.minecraft_model import (
+    DisplayOptionModel,
     MinecraftModel,
     ElementModel,
     MultiTextureResolved,
@@ -78,6 +79,8 @@ class GenericModelRenderTask(Task):
     item: Item
 
     do_rotate_camera: bool = True
+    apply_display_option: bool = False
+    display_context: str = "gui"
     offset: tuple[float, float, float] = (0, 0, 0)
     center_offset: tuple[float, float, float] = (0, 0, 0)
     additional_rotations: list[RotationModel] = field(default_factory=list)
@@ -102,22 +105,45 @@ class GenericModelRenderTask(Task):
                 textures[key] = value
         return textures
 
-    def rotate_camera(self, model: MinecraftModel, transformation: Optional[Transformation] = None):
-        if not self.do_rotate_camera:
-            return
-        # transform the vertices
-        scale = model.display.gui.scale or [1, 1, 1]
-        translation = model.display.gui.translation or [0, 0, 0]
-        rotation = model.display.gui.rotation or [0, 0, 0]
+    def get_display_option(self, model: MinecraftModel) -> DisplayOptionModel:
+        match self.display_context:
+            case "none":
+                return DisplayOptionModel()
+            case "thirdperson_lefthand":
+                return model.display.thirdperson_lefthand
+            case "thirdperson_righthand":
+                return model.display.thirdperson_righthand
+            case "firstperson_lefthand":
+                return model.display.firstperson_lefthand
+            case "firstperson_righthand":
+                return model.display.firstperson_righthand
+            case "head":
+                return model.display.head
+            case "ground":
+                return model.display.ground
+            case "fixed" | "on_shelf":
+                return model.display.fixed
+            case _:
+                return model.display.gui
 
-        # reset the matrix
-        glLoadIdentity()
-        # TODO: Check translation[2] for depth
-        glTranslatef(-translation[0], translation[1], -translation[2])
-        glRotatef(-rotation[0], 1, 0, 0)
-        glRotatef(rotation[1] + 180, 0, 1, 0)
-        glRotatef(rotation[2], 0, 0, 1)
-        glScalef(scale[0], scale[1], scale[2])
+    def rotate_camera(self, model: MinecraftModel, transformation: Optional[Transformation] = None):
+        if self.do_rotate_camera:
+            glLoadIdentity()
+
+        if self.do_rotate_camera or self.apply_display_option:
+            # transform the vertices
+            display_option = self.get_display_option(model)
+            scale = display_option.scale or [1, 1, 1]
+            translation = display_option.translation or [0, 0, 0]
+            rotation = display_option.rotation or [0, 0, 0]
+
+            # TODO: Check translation[2] for depth
+            glTranslatef(-translation[0], translation[1], -translation[2])
+            glRotatef(-rotation[0], 1, 0, 0)
+            glRotatef(rotation[1] + 180, 0, 1, 0)
+            glRotatef(rotation[2], 0, 0, 1)
+            glScalef(scale[0], scale[1], scale[2])
+
         if transformation is not None:
             matrix = transformation.get_matrix()
             glMultMatrixf(matrix)
@@ -261,6 +287,7 @@ class GenericModelRenderTask(Task):
         source: Optional[str] = None,
         transformation: Optional[Transformation] = None,
     ):
+        glPushMatrix()
         self.rotate_camera(model, transformation)
         textures_bindings = self.generate_textures_bindings(model, source)
         if model.gui_light == "side":
@@ -285,6 +312,7 @@ class GenericModelRenderTask(Task):
 
         glDisable(GL_LIGHT0)
         glDisable(GL_LIGHT1)
+        glPopMatrix()
 
     def draw_element(
         self,

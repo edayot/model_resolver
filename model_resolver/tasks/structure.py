@@ -6,7 +6,9 @@ from dataclasses import dataclass, field
 from model_resolver.item_model.item import Item
 from model_resolver.item_model.special import SpecialModelShulkerBox
 from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
+from model_resolver.item_model.transformation import Transformation
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
+from model_resolver.tasks.item import get_parsed_item_model
 from model_resolver.utils import ModelResolverOptions, resolve_key
 from model_resolver.minecraft_model import (
     DisplayOptionModel,
@@ -16,7 +18,7 @@ from model_resolver.minecraft_model import (
     TextureSource,
     resolve_model,
 )
-from typing import Generator, Optional, Any, TypedDict, Union
+from typing import Generator, Literal, Optional, Any, TypedDict, Union
 from pydantic import BaseModel, Field
 from functools import cached_property
 import random
@@ -36,13 +38,37 @@ class BlockModel(BaseModel):
     nbt: Optional[dict[str, Any]] = None
 
 
+class ItemDisplayNBT(BaseModel):
+    id: Literal["minecraft:item_display"]
+    item: Item
+    transformation: Transformation | None = None
+    display_context: str = Field(default="none", alias="item_display")
+    rotation: tuple[float, float] | None = Field(default=None, alias="Rotation")
+
+    class Config:
+        extra = "allow"
+
+
+def parse_item_display_nbt(nbt: dict[str, Any]) -> ItemDisplayNBT | None:
+    if nbt.get("id") != "minecraft:item_display":
+        return None
+    if "item" not in nbt:
+        return None
+    return ItemDisplayNBT.model_validate(nbt)
+
+
+class Entity(BaseModel):
+    blockPos: Any
+    nbt: dict[str, Any]
+    pos: tuple[float, float, float]
+
 class StructureDataModel(BaseModel):
     DataVersion: int
     size: tuple[int, int, int]
     palette_: Optional[list[PaletteModel]] = Field(alias="palette", default=None)
     palettes: Optional[list[list[PaletteModel]]] = None
     blocks: list[BlockModel]
-    entities: Any
+    entities: list[Entity]
 
     @cached_property
     def palette(self) -> list[PaletteModel]:
@@ -170,7 +196,60 @@ class StructureRenderTask(GenericModelRenderTask):
         center = (16 * center[0], 16 * center[1], 16 * center[2])
         for block in self.structure.blocks:
             self.render_block(block, center)
+        for entity in self.structure.entities:
+            self.render_entity(entity, center)
         random.seed()
+
+    def render_entity(self, entity: Entity, center: tuple[float, float, float]):
+        item_display_nbt = parse_item_display_nbt(entity.nbt)
+        if item_display_nbt is None:
+            return
+
+        item = item_display_nbt.item.model_copy(deep=True)
+        item.components_from_user = {
+            **item.components_from_user,
+            "minecraft:display_context": item_display_nbt.display_context,
+        }
+        item.fill(self.getter._ctx)
+
+        parsed_item_model = get_parsed_item_model(item, self.getter)
+        additional_rotations: list[RotationModel] = [
+            SingleAxisRotationModel(origin=(8, 8, 8), axis="y", angle=180)
+        ]
+        if item_display_nbt.rotation:
+            y_rot, x_rot = item_display_nbt.rotation
+            additional_rotations[:0] = [
+                SingleAxisRotationModel(origin=(8, 8, 8), axis="y", angle=-y_rot),
+                SingleAxisRotationModel(origin=(8, 8, 8), axis="x", angle=x_rot),
+            ]
+        for model in parsed_item_model.resolve(self.getter, item):
+            model_def = model.get_model(self.getter, item).bake()
+
+            task = GenericModelRenderTask(
+                item=item,
+                getter=self.getter,
+                render_size=self.render_size,
+                dynamic_textures=self.dynamic_textures,
+                do_rotate_camera=False,
+                apply_display_option=True,
+                display_context=item_display_nbt.display_context,
+                offset=(entity.pos[0] * 16, entity.pos[1] * 16, entity.pos[2] * 16),
+                center_offset=center,
+                additional_rotations=additional_rotations,
+            )
+            transformation = item_display_nbt.transformation
+            if model.transformation:
+                if transformation:
+                    transformation = transformation.compose(model.transformation)
+                else:
+                    transformation = model.transformation
+            task.render_model(
+                model_def,
+                model.get_tints(self.getter, item),
+                source=str(item),
+                transformation=transformation,
+            )
+
 
     def get_parsed_model(self, key: str) -> MinecraftModel:
         model = self.getter.assets.models.get(key)
@@ -191,6 +270,21 @@ class StructureRenderTask(GenericModelRenderTask):
                 assert isinstance(model_path, str), "Model path must be a string"
                 model = self.get_parsed_model(model_path)
                 yield model.textures
+        for entity in self.structure.entities:
+            item_display_nbt = parse_item_display_nbt(entity.nbt)
+            if item_display_nbt is not None:
+                item = item_display_nbt.item.model_copy(deep=True)
+                item.components_from_user = {
+                    **item.components_from_user,
+                    "minecraft:display_context": item_display_nbt.display_context,
+                }
+                item.fill(self.getter._ctx)
+                parsed_item_model = get_parsed_item_model(item, self.getter)
+                item_model_models = list(parsed_item_model.resolve(self.getter, item))
+                yield from [
+                    model.get_model(self.getter, item).bake().textures
+                    for model in item_model_models
+                ]
 
     def resolve(self) -> Generator[Task, None, None]:
         animation = Animation(

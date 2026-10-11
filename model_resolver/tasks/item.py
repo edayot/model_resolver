@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
 from typing import Optional
+from model_resolver.item_model.item import Item
+from model_resolver.pack_getter import PackGetter
 from model_resolver.tasks.model import AnimatedResultTask
 from model_resolver.minecraft_model import (
     MinecraftModel,
@@ -10,6 +12,23 @@ from model_resolver.item_model.tint_source import TintSource
 from typing import Generator
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
+
+
+def get_parsed_item_model(item: Item | None, getter: PackGetter) -> ItemModel:
+    assert item
+    assert item.__resolved__, f"Item {item.id} is not resolved"
+    assert item.components, f"Item {item.id} has no components"
+    assert (
+        "minecraft:item_model" in item.components
+    ), f"Item {item.id} has no item model"
+    item_model_key = item.components["minecraft:item_model"]
+    if not item_model_key:
+        raise RenderError(f"Item {item} does not have a model")
+    if item_model_key in getter.assets.item_models:
+        item_model = getter.assets.item_models[item_model_key]
+    else:
+        raise RenderError(f"Item model {item_model_key} not found")
+    return ItemModel.model_validate(item_model.data)
 
 
 @dataclass(kw_only=True)
@@ -29,20 +48,7 @@ class ItemModelModelRenderTask(GenericModelRenderTask):
 class ItemRenderTask(GenericModelRenderTask):
 
     def get_parsed_item_model(self) -> ItemModel:
-        assert self.item
-        assert self.item.__resolved__, f"Item {self.item.id} is not resolved"
-        assert self.item.components, f"Item {self.item.id} has no components"
-        assert (
-            "minecraft:item_model" in self.item.components
-        ), f"Item {self.item.id} has no item model"
-        item_model_key = self.item.components["minecraft:item_model"]
-        if not item_model_key:
-            raise RenderError(f"Item {self.item} does not have a model")
-        if item_model_key in self.getter.assets.item_models:
-            item_model = self.getter.assets.item_models[item_model_key]
-        else:
-            raise RenderError(f"Item model {item_model_key} not found")
-        return ItemModel.model_validate(item_model.data)
+        return get_parsed_item_model(self.item, self.getter)
 
     def run(self):
         parsed_item_model = self.get_parsed_item_model()

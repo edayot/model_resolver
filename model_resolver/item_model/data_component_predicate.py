@@ -119,7 +119,7 @@ class PredicateCollection(DataComponentBase):
     count: list[CountItem] | None = None
 
 
-class InventoryLikeDataComponent(DataComponentBase):
+class InventoryLikeDataComponentBase(DataComponentBase):
     inventory_component: ClassVar[str]
     items: Optional[PredicateCollection] = None
 
@@ -149,8 +149,9 @@ class InventoryLikeDataComponent(DataComponentBase):
         return res
 
     def is_valid(self, getter: PackGetter, item: Item) -> bool:
+        print(self, type(self))
         container: list[Item] = [
-            Item.model_validate(x["item"]) for x in item.get(self.inventory_component)
+            Item.model_validate(x["item"]) for x in (item.get(self.inventory_component) or [])
         ]
         if self.items is None:
             return False
@@ -171,11 +172,11 @@ class InventoryLikeDataComponent(DataComponentBase):
         return True
 
 
-class BundleContentsDataComponent(InventoryLikeDataComponent):
+class BundleContentsDataComponent(InventoryLikeDataComponentBase):
     inventory_component: ClassVar[str] = "bundle_contents"
 
 
-class ContainerDataComponent(InventoryLikeDataComponent):
+class ContainerDataComponent(InventoryLikeDataComponentBase):
     inventory_component: ClassVar[str] = "container"
 
 

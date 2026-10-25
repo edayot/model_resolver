@@ -35,8 +35,8 @@ class AtlasDict(TypedDict):
 
 
 class AppendList[T: Any](list[T]):
-    def append[U: T](self, object: U) -> U:
-        super().append(object)
+    def append[U](self, object: U) -> U:
+        super().append(object) # pyright: ignore[reportArgumentType]
         return object
 
 

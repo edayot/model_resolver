@@ -2,6 +2,35 @@
 
 
 
+## v1.16.0 (2026-10-25)
+
+### Feature
+
+* feat: resolving palettes ([`23890d7`](https://github.com/edayot/model_resolver/commit/23890d71f641d9f8fd3c0e89aa50d39edce447c7))
+
+* feat: upgrade to a better PackGetter ([`30503c2`](https://github.com/edayot/model_resolver/commit/30503c2b7cbd643a3507069deb9c7bb1a66cb487))
+
+* feat: expose animation duration ([`702d6d9`](https://github.com/edayot/model_resolver/commit/702d6d917bf55c8c4724ce3221e75ab083000f35))
+
+* feat: animated_path_padding ([`b2fac75`](https://github.com/edayot/model_resolver/commit/b2fac757ce4f5178a0c98a03cd394e8d9ad21d3e))
+
+### Unknown
+
+* fix type issue ([`5129e0a`](https://github.com/edayot/model_resolver/commit/5129e0a7f75cfca61022bb3bf624b5e464b8befb))
+
+* fixes ([`760c2e8`](https://github.com/edayot/model_resolver/commit/760c2e81c5928788c236a25e768d18270e7bad95))
+
+* fixes ([`1727a80`](https://github.com/edayot/model_resolver/commit/1727a803e37a9a300f05901e2cf23c2ce1610351))
+
+* bump minecraft version ([`91e4fef`](https://github.com/edayot/model_resolver/commit/91e4fef95976eb315b4b43c9a4f30a66e3e3a84a))
+
+* copy display options ([`fd2c3ed`](https://github.com/edayot/model_resolver/commit/fd2c3ed5fab1c5d93beabe8e02b53bdae85f8bbf))
+
+* woosh ([`b99df18`](https://github.com/edayot/model_resolver/commit/b99df1853517423a428a9eedf8d80e4215a8dbd3))
+
+* add variant fallback ([`e9fa235`](https://github.com/edayot/model_resolver/commit/e9fa2352b06aadd05125de822029f272e34d5269))
+
+
 ## v1.15.2 (2026-03-24)
 
 

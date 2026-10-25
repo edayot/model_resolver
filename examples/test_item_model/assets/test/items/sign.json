@@ -1,10 +1,6 @@
 {
     "model": {
-      "type": "minecraft:special",
-      "base": "minecraft:block/oak_sign",
-      "model": {
-        "type": "standing_sign",
-        "wood_type": "oak"
-      }
+      "type": "minecraft:model",
+      "model": "minecraft:block/oak_sign_rot_0"
     }
   }

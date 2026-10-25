@@ -1331,10 +1331,25 @@ class SpecialModelTrident(SpecialModelBase):
 class SpecialModelDecoratedPot(SpecialModelBase):
     type: Literal["minecraft:decorated_pot", "decorated_pot"]
 
-    def get_texture(self, pot_decorations: list[str] | None, index: int) -> str:
-        if pot_decorations is None or index >= len(pot_decorations):
+    # Legacy list order (pre 26.3): [back, left, right, front]
+    LEGACY_SIDES: ClassVar[list[str]] = ["back", "left", "right", "front"]
+
+    def get_texture(
+        self, pot_decorations: dict[str, Any] | list[str] | None, side: str
+    ) -> str:
+        decoration: Any = None
+        if isinstance(pot_decorations, dict):
+            # 26.3+ format: {"back": {"id": ...}, "front": ..., "left": ..., "right": ...}
+            decoration = pot_decorations.get(side)
+            if isinstance(decoration, dict):
+                decoration = decoration.get("id")
+        elif isinstance(pot_decorations, list):
+            index = self.LEGACY_SIDES.index(side)
+            if index < len(pot_decorations):
+                decoration = pot_decorations[index]
+        if not isinstance(decoration, str):
             return "minecraft:entity/decorated_pot/decorated_pot_side"
-        decoration = resolve_key(pot_decorations[index])
+        decoration = resolve_key(decoration)
         if decoration == "minecraft:brick":
             return "minecraft:entity/decorated_pot/decorated_pot_side"
         namespace, path = decoration.split(":", 1)
@@ -1346,10 +1361,10 @@ class SpecialModelDecoratedPot(SpecialModelBase):
         model: dict[str, Any] = {
             "textures": {
                 "base": "minecraft:entity/decorated_pot/decorated_pot_base",
-                "north": self.get_texture(pot_decorations, 0),
-                "east": self.get_texture(pot_decorations, 2),
-                "south": self.get_texture(pot_decorations, 3),
-                "west": self.get_texture(pot_decorations, 1),
+                "north": self.get_texture(pot_decorations, "back"),
+                "east": self.get_texture(pot_decorations, "right"),
+                "south": self.get_texture(pot_decorations, "front"),
+                "west": self.get_texture(pot_decorations, "left"),
             },
             "elements": [
                 {

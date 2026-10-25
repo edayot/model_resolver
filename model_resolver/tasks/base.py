@@ -79,7 +79,7 @@ class Task:
         self.saved_img = None
 
     def save(self, img: Image.Image):
-        if (
+        if self.animation_mode == "webp" or (
             self.path_save is None and self.path_ctx is None
         ):
             self.saved_img = img

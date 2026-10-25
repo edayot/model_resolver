@@ -314,7 +314,7 @@ class Render:
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
         glutInitWindowSize(512, 512)
         glutInitWindowPosition(100, 100)
-        glutCreateWindow(b"Isometric View")
+        glutCreateWindow(b"Model Resolver window")
         glutHideWindow()
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)

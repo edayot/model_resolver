@@ -200,7 +200,7 @@ class PackGetter():
     opts: ModelResolverOptions
     lookups: list[str]
 
-    if TYPE_CHECKING and False:
+    if TYPE_CHECKING:
         assets: ResourcePack
         data: DataPack
     else:

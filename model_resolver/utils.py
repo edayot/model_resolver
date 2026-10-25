@@ -1,7 +1,7 @@
 import json
 import os
 import subprocess
-from beet import Context
+from beet import LATEST_MINECRAFT_VERSION, Context
 from pydantic import BaseModel
 from typing import TYPE_CHECKING, Any, Literal, Self
 from beet import Context
@@ -59,6 +59,8 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
     from model_resolver.pack_getter import PackGetter
     getter = PackGetter.from_context(ctx)
     version = getter.opts.minecraft_version
+    if version == "latest":
+        version = LATEST_MINECRAFT_VERSION
     prefered = getter.opts.preferred_minecraft_generated
     # TODO: if java is not found, fallback to misode/mcmeta
     if prefered == "java":
@@ -76,6 +78,7 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
     match prefered:
         case "misode/mcmeta":
             url = f"https://raw.githubusercontent.com/misode/mcmeta/refs/tags/{version}-summary/item_components/data.json"
+            log.info(url)
             path = ctx.cache["model_resolver_components"].download(url)
             with open(path) as file:
                 components = json.load(file)

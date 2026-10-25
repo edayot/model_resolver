@@ -281,12 +281,16 @@ class Render:
         new_texture_path = resolve_key(new_texture_path)
 
         palette_key = resolve_key(source["palette_key"])
+        namespace, path = palette_key.split(":", 1)
+        palette_key = f"{namespace}:palettes/{path}"
         if palette_key in self.getter.assets.textures:
             palette = self.getter.assets.textures[palette_key].image
         else:
             raise RenderError(f"Palette {palette_key} not found")
 
         color_palette_key = resolve_key(color_palette_path)
+        namespace, path = color_palette_key.split(":", 1)
+        color_palette_key = f"{namespace}:palettes/{path}"
         if color_palette_key in self.getter.assets.textures:
             color_palette: Image.Image = self.getter.assets.textures[
                 color_palette_key

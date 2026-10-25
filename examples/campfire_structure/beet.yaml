@@ -15,5 +15,5 @@ meta:
   model_resolver:
     # load vanilla item models
     render_size: 1024
-    minecraft_version: "26.2"
+    minecraft_version: "26.3"
     special_rendering: true

@@ -1,6 +1,6 @@
 
 
-minecraft: "26.1"
+minecraft: "26.3"
 
 resource_pack:
   load: .

@@ -148,7 +148,12 @@ class ModelPathRenderTask(GenericModelRenderTask):
 
         tasks = []
 
-        for i, (images, duration) in animation.get_frames():
+        frames = list(animation.get_frames())
+        animated_path_padding = max(
+            self.animated_path_padding, len(str(len(frames) - 1))
+        )
+
+        for i, (images, duration) in frames:
             # get the images for the tick
             textures = self.get_textures(model, images)
             new_model = model.model_copy()
@@ -157,7 +162,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
                     i = i,
                     duration = duration,
-                    animated_path_padding = self.animated_path_padding
+                    animated_path_padding = animated_path_padding
                 )
             else:
                 new_path_save = None
@@ -165,7 +170,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
                 new_path_ctx = self.path_ctx + "/{i:0{animated_path_padding}}_{duration}".format(
                     i = i,
                     duration = duration,
-                    animated_path_padding = self.animated_path_padding
+                    animated_path_padding = animated_path_padding
                 )
             else:
                 new_path_ctx = None

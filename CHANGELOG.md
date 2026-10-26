@@ -2,6 +2,23 @@
 
 
 
+## v1.16.1 (2026-10-26)
+
+### Fix
+
+* fix: animated frame path format (#22)
+
+* fix: animated frame path format
+
+* perf: faster apply_palette
+
+* fix: minimum animated_path_padding per animation
+
+---------
+
+Co-authored-by: edayot &lt;pro.e.dayot@gmail.com&gt; ([`613cca8`](https://github.com/edayot/model_resolver/commit/613cca8969240fa53fd053abff1c160edffe6dbd))
+
+
 ## v1.16.0 (2026-10-25)
 
 ### Feature

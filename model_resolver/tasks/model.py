@@ -154,7 +154,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             new_model = model.model_copy()
             new_model.textures = textures
             if self.path_save:
-                new_path_save = self.path_save / "{i:{animated_path_padding}]}_{duration}.png".format(
+                new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
                     i = i,
                     duration = duration,
                     animated_path_padding = self.animated_path_padding
@@ -162,7 +162,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + "/{i:{animated_path_padding}}_{duration}".format(
+                new_path_ctx = self.path_ctx + "/{i:0{animated_path_padding}}_{duration}".format(
                     i = i,
                     duration = duration,
                     animated_path_padding = self.animated_path_padding

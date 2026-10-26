@@ -227,33 +227,22 @@ class Render:
     def apply_palette(
         self, texture: Image.Image, palette: Image.Image, color_palette: Image.Image
     ) -> Image.Image:
-        new_image = Image.new("RGBA", texture.size)
-        texture = texture.convert("RGBA")
         palette = palette.convert("RGB")
         color_palette = color_palette.convert("RGB")
-        for x in range(texture.width):
-            for y in range(texture.height):
-                pixel = texture.getpixel((x, y))
-                if not isinstance(pixel, tuple):
-                    raise ValueError("Texture is not RGBA")
-                color = pixel[:3]
-                alpha = pixel[3]
-                # if the color is in palette_key, replace it with the color from color_palette
-                found = False
-                for i in range(palette.width):
-                    for j in range(palette.height):
-                        if palette.getpixel((i, j)) == color:
-                            new_color = color_palette.getpixel((i, j))
-                            if not isinstance(new_color, tuple):
-                                raise ValueError("Color palette is not RGB")
-                            new_image.putpixel((x, y), new_color + (alpha,))
-                            found = True
-                            break
-                    if found:
-                        break
-                if not found:
-                    new_image.putpixel((x, y), pixel)
-        return new_image
+        # first match wins, column by column
+        mapping: dict[tuple[int, ...], tuple[int, ...]] = {}
+        for i in range(palette.width):
+            for j in range(palette.height):
+                color = palette.getpixel((i, j))
+                new_color = color_palette.getpixel((i, j))
+                if isinstance(color, tuple) and isinstance(new_color, tuple):
+                    mapping.setdefault(color, new_color)
+        data = bytearray(texture.convert("RGBA").tobytes())
+        for k in range(0, len(data), 4):
+            new_color = mapping.get(tuple(data[k : k + 3]))
+            if new_color is not None:
+                data[k : k + 3] = bytes(new_color)
+        return Image.frombytes("RGBA", texture.size, bytes(data))
 
     def resolve_altas(self, key: str, atlas: Atlas):
         for source in atlas.data["sources"]:

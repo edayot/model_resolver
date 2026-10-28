@@ -26,6 +26,8 @@ jobs:
           enable-cache: true
       - name: Sync Python dependencies
         run: uv sync --dev
+      - name: Unit tests (no OpenGL needed)
+        run: uv run pytest tests --ignore=tests/test_example.py
       - name: Setup OpenGL and Run Tests
         uses: edayot/model_resolver@master
         env:
@@ -63,6 +65,8 @@ jobs:
           enable-cache: true
       - name: Sync Python dependencies
         run: uv sync --dev
+      - name: Unit tests (no OpenGL needed)
+        run: uv run pytest tests --ignore=tests/test_example.py
       - uses: ssciwr/setup-mesa-dist-win@v2
       - name: Setup OpenGL and Run Tests
         uses: edayot/model_resolver@master

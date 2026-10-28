@@ -1,0 +1,13 @@
+minecraft: "26.3"
+
+pipeline:
+  - render_block_models
+
+output: ../../dist
+
+meta:
+  model_resolver:
+    minecraft_version: "26.3"
+    use_cache: true
+    special_rendering: true
+    preferred_minecraft_generated: "java"

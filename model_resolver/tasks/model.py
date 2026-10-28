@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 import io
 import os
 
-from typing import Optional
+from typing import Any, Optional
 from model_resolver.item_model.item import Item
 from model_resolver.minecraft_model import (
     MinecraftModel,
@@ -11,7 +11,8 @@ from model_resolver.minecraft_model import (
 from typing import ClassVar, Generator
 from model_resolver.tasks.base import Task, RenderError
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
-from model_resolver.item_model.tint_source import TintSource
+from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
+from model_resolver.block_colors import load_biome, model_tints
 from PIL import Image
 from beet import BinaryFileBase, NamespaceFileScope
 
@@ -40,6 +41,14 @@ class ModelRenderTask(GenericModelRenderTask):
 class AnimatedResultTask(Task):
     tasks: list[Task] = field(default_factory=list)
 
+    def resample(self, images_by_tick: list[Image.Image]) -> list[Image.Image]:
+        """One image per output frame: a game tick lasts 1/20 s, whatever the framerate."""
+        count = max(1, round(len(images_by_tick) * self.animation_framerate / 20))
+        return [
+            images_by_tick[min(len(images_by_tick) - 1, k * 20 // self.animation_framerate)]
+            for k in range(count)
+        ]
+
     def save(self, _: Image.Image):
         # create a webp from the images
         images = []
@@ -57,6 +66,7 @@ class AnimatedResultTask(Task):
                 duration = int(x[1].split("/")[-1].split("_")[1])
                 for i in range(duration):
                     images_duration.append(x[0])
+            images_duration = self.resample(images_duration)
 
             data = io.BytesIO()
             res = images_duration[0]
@@ -82,6 +92,7 @@ class AnimatedResultTask(Task):
                 duration = int(x[2].name.split("_")[1])
                 for i in range(duration):
                     images_duration.append(x[0])
+            images_duration = self.resample(images_duration)
 
             res = images_duration[0]
             os.makedirs(self.path_save.parent, exist_ok=True)
@@ -110,15 +121,29 @@ class TextureWebP(BinaryFileBase):
 
 @dataclass(kw_only=True)
 class ModelPathRenderTask(GenericModelRenderTask):
+    """A model shown on its own. A block's model is shown as that block: tinted with the
+    biome's colors (BlockColors), its shade overrides honoured."""
+
     model: str
     tints: list[TintSource] = field(default_factory=list)
     item: Item = field(default_factory=lambda: Item(id="do_not_use"))
+    biome: str | dict[str, Any] = "minecraft:plains"
+    shade_override: bool = True
+
+    def get_tints(self) -> list[TintSource]:
+        if self.tints or not self.getter.opts.colorize_blocks:
+            return self.tints
+        colors = model_tints(self.getter, load_biome(self.getter, self.biome), self.model)
+        if colors is None:
+            return []
+        return [
+            TintSourceConstant(type="minecraft:constant", value=0xFFFFFF if color is None else color)
+            for color in colors
+        ]
 
     def run(self):
-        if len(self.tints) > 0:
-            assert self.item, "Tints are only available if you provide an item"
         model = self.get_parsed_model()
-        self.render_model(model, self.tints, self.model)
+        self.render_model(model, self.get_tints(), self.model)
 
     def get_parsed_model(self) -> MinecraftModel:
         model = self.getter.assets.models.get(self.model)
@@ -181,7 +206,8 @@ class ModelPathRenderTask(GenericModelRenderTask):
             task = ModelRenderTask(
                 getter=self.getter,
                 model=new_model,
-                tints=self.tints,
+                tints=self.get_tints(),
+                shade_override=self.shade_override,
                 item=self.item,
                 do_rotate_camera=self.do_rotate_camera,
                 offset=self.offset,

@@ -1,41 +1,72 @@
-from typing import Any, ClassVar, Generator, Literal, Union, Optional
-from beet import NamespaceFile, NamespaceProxy, TagFile
-from pydantic import AliasChoices, Field, RootModel, BaseModel
-from nbtlib import parse_nbt, Compound
+"""Data component predicates, the `predicate` and `value` of a `minecraft:component` condition.
+
+Mirrors net.minecraft.core.component.predicates: each predicate reads one component and
+fails when the item doesn't have it. A `predicate` that is not one of the predicate types
+is a component id, and only checks that the component is present (AnyValue).
+"""
+
+from dataclasses import dataclass
+from typing import Any, ClassVar, Generator, Literal, Optional, Union
+
+import numpy as np
+from beet import NamespaceProxy, TagFile
+from nbtlib import Byte, ByteArray, Compound, Double, List, String, parse_nbt
+from nbtlib.tag import Base as NbtTag
+from pydantic import BaseModel, Field, RootModel, model_validator
 
 from model_resolver.item_model.item import Item
-from model_resolver.utils import resolve_key
+from model_resolver.item_model.tint_source import potion_effects
 from model_resolver.pack_getter import PackGetter
+from model_resolver.utils import log, namespaced, resolve_key
 
 
-class MinMax(BaseModel):
-    min: float
-    max: float
+@dataclass
+class Context:
+    getter: PackGetter
+    item: Item
+    """The item whose components are tested, nested items are built from it."""
 
 
-type NumberOrRange = Union[int, MinMax, None]
-type TaggedID = str | list[str] | None
+class Bounds(BaseModel):
+    """MinMaxBounds: a number for an exact match, or {min, max} where both are optional."""
+
+    min: Optional[float] = None
+    max: Optional[float] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def exactly(cls, data: Any) -> Any:
+        if isinstance(data, (int, float)):
+            return {"min": data, "max": data}
+        return data
+
+    def matches(self, value: float) -> bool:
+        if self.min is not None and value < self.min:
+            return False
+        return self.max is None or value <= self.max
 
 
-def compare_range(predicate: NumberOrRange, value: Any) -> bool:
-    if isinstance(predicate, int):
-        return predicate == value
-    if isinstance(predicate, MinMax):
-        return predicate.min <= value <= predicate.max
-    return False
+ANY = Bounds()
 
 
-def iter_tagged_id[
-    T: NamespaceFile
-](value: TaggedID, proxy: NamespaceProxy[T] | None = None) -> Generator[
-    str, None, None
-]:
+type HolderSet = Union[str, list[Union[str, dict[str, Any]]]]
+
+
+def iter_tagged_id(
+    value: Union[HolderSet, dict[str, Any], None], proxy: NamespaceProxy[Any] | None = None
+) -> Generator[str, None, None]:
     """
-    A generator that yields all the ids in a tagged id.
-    If # prefixed value is encountered, it will resolve the tag
-    according to the provided proxy (optional).
+    A generator that yields all the ids in a holder set: an id, a #tag or a list of ids.
+    Tags are resolved with the provided proxy, their entries can be {id, required}.
     """
-    if isinstance(value, str):
+    if isinstance(value, dict):
+        # tag entry {"id": ..., "required": false}
+        try:
+            yield from iter_tagged_id(value["id"], proxy)
+        except ValueError:
+            if value.get("required", True):
+                raise
+    elif isinstance(value, str):
         if value.startswith("#"):
             if proxy is None:
                 raise ValueError(f"There is no {value} tag in minecraft")
@@ -57,378 +88,471 @@ def iter_tagged_id[
         raise TypeError(f"Invalid tagged id type {value}")
 
 
-class DataComponentBase(BaseModel):
-
-    def is_valid(self, getter: PackGetter, item: Item) -> bool | None:
+def holder_set_contains(
+    holder_set: Optional[HolderSet], value: Any, ctx: Context, registry: str
+) -> bool:
+    """Whether a registry id is in the holder set. An inline value never is."""
+    if not isinstance(value, str):
         return False
+    proxy = getattr(ctx.getter.data, f"{registry}_tags", None) if _has_tag(holder_set) else None
+    return resolve_key(value) in iter_tagged_id(holder_set, proxy)
 
 
-class AttributeModifier(BaseModel):
-    attribute: TaggedID = None
-    id: Optional[str] = None
-    amount: NumberOrRange = None
-    operation: Literal[
-        "add_value", "add_multiplied_base", "add_multiplied_total", None
-    ] = None
-    slot: Literal[
-        "mainhand",
-        "offhand",
-        "head",
-        "chest",
-        "legs",
-        "feet",
-        "hand",
-        "armor",
-        "any",
-        "body",
-        "saddle",
-        None,
-    ] = None
+def _has_tag(holder_set: Any) -> bool:
+    if isinstance(holder_set, str):
+        return holder_set.startswith("#")
+    return isinstance(holder_set, list) and any(_has_tag(x) for x in holder_set)
 
 
-class CountAttributeModifier(BaseModel):
-    count: NumberOrRange = None
-    test: AttributeModifier | None = None
+class ElementPredicate(BaseModel):
+    def test(self, value: Any, ctx: Context) -> bool:
+        raise NotImplementedError
 
 
-class Modifier(BaseModel):
-    contains: Optional[list[AttributeModifier]] = None
-    size: NumberOrRange = None
-    count: list[CountAttributeModifier] | None = None
+class CountEntry[P: ElementPredicate](BaseModel):
+    test: P
+    count: Bounds
 
 
-class AttributeModifiersDataComponent(DataComponentBase):
-    modifiers: Optional[Modifier] = None
+class CollectionPredicate[P: ElementPredicate](BaseModel):
+    """CollectionPredicate: `contains` (each predicate matched by some element), `count`, `size`."""
 
+    contains: Optional[list[P]] = None
+    count: Optional[list[CountEntry[P]]] = None
+    size: Optional[Bounds] = None
 
-class ItemCondition(BaseModel):
-    items: TaggedID = None
-    count: NumberOrRange = None
-    components: dict[str, Any] | None = None
-    predicates: Union["DataComponent", None] = None
-
-
-class CountItem(DataComponentBase):
-    count: NumberOrRange = None
-    test: ItemCondition
-
-
-class PredicateCollection(DataComponentBase):
-    contains: Optional[list[ItemCondition]] = None
-    size: NumberOrRange = None
-    count: list[CountItem] | None = None
-
-
-class InventoryLikeDataComponent(DataComponentBase):
-    inventory_component: ClassVar[str]
-    items: Optional[PredicateCollection] = None
-
-    def verify_item_condition(
-        self, getter: PackGetter, item_condition: ItemCondition, container: list[Item]
-    ) -> int:
-        """
-        Checks the number of times an item condition is met in the container.
-        """
-        res = 0
-        for item in container:
-            if item_condition.items is not None:
-                if resolve_key(item.id) not in iter_tagged_id(
-                    item_condition.items, getter.data.item_tags
-                ):
-                    continue
-            if item_condition.count is not None:
-                if not compare_range(item_condition.count, item.count):
-                    continue
-            if item_condition.components is not None:
-                if item_condition.components != item.get("components"):
-                    continue
-            if item_condition.predicates is not None:
-                if not item_condition.predicates.is_valid(getter, item):
-                    continue
-            res += 1
-        return res
-
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        container: list[Item] = [
-            Item.model_validate(x["item"]) for x in item.get(self.inventory_component)
-        ]
-        if self.items is None:
-            return False
-        if self.items.size is not None:
-            if not compare_range(self.items.size, len(container)):
+    def test(self, values: list[Any], ctx: Context) -> bool:
+        if self.contains is not None:
+            if not all(any(p.test(v, ctx) for v in values) for p in self.contains):
                 return False
-        if self.items.contains is not None:
-            for item_condition in self.items.contains:
-                if self.verify_item_condition(getter, item_condition, container) == 0:
+        if self.count is not None:
+            for entry in self.count:
+                if not entry.count.matches(sum(entry.test.test(v, ctx) for v in values)):
                     return False
-        if self.items.count is not None:
-            for test_count in self.items.count:
-                nb_valid = self.verify_item_condition(
-                    getter, test_count.test, container
-                )
-                if not compare_range(test_count.count, nb_valid):
-                    return False
+        return self.size is None or self.size.matches(len(values))
+
+
+class DataComponentPredicateBase(BaseModel):
+    component: ClassVar[str]
+    """The component the predicate reads, it fails when the item doesn't have it."""
+
+    def matches(self, ctx: Context) -> bool:
+        value = ctx.item.components.get(self.component)
+        if value is None:
+            return False
+        return self.matches_value(value, ctx)
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        raise NotImplementedError
+
+
+class AnyValuePredicate(DataComponentPredicateBase):
+    """DataComponentPredicate.AnyValueType: any component id, checks that it is present."""
+
+    id: str
+
+    def matches(self, ctx: Context) -> bool:
+        return resolve_key(self.id) in ctx.item.components
+
+
+class DamagePredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:damage"
+    durability: Bounds = ANY
+    damage: Bounds = ANY
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        max_damage = ctx.item.components.get("minecraft:max_damage", 0)
+        return self.durability.matches(max_damage - value) and self.damage.matches(value)
+
+
+class EnchantmentPredicate(BaseModel):
+    enchantments: Optional[HolderSet] = None
+    levels: Bounds = ANY
+
+    def contained_in(self, enchantments: dict[str, int], ctx: Context) -> bool:
+        if self.enchantments is not None:
+            return any(
+                enchantments.get(key, 0) != 0 and self.levels.matches(enchantments[key])
+                for key in iter_tagged_id(self.enchantments, self.tags(ctx))
+            )
+        # no enchantments field: any enchantment with a matching level
+        return any(self.levels.matches(level) for level in enchantments.values())
+
+    def tags(self, ctx: Context) -> Optional[NamespaceProxy[Any]]:
+        return ctx.getter.data.enchantment_tags if _has_tag(self.enchantments) else None
+
+
+class EnchantmentsPredicate(RootModel[list[EnchantmentPredicate]], DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:enchantments"
+    root: list[EnchantmentPredicate]
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if isinstance(value, dict) and isinstance(value.get("levels"), dict):
+            # before 1.21.5: {levels, show_in_tooltip}
+            value = value["levels"]
+        enchantments = {resolve_key(key): level for key, level in value.items()}
+        return all(predicate.contained_in(enchantments, ctx) for predicate in self.root)
+
+
+class StoredEnchantmentsPredicate(EnchantmentsPredicate):
+    component: ClassVar[str] = "minecraft:stored_enchantments"
+
+
+class MobEffectInstancePredicate(BaseModel):
+    amplifier: Bounds = ANY
+    duration: Bounds = ANY
+    ambient: Optional[bool] = None
+    visible: Optional[bool] = None
+
+    def matches(self, effect: dict[str, Any]) -> bool:
+        if not self.amplifier.matches(effect.get("amplifier", 0)):
+            return False
+        if not self.duration.matches(effect.get("duration", 0)):
+            return False
+        if self.ambient is not None and self.ambient != effect.get("ambient", False):
+            return False
+        return self.visible is None or self.visible == effect.get("show_particles", True)
+
+
+class MobEffectsPredicate(RootModel[dict[str, MobEffectInstancePredicate]], ElementPredicate):
+    root: dict[str, MobEffectInstancePredicate]
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        effects = {resolve_key(key): predicate for key, predicate in self.root.items()}
+        predicate = effects.get(resolve_key(value["id"]))
+        return predicate is not None and predicate.matches(value)
+
+
+class PotionContentsPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:potion_contents"
+    potions: Optional[HolderSet] = None
+    effects: Optional[CollectionPredicate[MobEffectsPredicate]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy(cls, data: Any) -> Any:
+        # before 26.1 the predicate was the holder set of potions alone
+        if isinstance(data, (str, list)):
+            return {"potions": data}
+        return data
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        potion = value if isinstance(value, str) else value.get("potion")
+        if self.potions is not None:
+            if potion is None or not holder_set_contains(self.potions, potion, ctx, "potion"):
+                return False
+        if self.effects is not None:
+            effects = potion_effects(value, ctx.getter.opts.minecraft_version)
+            return self.effects.test(effects, ctx)
         return True
 
 
-class BundleContentsDataComponent(InventoryLikeDataComponent):
-    inventory_component: ClassVar[str] = "bundle_contents"
+class JukeboxPlayablePredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:jukebox_playable"
+    song: Optional[HolderSet] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy(cls, data: Any) -> Any:
+        if isinstance(data, (str, list)):
+            return {"song": data}
+        return data
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if isinstance(value, dict):
+            value = value.get("song")
+        return self.song is None or holder_set_contains(self.song, value, ctx, "jukebox_song")
 
 
-class ContainerDataComponent(InventoryLikeDataComponent):
-    inventory_component: ClassVar[str] = "container"
+class TrimPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:trim"
+    material: Optional[HolderSet] = None
+    pattern: Optional[HolderSet] = None
 
-
-class CustomDataDataComponent(RootModel, DataComponentBase):
-    root: dict[str, Any] | str
-
-    def verify_equal(
-        self, predicate: dict[str, Any] | list[dict[str, Any]] | int | str, value: Any
-    ) -> bool:
-        if isinstance(predicate, dict):
-            if not isinstance(value, dict):
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if self.material is not None:
+            if not holder_set_contains(self.material, value.get("material"), ctx, "trim_material"):
                 return False
-            for key, val in predicate.items():
-                if key not in value:
-                    return False
-                if not self.verify_equal(val, value[key]):
-                    return False
-            return True
-        if isinstance(predicate, list):
-            if not isinstance(value, list):
+        if self.pattern is not None:
+            if not holder_set_contains(self.pattern, value.get("pattern"), ctx, "trim_pattern"):
                 return False
-            for val in predicate:
-                if not val in value:
-                    return False
-            return True
-        return predicate == value
+        return True
 
-    def is_valid(self, getter: PackGetter, item: Item):
-        custom_data = item.get("custom_data")
-        if custom_data is None:
+
+class VillagerVariantPredicate(RootModel[HolderSet], DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:villager/variant"
+    root: HolderSet
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        return holder_set_contains(self.root, value, ctx, "villager_type")
+
+
+class FireworkPredicate(ElementPredicate):
+    shape: Optional[str] = None
+    has_twinkle: Optional[bool] = None
+    has_trail: Optional[bool] = None
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        if self.shape is not None and self.shape != value.get("shape"):
             return False
-        if not isinstance(custom_data, dict):
+        if self.has_twinkle is not None and self.has_twinkle != value.get("has_twinkle", False):
             return False
-        if isinstance(self.root, str):
-            nbt: Compound = parse_nbt(self.root)
-            a = self.verify_equal(nbt, custom_data)
-            return a
-        return self.verify_equal(self.root, custom_data)
+        return self.has_trail is None or self.has_trail == value.get("has_trail", False)
 
 
-class DamageDataComponent(DataComponentBase):
-    damage: NumberOrRange = None
-    durability: NumberOrRange = None
+class FireworkExplosionPredicate(RootModel[FireworkPredicate], DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:firework_explosion"
+    root: FireworkPredicate
 
-    def is_valid(self, getter: PackGetter, item: Item):
-        damage = item.get("damage")
-        max_damage = item.get("max_damage")
-        if max_damage is None:
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        return self.root.test(value, ctx)
+
+
+class FireworksPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:fireworks"
+    explosions: Optional[CollectionPredicate[FireworkPredicate]] = None
+    flight_duration: Bounds = ANY
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if self.explosions is not None:
+            if not self.explosions.test(value.get("explosions", []), ctx):
+                return False
+        return self.flight_duration.matches(value.get("flight_duration", 0))
+
+
+def raw_text(value: Any) -> Any:
+    # Filterable: a value, or {raw, filtered}
+    if isinstance(value, dict) and "raw" in value:
+        return value["raw"]
+    return value
+
+
+def text_component(value: Any) -> Any:
+    # "text" and {"text": "text"} decode to the same component
+    return {"text": value} if isinstance(value, str) else value
+
+
+class WritablePagePredicate(RootModel[str], ElementPredicate):
+    root: str
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        return raw_text(value) == self.root
+
+
+class WritableBookPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:writable_book_content"
+    pages: Optional[CollectionPredicate[WritablePagePredicate]] = None
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        return self.pages is None or self.pages.test(value.get("pages", []), ctx)
+
+
+class WrittenPagePredicate(RootModel[Any], ElementPredicate):
+    root: Any
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        return text_component(raw_text(value)) == text_component(self.root)
+
+
+class WrittenBookPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:written_book_content"
+    pages: Optional[CollectionPredicate[WrittenPagePredicate]] = None
+    author: Optional[str] = None
+    title: Optional[str] = None
+    generation: Bounds = ANY
+    resolved: Optional[bool] = None
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if self.author is not None and self.author != value.get("author"):
             return False
-        if damage is None:
-            damage = 0
-        durability = max_damage - damage
-        return compare_range(self.durability, durability) and compare_range(
-            self.damage, damage
+        if self.title is not None and self.title != raw_text(value.get("title")):
+            return False
+        if not self.generation.matches(value.get("generation", 0)):
+            return False
+        if self.resolved is not None and self.resolved != value.get("resolved", False):
+            return False
+        return self.pages is None or self.pages.test(value.get("pages", []), ctx)
+
+
+class AttributeModifierPredicate(ElementPredicate):
+    attribute: Optional[HolderSet] = None
+    id: Optional[str] = None
+    amount: Bounds = ANY
+    operation: Optional[Literal["add_value", "add_multiplied_base", "add_multiplied_total"]] = None
+    slot: Optional[str] = None
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        if self.attribute is not None:
+            if not holder_set_contains(self.attribute, value.get("type"), ctx, "attribute"):
+                return False
+        if self.id is not None and resolve_key(self.id) != resolve_key(value.get("id", "")):
+            return False
+        if not self.amount.matches(value.get("amount", 0)):
+            return False
+        if self.operation is not None and self.operation != value.get("operation"):
+            return False
+        return self.slot is None or self.slot == value.get("slot", "any")
+
+
+class AttributeModifiersPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:attribute_modifiers"
+    modifiers: Optional[CollectionPredicate[AttributeModifierPredicate]] = None
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        if isinstance(value, dict):
+            # before 1.21.5: {modifiers, show_in_tooltip}
+            value = value.get("modifiers", [])
+        return self.modifiers is None or self.modifiers.test(value, ctx)
+
+
+class ItemPredicate(ElementPredicate):
+    """ItemPredicate: items, count, exact components and component predicates."""
+
+    items: Optional[HolderSet] = None
+    count: Bounds = ANY
+    components: Optional[dict[str, Any]] = None
+    predicates: Optional[dict[str, Any]] = None
+
+    def test(self, value: Any, ctx: Context) -> bool:
+        item: Item = value
+        if self.items is not None:
+            proxy = ctx.getter.data.item_tags if _has_tag(self.items) else None
+            if resolve_key(item.id) not in iter_tagged_id(self.items, proxy):
+                return False
+        if not self.count.matches(item.count):
+            return False
+        components = item.components
+        for key, expected in (self.components or {}).items():
+            # DataComponentExactPredicate: the decoded values are equal
+            if namespaced(expected) != namespaced(components.get(resolve_key(key))):
+                return False
+        nested = Context(ctx.getter, item)
+        return all(
+            component_predicate(key, predicate).matches(nested)
+            for key, predicate in (self.predicates or {}).items()
         )
 
 
-class Enchantment(BaseModel):
-    enchantments: TaggedID = None
-    levels: NumberOrRange = None
+class ContainerPredicate(DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:container"
+    items: Optional[CollectionPredicate[ItemPredicate]] = None
 
-    def is_valid(self, enchantments: dict[str, int], getter: PackGetter) -> bool:
-        enchantments = {resolve_key(key): value for key, value in enchantments.items()}
-        for enchantment in iter_tagged_id(
-            self.enchantments, getter.data.enchantment_tags
-        ):
-            if enchantment not in enchantments:
-                continue
-            if compare_range(self.levels, enchantments[enchantment]):
-                return True
-        return False
+    def contents(self, value: Any, ctx: Context) -> list[Item]:
+        # ItemContainerContents.nonEmptyItems, the slots are {slot, item}
+        return [ctx.item.nested(slot["item"]) for slot in value]
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        return self.items is None or self.items.test(self.contents(value, ctx), ctx)
 
 
-class EnchantmentsLikeDataComponent(RootModel, DataComponentBase):
-    root: list[Enchantment] | None = None
+class BundleContentsPredicate(ContainerPredicate):
+    component: ClassVar[str] = "minecraft:bundle_contents"
 
-    def is_valid_enchantments(
-        self, getter: PackGetter, item: Item, component_name: str
-    ) -> bool:
-        enchantments: dict[str, int] | None = item.get(component_name)
-        if enchantments is None:
-            return False
-        if self.root is None or enchantments is None:
-            return False
-        if len(self.root) > len(enchantments):
-            return False
-        for predicate_enchantment in self.root:
-            if not predicate_enchantment.is_valid(enchantments, getter):
-                return False
+    def contents(self, value: Any, ctx: Context) -> list[Item]:
+        # BundleContents is a plain list of item stacks
+        return [ctx.item.nested(stack) for stack in value]
+
+
+def to_nbt(value: Any) -> Optional[NbtTag]:
+    """A component value as NBT: SNBT strings are parsed, JSON values converted like
+    Dynamic.convert(NbtOps) does, where every number becomes a double."""
+    if isinstance(value, NbtTag):
+        return value
+    if isinstance(value, bool):
+        return Byte(value)
+    if isinstance(value, (int, float)):
+        return Double(value)
+    if isinstance(value, str):
+        return String(value)
+    if isinstance(value, dict):
+        return Compound({key: to_nbt(x) for key, x in value.items()})
+    if isinstance(value, list):
+        tags = [to_nbt(x) for x in value]
+        if tags and all(isinstance(x, Byte) for x in tags):
+            # NbtOps collects a list of bytes into a byte array
+            return ByteArray(tags)
+        return List(tags)
+    return None
+
+
+def compare_nbt(expected: Optional[NbtTag], actual: Optional[NbtTag]) -> bool:
+    """NbtUtils.compareNbt(expected, actual, partialListMatches=true)"""
+    if expected is None:
         return True
-
-
-class EnchantmentsDataComponent(EnchantmentsLikeDataComponent):
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        return self.is_valid_enchantments(getter, item, "enchantments")
-
-
-class FireworkExplosionDataComponent(DataComponentBase): ...
-
-
-class FireworksDataComponent(DataComponentBase): ...
-
-
-class JukeboxPlayableDataComponent(RootModel, DataComponentBase):
-    root: TaggedID = None
-
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        jukebox_playable = item.get("jukebox_playable")
-        if jukebox_playable is None:
-            return False
-        for sound in iter_tagged_id(self.root):
-            if resolve_key(sound) == resolve_key(jukebox_playable):
-                return True
+    if actual is None:
         return False
-
-
-class PotionContentsDataComponent(DataComponentBase):
-    root: TaggedID = None
-
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        potion = item.get("potion_contents")
-        if potion is None:
+    if isinstance(expected, Compound):
+        if not isinstance(actual, Compound) or len(actual) < len(expected):
             return False
-        potion_type = potion.get("potion")
-        if potion_type is None:
+        return all(compare_nbt(x, actual.get(key)) for key, x in expected.items())
+    if isinstance(expected, List):
+        # every expected element matches some actual element, [] only matches []
+        if not isinstance(actual, List):
             return False
-        potion_type = resolve_key(potion_type)
-        for predicate_potion_type in iter_tagged_id(self.root):
-            if potion_type == predicate_potion_type:
-                return True
+        if len(expected) == 0:
+            return len(actual) == 0
+        if len(actual) < len(expected):
+            return False
+        return all(any(compare_nbt(x, y) for y in actual) for x in expected)
+    if type(expected) is not type(actual):
         return False
+    if isinstance(expected, np.ndarray):
+        return bool(np.array_equal(expected, np.asarray(actual)))
+    return expected == actual
 
 
-class StoredEnchantmentsDataComponent(EnchantmentsLikeDataComponent):
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        return self.is_valid_enchantments(getter, item, "stored_enchantments")
+class CustomDataPredicate(RootModel[Union[dict[str, Any], str]], DataComponentPredicateBase):
+    component: ClassVar[str] = "minecraft:custom_data"
+    root: Union[dict[str, Any], str]
+
+    def matches(self, ctx: Context) -> bool:
+        # NbtPredicate: an item without custom_data compares as {}
+        actual = ctx.item.components.get(self.component, {})
+        return self.matches_value(actual, ctx)
+
+    def matches_value(self, value: Any, ctx: Context) -> bool:
+        expected = parse_nbt(self.root) if isinstance(self.root, str) else to_nbt(self.root)
+        actual = parse_nbt(value) if isinstance(value, str) else to_nbt(value)
+        return compare_nbt(expected, actual)
 
 
-class TrimDataComponent(DataComponentBase):
-    material: TaggedID = None
-    pattern: TaggedID = None
-
-    def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        trim = item.get("trim")
-        if trim is None:
-            return False
-        if self.material is not None:
-            material = trim.get("material")
-            if material is None:
-                return False
-            material = resolve_key(material)
-            if not any(
-                material == predicate_material
-                for predicate_material in iter_tagged_id(self.material)
-            ):
-                return False
-        if self.pattern is not None:
-            pattern = trim.get("pattern")
-            if pattern is None:
-                return False
-            pattern = resolve_key(pattern)
-            if not any(
-                pattern == predicate_pattern
-                for predicate_pattern in iter_tagged_id(self.pattern)
-            ):
-                return False
-        return True
+PREDICATES: dict[str, type[DataComponentPredicateBase]] = {
+    "minecraft:attribute_modifiers": AttributeModifiersPredicate,
+    "minecraft:bundle_contents": BundleContentsPredicate,
+    "minecraft:container": ContainerPredicate,
+    "minecraft:custom_data": CustomDataPredicate,
+    "minecraft:damage": DamagePredicate,
+    "minecraft:enchantments": EnchantmentsPredicate,
+    "minecraft:firework_explosion": FireworkExplosionPredicate,
+    "minecraft:fireworks": FireworksPredicate,
+    "minecraft:jukebox_playable": JukeboxPlayablePredicate,
+    "minecraft:potion_contents": PotionContentsPredicate,
+    "minecraft:stored_enchantments": StoredEnchantmentsPredicate,
+    "minecraft:trim": TrimPredicate,
+    "minecraft:villager/variant": VillagerVariantPredicate,
+    "minecraft:writable_book_content": WritableBookPredicate,
+    "minecraft:written_book_content": WrittenBookPredicate,
+}
+"""DataComponentPredicates in 26.3"""
 
 
-class WritableBookContentDataComponent(DataComponentBase): ...
-
-
-class WrittenBookContentDataComponent(DataComponentBase): ...
+def component_predicate(predicate: str, value: Any) -> DataComponentPredicateBase:
+    """Parse the predicate `value` of the given type, any other id is a component presence check."""
+    cls = PREDICATES.get(resolve_key(predicate))
+    if cls is None:
+        if value not in ({}, None):
+            log.warning(f"Component {predicate} has no predicate type, only its presence is checked")
+        return AnyValuePredicate(id=predicate)
+    return cls.model_validate(value)
 
 
 class DataComponent(BaseModel):
-    attibute_modifiers: Optional[AttributeModifiersDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "attribute_modifiers", "minecraft:attribute_modifiers"
-        ),
-    )
-    bundle_contents: Optional[BundleContentsDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices("bundle_contents", "minecraft:bundle_contents"),
-    )
-    container: Optional[ContainerDataComponent] = Field(
-        default=None, validation_alias=AliasChoices("container", "minecraft:container")
-    )
-    custom_data: Optional[CustomDataDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices("custom_data", "minecraft:custom_data"),
-    )
-    damage: Optional[DamageDataComponent] = Field(
-        default=None, validation_alias=AliasChoices("damage", "minecraft:damage")
-    )
-    enchantments: Optional[EnchantmentsDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices("enchantments", "minecraft:enchantments"),
-    )
-    firework_explosion: Optional[FireworkExplosionDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "firework_explosion", "minecraft:firework_explosion"
-        ),
-    )
-    fireworks: Optional[FireworksDataComponent] = Field(
-        default=None, validation_alias=AliasChoices("fireworks", "minecraft:fireworks")
-    )
-    jukebox_playable: Optional[JukeboxPlayableDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices("jukebox_playable", "minecraft:jukebox_playable"),
-    )
-    potion_contents: Optional[PotionContentsDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices("potion_contents", "minecraft:potion_contents"),
-    )
-    stored_enchantments: Optional[StoredEnchantmentsDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "stored_enchantments", "minecraft:stored_enchantments"
-        ),
-    )
-    trim: Optional[TrimDataComponent] = Field(
-        default=None, validation_alias=AliasChoices("trim", "minecraft:trim")
-    )
-    writable_book_content: Optional[WritableBookContentDataComponent] = Field(
-        default=None,
-        validation_alias=AliasChoices(
-            "writable_book_content", "minecraft:writable_book_content"
-        ),
-    )
+    """Component predicates by id, all of which must match (DataComponentMatchers.predicates)."""
+
+    predicates: dict[str, Any] = Field(default_factory=dict)
 
     def is_valid(self, getter: PackGetter, item: Item) -> bool:
-        valid = []
-        components: list[Optional[DataComponentBase]] = [
-            self.attibute_modifiers,
-            self.bundle_contents,
-            self.container,
-            self.custom_data,
-            self.damage,
-            self.enchantments,
-            self.firework_explosion,
-            self.fireworks,
-            self.jukebox_playable,
-            self.potion_contents,
-            self.stored_enchantments,
-            self.trim,
-            self.writable_book_content,
-        ]
-
-        for component in components:
-            if component is None:
-                continue
-            valid.append(component.is_valid(getter, item))
-        return all(valid)
+        ctx = Context(getter, item)
+        return all(
+            component_predicate(key, value).matches(ctx) for key, value in self.predicates.items()
+        )

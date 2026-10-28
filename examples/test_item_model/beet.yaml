@@ -14,7 +14,6 @@ output: ../../dist
 meta:
   model_resolver:
     # load vanilla item models
-    load_vanilla: false
     use_cache: true
     special_rendering: true
     preferred_minecraft_generated: "java"

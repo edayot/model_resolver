@@ -30,6 +30,8 @@ jobs:
           enable-cache: true
       - name: Sync Python dependencies
         run: uv sync --dev
+      - name: Unit tests (no OpenGL needed)
+        run: uv run pytest tests --ignore=tests/test_example.py
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:

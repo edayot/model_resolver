@@ -1,9 +1,10 @@
 import json
 import os
+import re
 import subprocess
 from beet import LATEST_MINECRAFT_VERSION, Context
-from pydantic import BaseModel
-from typing import TYPE_CHECKING, Any, Literal, Self
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
+from typing import TYPE_CHECKING, Any, Literal, Optional, Self, get_args
 from beet import Context
 from functools import lru_cache
 
@@ -21,12 +22,60 @@ def resolve_key(key: str) -> str:
     return f"minecraft:{key}" if ":" not in key else key
 
 
+ID_PATTERN = re.compile(r"[a-z0-9_.-]+(/[a-z0-9_./-]*)*")
+
+
+def namespaced(value: Any) -> Any:
+    """Add the minecraft namespace to every string that is an id without one.
+
+    Applied to both sides of a comparison, it makes "stone" equal minecraft:stone the way
+    decoding them as ids does, and changes nothing else.
+    """
+    if isinstance(value, str):
+        return f"minecraft:{value}" if ID_PATTERN.fullmatch(value) else value
+    if isinstance(value, list):
+        return [namespaced(x) for x in value]
+    if isinstance(value, dict):
+        return {key: namespaced(x) for key, x in value.items()}
+    return value
+
+
 if TYPE_CHECKING:
     from _typeshed import SupportsRichComparison
 
 
 def clamp[T: (SupportsRichComparison)](minimum: T, x: T, maximum: T) -> T:
     return max(minimum, min(x, maximum))
+
+
+def literal_values(cls: type[BaseModel], field: str) -> tuple[Any, ...]:
+    info = cls.model_fields.get(field)
+    return get_args(info.annotation) if info else ()
+
+
+def validate_dispatched[T: BaseModel](data: Any, classes: list[type[T]], what: str) -> T:
+    """Validate `data` with the class its `type` (and `property`) selects, like a dispatch codec.
+
+    Classes registered later win, so subclasses can replace built-in implementations.
+    """
+    if not isinstance(data, dict):
+        raise ValueError(f"Invalid {what}, expected an object: {data!r}")
+    candidates = [cls for cls in reversed(classes) if data.get("type") in literal_values(cls, "type")]
+    if not candidates:
+        raise ValueError(f"Unknown {what} type {data.get('type')!r}")
+    if any("property" in cls.model_fields for cls in candidates):
+        candidates = [
+            cls for cls in candidates if data.get("property") in literal_values(cls, "property")
+        ]
+        if not candidates:
+            raise ValueError(f"Unknown {what} property {data.get('property')!r} for {data['type']!r}")
+    errors: list[ValidationError] = []
+    for cls in candidates:
+        try:
+            return cls.model_validate(data)
+        except ValidationError as e:
+            errors.append(e)
+    raise ValueError(f"Invalid {what} {data['type']!r}: {errors[0]}")
 
 
 class LightOptions(BaseModel):
@@ -42,6 +91,9 @@ class LightOptions(BaseModel):
     ]
 
 
+_warned_options: set[str] = set()
+
+
 class ModelResolverOptions(BaseModel):
     """Model resolver options."""
 
@@ -51,6 +103,19 @@ class ModelResolverOptions(BaseModel):
     colorize_blocks: bool = True
     preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "misode/mcmeta"
     transparent_missingno: bool = True
+    render_size: Optional[int] = None
+    """Size of the renders that don't set one, DEFAULT_RENDER_SIZE when unset."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="after")
+    def warn_unknown_options(self) -> Self:
+        # beet validates the options again on every ctx.validate, warn once per key
+        for key in self.model_extra or {}:
+            if key not in _warned_options:
+                _warned_options.add(key)
+                log.warning(f"Unknown model_resolver option {key!r} is ignored")
+        return self
 
 
 

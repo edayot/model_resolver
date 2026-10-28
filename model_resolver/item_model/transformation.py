@@ -1,7 +1,7 @@
 import math
 
-from pydantic import BaseModel, RootModel
-from typing import NamedTuple, Union
+from pydantic import BaseModel, RootModel, model_validator
+from typing import Any, NamedTuple, Union
 
 
 class Vector(NamedTuple):
@@ -87,10 +87,29 @@ type TransformationType = Union[
     TransformationDecomposed
 ]
 
+def _transpose(m: Matrix) -> Matrix:
+    return tuple(m[(i & 3) * 4 + (i >> 2)] for i in range(16))  # type: ignore
+
+
 class Transformation(RootModel[TransformationType]):
     root: TransformationType
 
+    @model_validator(mode="before")
+    @classmethod
+    def row_major(cls, data: Any) -> Any:
+        # ExtraCodecs.MATRIX4F reads the 16 floats row by row (setRowColumn(i >> 2, i & 3)),
+        # they are stored column-major like everything else here
+        if isinstance(data, (list, tuple)) and len(data) == 16:
+            return _transpose(tuple(data))  # type: ignore
+        return data
+
+    @classmethod
+    def from_matrix(cls, matrix: Matrix) -> "Transformation":
+        """From a column-major matrix."""
+        return cls.model_construct(tuple(float(x) for x in matrix))  # type: ignore
+
     def get_matrix(self) -> Matrix:
+        """Column-major, as glMultMatrixf expects."""
         if isinstance(self.root, tuple):
             return self.root
         d = self.root
@@ -98,5 +117,5 @@ class Transformation(RootModel[TransformationType]):
 
     def compose(self, other: "Transformation") -> "Transformation":
         """Compose transformations: self * other (self applied after other)."""
-        return Transformation(root=_mat4_mul(self.get_matrix(), other.get_matrix()))
+        return Transformation.from_matrix(_mat4_mul(self.get_matrix(), other.get_matrix()))
 

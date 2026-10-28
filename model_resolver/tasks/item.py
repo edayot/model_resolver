@@ -1,32 +1,47 @@
 from dataclasses import dataclass
 
-from typing import Optional
+from typing import ClassVar, Optional
 from model_resolver.tasks.model import AnimatedResultTask
 from model_resolver.minecraft_model import (
     MinecraftModel,
 )
-from model_resolver.item_model.model import ItemModel
+from model_resolver.item_model.model import ItemModel, ItemModelResolvable, ItemModelSpecial
+from model_resolver.item_model.transformation import Transformation
 from model_resolver.item_model.tint_source import TintSource
-from typing import Generator
+from typing import Generator, Sequence
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask
 from model_resolver.tasks.base import Task, RenderError
+from model_resolver.utils import resolve_key
+
+
+type Transformations = tuple[Optional[Transformation], Optional[Transformation]]
+
+
+def get_transformations(model: ItemModelResolvable) -> Transformations:
+    """(transformation, calibration) of a resolved item model, see ItemModelSpecial."""
+    if isinstance(model, ItemModelSpecial):
+        return model.split_transformation()
+    return model.transformation, None
 
 
 @dataclass(kw_only=True)
 class ItemModelModelRenderTask(GenericModelRenderTask):
-    models: list[tuple[MinecraftModel, list[TintSource]]]
+    vanilla_display_defaults: ClassVar[bool] = True
+    models: Sequence[tuple[MinecraftModel, list[TintSource]] | tuple[MinecraftModel, list[TintSource], Transformations]]
     source: Optional[str] = None
 
     def resolve(self) -> Generator[Task, None, None]:
         yield self
 
     def run(self):
-        for model, tints in self.models:
-            self.render_model(model, tints, self.source)
+        for model, tints, *rest in self.models:
+            transformation, calibration = rest[0] if rest else (None, None)
+            self.render_model(model, tints, self.source, transformation, calibration)
 
 
 @dataclass(kw_only=True)
 class ItemRenderTask(GenericModelRenderTask):
+    vanilla_display_defaults: ClassVar[bool] = True
 
     def get_parsed_item_model(self) -> ItemModel:
         assert self.item
@@ -38,6 +53,7 @@ class ItemRenderTask(GenericModelRenderTask):
         item_model_key = self.item.components["minecraft:item_model"]
         if not item_model_key:
             raise RenderError(f"Item {self.item} does not have a model")
+        item_model_key = resolve_key(item_model_key)
         if item_model_key in self.getter.assets.item_models:
             item_model = self.getter.assets.item_models[item_model_key]
         else:
@@ -48,11 +64,13 @@ class ItemRenderTask(GenericModelRenderTask):
         parsed_item_model = self.get_parsed_item_model()
         for model in parsed_item_model.resolve(self.getter, self.item):
             model_def = model.get_model(self.getter, self.item).bake()
+            transformation, calibration = get_transformations(model)
             self.render_model(
                 model_def,
                 model.get_tints(self.getter, self.item),
                 source=str(self.item),
-                transformation=model.transformation,
+                transformation=transformation,
+                calibration=calibration,
             )
 
     def resolve(self) -> Generator[Task, None, None]:
@@ -82,13 +100,15 @@ class ItemRenderTask(GenericModelRenderTask):
 
         for i, (images, duration) in frames:
             # get the images for the tick
-            models: list[tuple[MinecraftModel, list[TintSource]]] = []
+            models: list[tuple[MinecraftModel, list[TintSource], Transformations]] = []
             for model in item_model_models:
                 model_def = model.get_model(self.getter, self.item).bake()
                 model_def = model_def.model_copy()
                 textures = self.get_textures(model_def, images)
                 model_def.textures = textures
-                models.append((model_def, model.get_tints(self.getter, self.item)))
+                models.append(
+                    (model_def, model.get_tints(self.getter, self.item), get_transformations(model))
+                )
 
             if self.path_save:
                 new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(

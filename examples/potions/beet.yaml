@@ -1,0 +1,12 @@
+minecraft: "26.3"
+
+pipeline:
+  - render_potions
+
+output: ../../dist
+
+meta:
+  model_resolver:
+    minecraft_version: "26.3"
+    use_cache: true
+    preferred_minecraft_generated: "java"

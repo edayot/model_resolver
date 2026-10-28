@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Mapping, Protocol, Optional, Sequence, Type, overload, cast
 
-from beet import LATEST_MINECRAFT_VERSION, Blockstate, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
+from beet import LATEST_MINECRAFT_VERSION, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
 from beet.contrib.vanilla import Vanilla, Release
 
 from model_resolver.utils import ModelResolverOptions
@@ -37,45 +37,17 @@ def get_by_namespace_proxy[T: NamespaceFile](context: NamespaceProxy[T] | Namesp
 
 
 
-def custom_merge[T: NamespaceFile](value: T, other: T):
-    if isinstance(value, Blockstate) and isinstance(other, Blockstate):
-        v1: dict | None = value.data.get("variants")
-        v2: dict | None = other.data.get("variants")
-        merged = {}
-        if v2: merged.update(v2)
-        if v1: merged.update(v1)
-        value.data["variants"] = merged
-
-        m1: list | None = value.data.get("multipart")
-        m2: list | None = other.data.get("multipart")
-        res = []
-        if m1: res.extend(m1)
-        if m2: res.extend(m2)
-        value.data["multipart"] = res
-        return True
-    
-
-    return value.merge(other)
-
-
 @overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]], key: str) -> T: ...
 @overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceContainer[T]], key: str) -> T: ...
 
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]] | list[NamespaceContainer[T]], key: str) -> T:
-    candidates: list[T] = []
     for lookup in lookups:
         res = lookup.get(key)
         if res is not None:
-            candidates.append(res)
-    if len(candidates) == 0:
-        raise KeyError(key)
-    candidates.reverse()
-    res = candidates[0]
-    for cand in candidates[1:]:
-        custom_merge(res, cand)
-    return res
+            return res
+    raise KeyError(key)
 
 
 def iter_lookup_keys(lookups: Sequence[Mapping[str, object]]) -> Iterator[str]:
@@ -219,6 +191,22 @@ class PackGetter():
         self._vanilla = vanilla
         self._static_lookup = static_lookup
         self.opts = opts
+
+    def get_stack[T: NamespaceFile](self, file_type: Type[T], key: str, exclude: Sequence[str] = ()) -> list[T]:
+        """Every pack's copy of a file, highest priority first.
+
+        Most files are plain overrides (see `get_by_lookup_order`), but Minecraft resolves
+        blockstates state by state through this stack (`BlockStateModelLoader`).
+        """
+        pack = ResourcePack if file_type in ResourcePack.namespace_type.field_map else DataPack
+        stack: list[T] = []
+        for lookup in self.lookups:
+            if lookup in exclude:
+                continue
+            res = get_pack(pack, getattr(self, lookup))[file_type].get(key)
+            if res is not None:
+                stack.append(res)
+        return stack
 
 
     @classmethod

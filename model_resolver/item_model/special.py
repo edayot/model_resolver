@@ -1,18 +1,21 @@
 from functools import cached_property
 import math
-from pydantic import BaseModel, RootModel, ValidationError
+from pydantic import BaseModel, RootModel
 from model_resolver.item_model.tint_source import (
     TintSource,
-    to_argb,
     TintSourceConstant,
 )
 from typing import ClassVar, Optional, Literal, Type, Any
 from model_resolver.item_model.item import Item
 from model_resolver.minecraft_model import MultiTexture, TextureSource
-from model_resolver.utils import clamp, resolve_key
+from model_resolver.utils import clamp, resolve_key, validate_dispatched
 from model_resolver.pack_getter import PackGetter
+from model_resolver.item_model.entity_model import entity_layers, to_elements
+from model_resolver.utils import log
+from beet import BannerPattern
 from PIL import Image
 from uuid import UUID
+import hashlib
 import json
 import base64
 
@@ -50,6 +53,8 @@ class SpecialModelBase(BaseModel):
         "bell",
         "minecraft:book",
         "book",
+        "minecraft:end_cube",
+        "end_cube",
     ]
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
@@ -83,12 +88,26 @@ class SpecialModelCopperGolemStatue(SpecialModelBase):
     texture: str
     pose: Literal["sitting", "running", "star", "standing"]
 
+    LAYERS: ClassVar[dict[str, str]] = {
+        "standing": "copper_golem",
+        "running": "copper_golem_running",
+        "sitting": "copper_golem_sitting",
+        "star": "copper_golem_star",
+    }
+
     def get_texture_path(self) -> str:
+        # the texture is a full path, textures/<path>.png
         namespace, path = resolve_key(self.texture).split(":")
-        return f"{namespace}:{path.removeprefix("textures/")}"
+        return f"{namespace}:{path.removeprefix('textures/').removesuffix('.png')}"
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
-        return {}
+        layer = entity_layers(getter.opts.minecraft_version)[self.LAYERS[self.pose]]
+        texture = self.get_texture_path()
+        return {
+            "textures": {"0": texture, "particle": texture},
+            # CopperGolemStatueModel.setupAnim
+            "elements": to_elements(layer, poses={"root": {"y": 0.0, "zRot": math.pi}}),
+        }
 
 
 class SpecialModelBed(SpecialModelBase):
@@ -227,9 +246,7 @@ class SpecialModelLayerBase(SpecialModelBase):
     def get_color(self, color: str) -> TintSourceConstant:
         if color not in self.COLOR_STRING_TO_ARGB:
             raise ValueError(f"Invalid color {color} for shield")
-        argb = self.COLOR_STRING_TO_ARGB[color]
-        argb = to_argb(argb)
-        return TintSourceConstant(type="constant", value=(argb[1], argb[2], argb[3]))
+        return TintSourceConstant(type="constant", value=self.COLOR_STRING_TO_ARGB[color])
 
     def get_texture(self, getter: PackGetter, item: Item) -> TextureSource:
         if not (base_color := self.get_base_color(item)):
@@ -242,8 +259,7 @@ class SpecialModelLayerBase(SpecialModelBase):
         )
 
         for pattern in item.components.get("minecraft:banner_patterns", []):
-            pattern_id = resolve_key(pattern["pattern"])
-            namespace, path = pattern_id.split(":")
+            namespace, path = self.get_asset_id(getter, pattern["pattern"]).split(":", 1)
             res.append(
                 (
                     f"{namespace}:entity/{self.entity_type}/{path}",
@@ -252,6 +268,17 @@ class SpecialModelLayerBase(SpecialModelBase):
             )
 
         return tuple(res)
+
+    @staticmethod
+    def get_asset_id(getter: PackGetter, pattern: str | dict[str, Any]) -> str:
+        """The asset_id of a banner_pattern, given by id or inline (Sheets.getBannerMaterial)."""
+        if isinstance(pattern, dict):
+            return resolve_key(pattern["asset_id"])
+        pattern = resolve_key(pattern)
+        # every vanilla pattern's asset_id is its id, so the vanilla data pack isn't loaded
+        for file in getter.get_stack(BannerPattern, pattern, exclude=("_vanilla",)):
+            return resolve_key(file.data["asset_id"])
+        return pattern
 
 
 class SpecialModelBanner(SpecialModelLayerBase):
@@ -642,6 +669,48 @@ class ProfileComponent(BaseModel):
     name: Optional[str] = None
     id: Optional[list[int]] | str = None
     properties: Optional[list[PropertiesModel]] = None
+    texture: Optional[str] = None
+    """Skin patch (PlayerSkin.Patch), the texture textures/<path>.png replaces the skin."""
+
+    def uuid(self) -> Optional[UUID]:
+        if isinstance(self.id, str):
+            return UUID(self.id)
+        if self.id is not None:
+            # UUIDUtil.uuidFromIntArray, 4 signed 32 bit integers
+            value = 0
+            for i, signed in enumerate(self.id):
+                value += (signed & 0xFFFFFFFF) << (32 * (3 - i))
+            return UUID(int=value)
+        if self.name is not None:
+            return offline_player_uuid(self.name)
+        return None
+
+
+def offline_player_uuid(name: str) -> UUID:
+    """UUIDUtil.createOfflinePlayerUUID, Java's UUID.nameUUIDFromBytes."""
+    digest = bytearray(hashlib.md5(f"OfflinePlayer:{name}".encode()).digest())
+    digest[6] = digest[6] & 0x0F | 0x30
+    digest[8] = digest[8] & 0x3F | 0x80
+    return UUID(bytes=bytes(digest))
+
+
+DEFAULT_SKINS = [
+    f"minecraft:entity/player/{model}/{name}"
+    for model in ("slim", "wide")
+    for name in ("alex", "ari", "efe", "kai", "makena", "noor", "steve", "sunny", "zuri")
+]
+
+
+def default_skin(uuid: Optional[UUID]) -> str:
+    """DefaultPlayerSkin.get: the skin a profile shows until (or unless) its own skin loads."""
+    if uuid is None:
+        return DEFAULT_SKINS[6]
+    # java.util.UUID.hashCode
+    bits = uuid.int
+    hilo = (bits >> 64) ^ (bits & 0xFFFFFFFFFFFFFFFF)
+    hash_code = ((hilo >> 32) ^ hilo) & 0xFFFFFFFF
+    hash_code -= 1 << 32 if hash_code >= 1 << 31 else 0
+    return DEFAULT_SKINS[hash_code % len(DEFAULT_SKINS)]
 
 
 class SpecialModelHeadBase(SpecialModelBase):
@@ -703,50 +772,46 @@ class SpecialModelPlayerHead(SpecialModelHeadBase):
         )
 
     def get_player_texture(self, getter: PackGetter, item: Item) -> str | Image.Image:
-        DEFAULT_TEXTURE = "minecraft:entity/player/wide/steve"
-        if not item.components:
-            return DEFAULT_TEXTURE
-        if not "minecraft:profile" in item.components:
-            return DEFAULT_TEXTURE
-        cache = getter._ctx.cache["model_resolver_player_skin"]
-        if not isinstance(item.components["minecraft:profile"], str):
-            profile = ProfileComponent.model_validate(
-                item.components["minecraft:profile"]
-            )
+        profile_data = item.components.get("minecraft:profile")
+        if profile_data is None:
+            return DEFAULT_SKINS[6]
+        if isinstance(profile_data, str):
+            profile = ProfileComponent(name=profile_data)
         else:
-            profile = ProfileComponent(name=item.components["minecraft:profile"])
+            profile = ProfileComponent.model_validate(profile_data)
+        if profile.texture is not None:
+            namespace, path = resolve_key(profile.texture).split(":", 1)
+            return f"{namespace}:{path}"
+        try:
+            skin = self.download_skin(getter, profile)
+        except Exception as e:
+            log.warning(f"Could not load the skin of {profile_data}, using a default skin: {e}")
+            skin = None
+        return skin if skin is not None else default_skin(profile.uuid())
 
-        if profile.id or profile.name:
-            if profile.name:
-                url = "https://api.mojang.com/users/profiles/minecraft/" + profile.name
-                path = cache.download(url)
-                with open(path, "r") as f:
+    def download_skin(self, getter: PackGetter, profile: ProfileComponent) -> Optional[Image.Image]:
+        cache = getter._ctx.cache["model_resolver_player_skin"]
+        if not profile.properties and (profile.id or profile.name):
+            if profile.id:
+                uuid = profile.uuid()
+            else:
+                url = "https://api.mojang.com/users/profiles/minecraft/" + str(profile.name)
+                with open(cache.download(url), "r") as f:
                     data = json.load(f)
                 if not "id" in data:
-                    return DEFAULT_TEXTURE
+                    return None
                 uuid = UUID(data["id"])
-            elif profile.id:
-                assert isinstance(profile.id, list)
-                id = 0
-                for i, signed in enumerate(profile.id):
-                    # signed is a 32 bit signed integer
-                    unsigned = signed & 0xFFFFFFFF
-                    id += unsigned * 2 ** (32 * (3 - i))
-                uuid = UUID(int=id)
             url = f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}"
-            path = cache.download(url)
-            with open(path, "r") as f:
+            with open(cache.download(url), "r") as f:
                 data = json.load(f)
             profile = ProfileComponent.model_validate(data)
-        if not profile.properties:
-            return DEFAULT_TEXTURE
-        if len(profile.properties) == 0:
-            return DEFAULT_TEXTURE
-        prop = profile.properties[0]
-        value = base64.b64decode(prop.value)
-        data = json.loads(value)
-        texture_url = data["textures"]["SKIN"]["url"]
-        texture_cache = cache.download(texture_url)
+        textures = [prop for prop in profile.properties or [] if prop.name == "textures"]
+        if not textures:
+            return None
+        data = json.loads(base64.b64decode(textures[0].value))
+        if "SKIN" not in data.get("textures", {}):
+            return None
+        texture_cache = cache.download(data["textures"]["SKIN"]["url"])
         img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
         with Image.open(texture_cache) as texture:
             img.paste(texture, (0, 0))
@@ -767,21 +832,29 @@ class SpecialModelHead(SpecialModelHeadBase):
             return 0.75
         return 1.0
 
+    @property
+    def texture_override(self) -> Optional[str]:
+        # SkullSpecialRenderer: the texture is textures/entity/<path>.png
+        if self.texture is None:
+            return None
+        namespace, path = resolve_key(self.texture).split(":", 1)
+        return f"{namespace}:entity/{path}"
+
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         match self.kind:
             case "player":
-                texture = "minecraft:entity/player/wide/steve"
+                texture = self.texture_override or DEFAULT_SKINS[6]
                 return self.get_model_player(getter, item, texture)
             case "zombie":
                 return self.get_model_zombie(getter, item)
             case "skeleton":
-                texture = self.texture or "minecraft:entity/skeleton/skeleton"
+                texture = self.texture_override or "minecraft:entity/skeleton/skeleton"
                 return self.get_generic_mob_head(getter, item, texture)
             case "wither_skeleton":
-                texture = self.texture or "minecraft:entity/skeleton/wither_skeleton"
+                texture = self.texture_override or "minecraft:entity/skeleton/wither_skeleton"
                 return self.get_generic_mob_head(getter, item, texture)
             case "creeper":
-                texture = self.texture or "minecraft:entity/creeper/creeper"
+                texture = self.texture_override or "minecraft:entity/creeper/creeper"
                 return self.get_generic_mob_head(getter, item, texture)
             case "piglin":
                 return self.get_piglin_head(getter, item)
@@ -791,7 +864,7 @@ class SpecialModelHead(SpecialModelHeadBase):
                 raise NotImplementedError(f"Head kind {self.kind} not implemented")
 
     def get_dragon_head(self, getter: PackGetter, item: Item) -> dict[str, Any]:
-        texture = self.texture or "minecraft:entity/enderdragon/dragon"
+        texture = self.texture_override or "minecraft:entity/enderdragon/dragon"
         model = {
             "textures": {"0": texture, "particle": texture},
             "elements": [
@@ -909,7 +982,7 @@ class SpecialModelHead(SpecialModelHeadBase):
         return jaw
 
     def get_piglin_head(self, getter: PackGetter, item: Item) -> dict[str, Any]:
-        texture = self.texture or "minecraft:entity/piglin/piglin"
+        texture = self.texture_override or "minecraft:entity/piglin/piglin"
         left_ear, right_ear = self.get_piglin_angles()
         model = {
             "textures": {"0": texture, "particle": texture},
@@ -1016,7 +1089,7 @@ class SpecialModelHead(SpecialModelHeadBase):
         return left_ear, right_ear
 
     def get_model_zombie(self, getter: PackGetter, item: Item) -> dict[str, Any]:
-        texture = self.texture or "minecraft:entity/zombie/zombie"
+        texture = self.texture_override or "minecraft:entity/zombie/zombie"
         model = {
             "textures": {"1": texture, "particle": texture},
             "elements": [
@@ -1521,6 +1594,11 @@ class SpecialModelHangingSign(SpecialModelSignBase):
 class SpecialModelBell(SpecialModelBase):
     type: Literal["minecraft:bell", "bell"]
 
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
+        texture = "minecraft:entity/bell/bell_body"
+        layer = entity_layers(getter.opts.minecraft_version)["bell"]
+        return {"textures": {"0": texture, "particle": texture}, "elements": to_elements(layer)}
+
 class SpecialModelBook(SpecialModelBase):
     type: Literal["minecraft:book", "book"]
     open_angle: float
@@ -1530,16 +1608,46 @@ class SpecialModelBook(SpecialModelBase):
     page2: float
     """The positions of two pages inside the book. 0.0 means the page is in the leftmost position, 1.0 means the page in the rightmost position."""
 
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
+        # BookModel.setupAnim with BookSpecialRenderer's state
+        openness = math.radians(self.open_angle)
+        shift = math.sin(openness)
+        poses = {
+            "left_lid": {"yRot": math.pi + openness},
+            "right_lid": {"yRot": -openness},
+            "left_pages": {"yRot": openness, "x": shift},
+            "right_pages": {"yRot": -openness, "x": shift},
+            "flip_page1": {"yRot": openness - openness * 2 * self.page1, "x": shift},
+            "flip_page2": {"yRot": openness - openness * 2 * self.page2, "x": shift},
+        }
+        texture = "minecraft:entity/enchantment/enchanting_table_book"
+        layer = entity_layers(getter.opts.minecraft_version)["book"]
+        return {
+            "textures": {"0": texture, "particle": texture},
+            "elements": to_elements(layer, poses=poses),
+        }
+
+
+class SpecialModelEndCube(SpecialModelBase):
+    type: Literal["minecraft:end_cube", "end_cube"]
+    effect: Literal["portal", "gateway"]
+
+    def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
+        """A still picture of the end portal shader: the starfield on the top face only
+        for a portal (at 3/4 of the block), on every face for a gateway."""
+        texture = "minecraft:entity/end_portal/end_portal"
+        face = {"texture": "#0", "uv": [0, 0, 16, 16]}
+        if self.effect == "portal":
+            elements = [{"from": [0, 12, 0], "to": [16, 12, 16], "faces": {"up": face}}]
+        else:
+            faces = ("down", "up", "north", "south", "west", "east")
+            elements = [{"from": [0, 0, 0], "to": [16, 16, 16], "faces": {f: face for f in faces}}]
+        return {"textures": {"0": texture, "particle": texture}, "elements": elements}
+
 
 class SpecialModel(RootModel[Any]):
     root: Any
 
     @cached_property
     def special_model(self) -> SpecialModelBase:
-        for cls in reversed(SpecialModelBaseClass):
-            try:
-                return cls.model_validate(self.root)
-            except ValidationError as e:
-                pass
-        print(list(reversed(SpecialModelBaseClass)))
-        raise ValueError("No valid special model found for root: " + str(self.root))
+        return validate_dispatched(self.root, SpecialModelBaseClass, "special model")

@@ -1,0 +1,16 @@
+minecraft: "26.3"
+
+resource_pack:
+  load: .
+
+pipeline:
+  - render_item_displays
+
+output: ../../dist
+
+meta:
+  model_resolver:
+    minecraft_version: "26.3"
+    use_cache: true
+    special_rendering: true
+    preferred_minecraft_generated: "java"

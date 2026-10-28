@@ -1,13 +1,16 @@
+from fractions import Fraction
+import numpy as np
 from functools import cached_property
-from pydantic import BaseModel, Field, RootModel, ValidationError
-from model_resolver.item_model.data_component_predicate import DataComponent
+import math
+from pydantic import BaseModel, Field, RootModel, model_validator
+from model_resolver.item_model.data_component_predicate import Context, component_predicate
 from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
-from typing import Optional, Literal, ClassVar, Generator, Type, Union, Any
+from typing import Optional, Literal, ClassVar, Generator, Self, Type, Union, Any
 from model_resolver.item_model.item import Item
 from model_resolver.item_model.transformation import Transformation
-from model_resolver.utils import ModelResolverOptions, clamp, resolve_key
-from model_resolver.minecraft_model import MinecraftModel, resolve_model
+from model_resolver.utils import clamp, namespaced, resolve_key, validate_dispatched
+from model_resolver.minecraft_model import MISSING_MODEL_ID, MinecraftModel, missing_model, resolve_model
 from model_resolver.pack_getter import PackGetter
 
 ItemModelBaseClass: list[Type["ItemModelBase"]] = []
@@ -54,14 +57,15 @@ class ItemModelBase(BaseModel):
             yield res.with_compose(parent_transformation)
     
 
-    def with_compose(self, parent_transformation: Optional[Transformation]):
+    def with_compose(self, parent_transformation: Optional[Transformation]) -> Self:
+        # a copy: parsed item models are cached, resolving one must not change it
         if parent_transformation is None:
             return self
         if self.transformation is None:
-            self.transformation = parent_transformation
-            return self
-        self.transformation = parent_transformation.compose(self.transformation)
-        return self
+            return self.model_copy(update={"transformation": parent_transformation})
+        return self.model_copy(
+            update={"transformation": parent_transformation.compose(self.transformation)}
+        )
 
 
 class ItemModelModel(ItemModelBase):
@@ -76,6 +80,8 @@ class ItemModelModel(ItemModelBase):
 
     def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         key = resolve_key(self.model)
+        if key == MISSING_MODEL_ID:
+            return missing_model()
         if key in getter.assets.models:
             data = getter.assets.models[key].data
         else:
@@ -152,17 +158,8 @@ class ItemModelConditionBroken(ItemModelConditionBase):
     property: Literal["minecraft:broken", "broken"]
 
     def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
-        if not item.components:
-            return False
-        if not "minecraft:damage" in item.components:
-            return False
-        if not "minecraft:max_damage" in item.components:
-            return False
-        remaining = (
-            item.components["minecraft:max_damage"]
-            - item.components["minecraft:damage"]
-        )
-        return remaining <= 1
+        # ItemStack.nextDamageWillBreak
+        return item.is_damageable and item.damage >= item.max_damage - 1
 
 
 class ItemModelConditionComponent(ItemModelConditionBase):
@@ -171,19 +168,15 @@ class ItemModelConditionComponent(ItemModelConditionBase):
     value: Any
 
     def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
-        data_component = DataComponent.model_validate({self.predicate: self.value})
-        return data_component.is_valid(getter, item) or False
+        return component_predicate(self.predicate, self.value).matches(Context(getter, item))
 
 
 class ItemModelConditionDamaged(ItemModelConditionBase):
     property: Literal["minecraft:damaged", "damaged"]
 
     def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
-        if not item.components:
-            return False
-        if not "minecraft:damage" in item.components:
-            return False
-        return item.components["minecraft:damage"] > 0
+        # ItemStack.isDamaged
+        return item.is_damageable and item.damage > 0
 
 
 class ItemModelConditionHasComponent(ItemModelConditionBase):
@@ -192,12 +185,9 @@ class ItemModelConditionHasComponent(ItemModelConditionBase):
     ignore_default: Optional[bool] = False
 
     def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
-        if not item.components:
-            return False
         if self.ignore_default:
-            return self.component in item.components_from_user
-        else:
-            return self.component in item.components
+            return item.has_non_default(self.component)
+        return resolve_key(self.component) in item.components
 
 
 class ItemModelConditionFishingRodCast(ItemModelConditionBase):
@@ -278,6 +268,15 @@ class SelectCase(BaseModel):
     when: Any | list[Any]
     model: "ItemModelRecursive"
 
+    @property
+    def values(self) -> list[Any]:
+        return self.when if isinstance(self.when, list) else [self.when]
+
+
+def missing_item_model() -> "ItemModelRecursive":
+    # what an absent fallback bakes to (ItemModel.BakingContext.missingItemModel)
+    return ItemModelRecursive({"type": "minecraft:model", "model": MISSING_MODEL_ID})
+
 
 class ItemModelSelectBase(ItemModelBase):
     type: Literal["minecraft:select", "select"]
@@ -304,21 +303,45 @@ class ItemModelSelectBase(ItemModelBase):
         "context_dimension",
     ]
     cases: list[SelectCase] = Field(default_factory=list)
-    fallback: "ItemModelRecursive"
+    fallback: Optional["ItemModelRecursive"] = None
     possible_values: ClassVar[list[str]] = []
 
+    @classmethod
+    def decode(cls, value: Any) -> Any:
+        """Read a `when` value, or the item's value, like the property's value codec."""
+        return value
+
+    @model_validator(mode="after")
+    def validate_cases(self) -> Self:
+        # SelectItemModelProperty.Type.validateCases
+        if not self.cases:
+            raise ValueError("Empty case list")
+        seen: list[Any] = []
+        duplicates: list[Any] = []
+        for case in self.cases:
+            for value in case.values:
+                value = self.decode(value)
+                if value in seen and value not in duplicates:
+                    duplicates.append(value)
+                seen.append(value)
+        if duplicates:
+            raise ValueError(f"Duplicate case conditions: {', '.join(map(str, duplicates))}")
+        return self
+
+    def get_fallback(self) -> "ItemModelRecursive":
+        return self.fallback or missing_item_model()
+
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        return self.fallback
+        return self.get_fallback()
 
     def resolve_case(self, value: Any) -> "ItemModelRecursive":
+        if value is None:
+            return self.get_fallback()
+        value = self.decode(value)
         for case in self.cases:
-            if isinstance(case.when, list):
-                if value in case.when:
-                    return case.model
-            else:
-                if case.when == value:
-                    return case.model
-        return self.fallback
+            if any(self.decode(when) == value for when in case.values):
+                return case.model
+        return self.get_fallback()
 
     def resolve(
         self, getter: PackGetter, item: Item
@@ -330,36 +353,39 @@ class ItemModelSelectMainHand(ItemModelSelectBase):
     property: Literal["minecraft:main_hand", "main_hand"]
     possible_values: ClassVar[list[str]] = ["left", "right"]
 
+    def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
+        # MainHand: the owner's main arm, right by default for a player
+        return self.resolve_case("right" if item.owner is not None else None)
+
 
 class ItemModelSelectChargeType(ItemModelSelectBase):
     property: Literal["minecraft:charge_type", "charge_type"]
     possible_values: ClassVar[list[str]] = ["none", "rocket", "arrow"]
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        if not item.components:
+        # Charge: a firework rocket among the charged projectiles, any projectile, or none
+        projectiles = [
+            item.nested(stack)
+            for stack in item.components.get("minecraft:charged_projectiles") or []
+        ]
+        if not projectiles:
             return self.resolve_case("none")
-        if not "minecraft:charge_type" in item.components:
-            return self.resolve_case("none")
-        items: list[Item] = item.components["minecraft:charge_type"]
-        charge_type = "none"
-        for item in items:
-            if item.id == "minecraft:firework_rocket":
-                charge_type = "rocket"
-                break
-        if charge_type == "none" and len(items) > 0:
-            charge_type = "arrow"
-        return self.resolve_case(charge_type)
+        if any(resolve_key(x.id) == "minecraft:firework_rocket" for x in projectiles):
+            return self.resolve_case("rocket")
+        return self.resolve_case("arrow")
 
 
 class ItemModelSelectComponent(ItemModelSelectBase):
     property: Literal["minecraft:component", "component"]
     component: str
 
+    @classmethod
+    def decode(cls, value: Any) -> Any:
+        # the component codec reads "stone" as minecraft:stone wherever it expects an id
+        return namespaced(value)
+
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        component = item.components.get(resolve_key(self.component))
-        if component is not None:
-            return self.resolve_case(component)
-        return self.fallback
+        return self.resolve_case(item.components.get(resolve_key(self.component)))
 
 
 class ItemModelSelectLocalTime(ItemModelSelectBase):
@@ -370,27 +396,32 @@ class ItemModelSelectLocalTime(ItemModelSelectBase):
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         # Not possible to implement
-        return self.fallback
+        return self.get_fallback()
 
 
 class ItemModelSelectContextEntityType(ItemModelSelectBase):
     property: Literal["minecraft:context_entity_type", "context_entity_type"]
 
+    @classmethod
+    def decode(cls, value: Any) -> Any:
+        return resolve_key(value) if isinstance(value, str) else value
+
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        return self.resolve_case("minecraft:player")
+        return self.resolve_case(item.owner)
 
 
 class ItemModelSelectTrimMaterial(ItemModelSelectBase):
     property: Literal["minecraft:trim_material", "trim_material"]
 
+    @classmethod
+    def decode(cls, value: Any) -> Any:
+        return resolve_key(value) if isinstance(value, str) else value
+
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        if not item.components:
-            return self.fallback
-        if not "minecraft:trim" in item.components:
-            return self.fallback
-        if not "material" in item.components["minecraft:trim"]:
-            return self.fallback
-        return self.resolve_case(item.components["minecraft:trim"]["material"])
+        trim = item.components.get("minecraft:trim") or {}
+        material = trim.get("material")
+        # an inline material has no id to select on
+        return self.resolve_case(material if isinstance(material, str) else None)
 
 
 class ItemModelSelectBlockState(ItemModelSelectBase):
@@ -398,15 +429,8 @@ class ItemModelSelectBlockState(ItemModelSelectBase):
     block_state_property: str
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        if not item.components:
-            return self.fallback
-        if not "minecraft:block_state" in item.components:
-            return self.fallback
-        if not self.block_state_property in item.components["minecraft:block_state"]:
-            return self.fallback
-        return self.resolve_case(
-            item.components["minecraft:block_state"][self.block_state_property]
-        )
+        block_state = item.components.get("minecraft:block_state") or {}
+        return self.resolve_case(block_state.get(self.block_state_property))
 
 
 class ItemModelSelectDisplayContext(ItemModelSelectBase):
@@ -424,7 +448,7 @@ class ItemModelSelectDisplayContext(ItemModelSelectBase):
     ]
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        return self.resolve_case("gui")
+        return self.resolve_case(item.display_context)
 
 
 class ItemModelSelectCustomModelData(ItemModelSelectBase):
@@ -432,22 +456,17 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
     index: Optional[int] = 0
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        if not item.components:
-            return self.fallback
-        if not "minecraft:custom_model_data" in item.components:
-            return self.fallback
-        if not "strings" in item.components["minecraft:custom_model_data"]:
-            return self.fallback
+        strings = (item.components.get("minecraft:custom_model_data") or {}).get("strings", [])
         index = self.index or 0
-        if index >= len(item.components["minecraft:custom_model_data"]["strings"]):
-            return self.fallback
-        return self.resolve_case(
-            item.components["minecraft:custom_model_data"]["strings"][index]
-        )
+        return self.resolve_case(strings[index] if 0 <= index < len(strings) else None)
 
 
 class ItemModelSelectContextDimension(ItemModelSelectBase):
     property: Literal["minecraft:context_dimension", "context_dimension"]
+
+    @classmethod
+    def decode(cls, value: Any) -> Any:
+        return resolve_key(value) if isinstance(value, str) else value
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
         return self.resolve_case("minecraft:overworld")
@@ -492,19 +511,17 @@ class ItemModelRangeDispatchBase(ItemModelBase):
     def resolve(
         self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        value = self.resolve_range_dispatch(getter, item)
-        max_threshold = 0
-        good_entry: Optional[RangeDispatchEntry] = None
-        for entry in sorted(self.entries, key=lambda x: x.threshold):
-            if entry.threshold >= max_threshold and entry.threshold <= value:
-                good_entry = entry
-                max_threshold = entry.threshold
-
-        if good_entry:
-            yield from good_entry.model.resolve_with_compose(getter, item, self.transformation)
-            return
-        if self.fallback:
-            yield from self.fallback.resolve_with_compose(getter, item, self.transformation)
+        # RangeSelectItemModel: the last entry whose threshold <= value * scale,
+        # the fallback when there is none or the value is NaN
+        scale = 1.0 if self.scale is None else self.scale
+        value = self.resolve_range_dispatch(getter, item) * scale
+        selected = self.fallback or missing_item_model()
+        if not math.isnan(value):
+            for entry in sorted(self.entries, key=lambda x: x.threshold):
+                if entry.threshold > value:
+                    break
+                selected = entry.model
+        yield from selected.resolve_with_compose(getter, item, self.transformation)
 
 
 class ItemModelRangeDispatchCustomModelData(ItemModelRangeDispatchBase):
@@ -528,9 +545,26 @@ class ItemModelRangeDispatchBundleFullness(ItemModelRangeDispatchBase):
     property: Literal["minecraft:bundle/fullness", "bundle/fullness"]
 
     def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
-        # Not implemented for now
-        # need to calculate the fullness of the bundle
-        return 0.0
+        return float(bundle_weight(item))
+
+
+def bundle_weight(item: Item) -> Fraction:
+    """BundleContents.weight: each stack weighs count / max_stack_size,
+    a nested bundle its own weight + 1/16 and a beehive with bees 1."""
+    weight = Fraction(0)
+    for template in item.components.get("minecraft:bundle_contents") or []:
+        stack = item.nested(template)
+        bees = stack.components.get("minecraft:bees")
+        if isinstance(bees, dict):
+            bees = bees.get("bees")
+        if "minecraft:bundle_contents" in stack.components:
+            stack_weight = bundle_weight(stack) + Fraction(1, 16)
+        elif bees:
+            stack_weight = Fraction(1)
+        else:
+            stack_weight = Fraction(1, stack.max_stack_size)
+        weight += stack_weight * stack.count
+    return weight
 
 
 class ItemModelRangeDispatchDamage(ItemModelRangeDispatchBase):
@@ -538,16 +572,10 @@ class ItemModelRangeDispatchDamage(ItemModelRangeDispatchBase):
     normalize: Optional[bool] = True
 
     def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
-        if not item.components:
-            return 0.0
-        if not "minecraft:damage" in item.components:
-            return 0.0
-        if not "minecraft:max_damage" in item.components:
-            return 0.0
-        damage = item.components["minecraft:damage"]
-        max_damage = item.components["minecraft:max_damage"]
+        damage, max_damage = item.damage, item.max_damage
         if self.normalize:
-            return damage / max_damage
+            # 0 / 0 is NaN in vanilla, so items without max_damage take the fallback
+            return clamp(0.0, damage / max_damage, 1.0) if max_damage else math.nan
         return clamp(0.0, damage, max_damage)
 
 
@@ -556,14 +584,9 @@ class ItemModelRangeDispatchCount(ItemModelRangeDispatchBase):
     normalize: Optional[bool] = True
 
     def resolve_range_dispatch(self, getter: PackGetter, item: Item) -> float:
-        if not item.components:
-            return 0.0
-        if not "minecraft:max_stack_size" in item.components:
-            return 0.0
-        count = item.count
-        max_stack_size = item.components["minecraft:max_stack_size"]
+        count, max_stack_size = item.count, item.max_stack_size
         if self.normalize:
-            return count / max_stack_size
+            return clamp(0.0, count / max_stack_size, 1.0)
         return clamp(0.0, count, max_stack_size)
 
 
@@ -626,14 +649,50 @@ class ItemModelBundleSelectedItem(ItemModelBase):
     type: Literal["minecraft:bundle/selected_item", "bundle/selected_item"]
 
 
+# the transformation vanilla's item definitions give each special model (26.3), column-major.
+# Special models built from the entity models themselves (copper golem statue, bell, book)
+# are not listed: their transformation applies as is.
+_FLIP_YZ = (1.0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, -1.0, 0)
+VANILLA_SPECIAL_TRANSFORMATIONS: dict[str, tuple[float, ...]] = {
+    "minecraft:banner": (0.6666667, 0, 0, 0, 0, -0.6666667, 0, 0, 0, 0, -0.6666667, 0, 0.5, 0, 0.5, 1),
+    "minecraft:shulker_box": (0.9995, 0, 0, 0, 0, -0.9995, 0, 0, 0, 0, -0.9995, 0, 0.5, 1.4995, 0.5, 1),
+    "minecraft:conduit": (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.5, 0.5, 0.5, 1),
+    "minecraft:head": (*_FLIP_YZ, 0.5, 0, 0.5, 1),
+    "minecraft:player_head": (*_FLIP_YZ, 0.5, 0, 0.5, 1),
+    "minecraft:shield": (*_FLIP_YZ, 0, 0, 0, 1),
+}
+
+
 class ItemModelSpecial(ItemModelBase):
     type: Literal["minecraft:special", "special"]
     base: str
     model: SpecialModel
 
+    def split_transformation(self) -> tuple[Optional[Transformation], Optional[Transformation]]:
+        """(transformation, calibration) to draw the special geometry with.
+
+        Vanilla's special renderers draw entity models, which the item definition moves
+        into place with a transformation. Our special geometries are block models that
+        were calibrated with that vanilla transformation applied the old way (in pixels,
+        around the model center): that is the calibration. Whatever the item definition
+        adds on top of the vanilla transformation is applied like any other.
+        """
+        default = VANILLA_SPECIAL_TRANSFORMATIONS.get(resolve_key(self.model.root.get("type", "")))
+        if default is None:
+            return self.transformation, None
+        calibration = Transformation.from_matrix(default)  # type: ignore
+        if self.transformation is None:
+            # what the item definition asks for is "no transformation": undo vanilla's
+            inverse = np.linalg.inv(np.array(default).reshape(4, 4).T)
+            return Transformation.from_matrix(tuple(inverse.T.flatten())), calibration  # type: ignore
+        actual = np.array(self.transformation.get_matrix()).reshape(4, 4).T
+        delta = actual @ np.linalg.inv(np.array(default).reshape(4, 4).T)
+        if np.allclose(delta, np.identity(4), atol=1e-6):
+            return None, calibration
+        return Transformation.from_matrix(tuple(delta.T.flatten())), calibration  # type: ignore
+
     def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
-        opts = getter._ctx.validate("model_resolver", ModelResolverOptions)
-        if not opts.special_rendering:
+        if not getter.opts.special_rendering:
             return MinecraftModel()
         child = self.model.special_model.get_model(getter, item)
         scale = self.model.special_model.get_scale()
@@ -698,13 +757,7 @@ class ItemModelRecursive(RootModel[Any]):
 
     @cached_property
     def model(self) -> ItemModelBase:
-        errors = []
-        for cls in reversed(ItemModelBaseClass):
-            try:
-                return cls.model_validate(self.root)
-            except ValidationError as e:
-                errors.append(e)
-        raise ValidationError(errors)
+        return validate_dispatched(self.root, ItemModelBaseClass, "item model")
 
     def resolve(
         self, getter: PackGetter, item: Item

@@ -10,7 +10,19 @@ from typing import Any, ClassVar, Generator, Literal, Optional, Union
 
 import numpy as np
 from beet import NamespaceProxy, TagFile
-from nbtlib import Byte, ByteArray, Compound, Double, List, String, parse_nbt
+from nbtlib import (
+    Byte,
+    Compound,
+    Double,
+    Float,
+    IncompatibleItemType,
+    Int,
+    List,
+    Long,
+    Short,
+    String,
+    parse_nbt,
+)
 from nbtlib.tag import Base as NbtTag
 from pydantic import BaseModel, Field, RootModel, model_validator
 
@@ -453,29 +465,44 @@ class BundleContentsPredicate(ContainerPredicate):
         return [ctx.item.nested(stack) for stack in value]
 
 
-def to_nbt(value: Any) -> Optional[NbtTag]:
+def json_number(value: int | float) -> NbtTag:
+    """JsonOps.convertTo: the narrowest integer tag holding an integral value, else a float
+    when the value survives float32, else a double."""
+    if isinstance(value, float) and value.is_integer() and -(2**63) <= value < 2**63:
+        value = int(value)
+    if isinstance(value, int):
+        for tag, bits in ((Byte, 8), (Short, 16), (Int, 32), (Long, 64)):
+            if -(2 ** (bits - 1)) <= value < 2 ** (bits - 1):
+                return tag(value)
+        value = float(value)
+    return Float(value) if float(np.float32(value)) == value else Double(value)
+
+
+def to_nbt(value: Any) -> Optional[NbtTag | list[Any]]:
     """A component value as NBT: SNBT strings are parsed, JSON values converted like
-    Dynamic.convert(NbtOps) does, where every number becomes a double."""
+    Dynamic.convert(NbtOps) does."""
     if isinstance(value, NbtTag):
         return value
     if isinstance(value, bool):
         return Byte(value)
     if isinstance(value, (int, float)):
-        return Double(value)
+        return json_number(value)
     if isinstance(value, str):
         return String(value)
     if isinstance(value, dict):
         return Compound({key: to_nbt(x) for key, x in value.items()})
     if isinstance(value, list):
+        # NbtOps.createList: always a ListTag, never an array
         tags = [to_nbt(x) for x in value]
-        if tags and all(isinstance(x, Byte) for x in tags):
-            # NbtOps collects a list of bytes into a byte array
-            return ByteArray(tags)
-        return List(tags)
+        try:
+            return List(tags)
+        except IncompatibleItemType:
+            # a ListTag mixes element types since 1.21.5, an nbtlib List can't
+            return tags
     return None
 
 
-def compare_nbt(expected: Optional[NbtTag], actual: Optional[NbtTag]) -> bool:
+def compare_nbt(expected: Optional[NbtTag | list[Any]], actual: Optional[NbtTag | list[Any]]) -> bool:
     """NbtUtils.compareNbt(expected, actual, partialListMatches=true)"""
     if expected is None:
         return True
@@ -485,9 +512,9 @@ def compare_nbt(expected: Optional[NbtTag], actual: Optional[NbtTag]) -> bool:
         if not isinstance(actual, Compound) or len(actual) < len(expected):
             return False
         return all(compare_nbt(x, actual.get(key)) for key, x in expected.items())
-    if isinstance(expected, List):
+    if isinstance(expected, list):
         # every expected element matches some actual element, [] only matches []
-        if not isinstance(actual, List):
+        if not isinstance(actual, list):
             return False
         if len(expected) == 0:
             return len(actual) == 0

@@ -42,7 +42,7 @@ Two examples cover the newer features: [examples/potions](../examples/potions) (
 
 ### P: component predicates
 
-Rewritten after `net.minecraft.core.component.predicates` ([data_component_predicate.py](../model_resolver/item_model/data_component_predicate.py)): `MinMaxBounds`, holder sets with tags and `{id, required}` entries, `CollectionPredicate` (`contains` / `count` / `size`), nested `ItemPredicate`s, every 26.3 predicate, any other component id as a presence check, and `custom_data` with `NbtUtils.compareNbt` (partial lists, typed tags, JSON numbers read as doubles like `NbtOps`). Pre-26.1 shapes of `potion_contents` and `jukebox_playable` are still read.
+Rewritten after `net.minecraft.core.component.predicates` ([data_component_predicate.py](../model_resolver/item_model/data_component_predicate.py)): `MinMaxBounds`, holder sets with tags and `{id, required}` entries, `CollectionPredicate` (`contains` / `count` / `size`), nested `ItemPredicate`s, every 26.3 predicate, any other component id as a presence check, and `custom_data` with `NbtUtils.compareNbt` (partial lists, typed tags, JSON numbers take the narrowest tag like `JsonOps.convertTo`: byte, short, int or long, else float or double; JSON lists are always `ListTag`s). Pre-26.1 shapes of `potion_contents` and `jukebox_playable` are still read.
 
 ### G: geometry, model files, lighting
 

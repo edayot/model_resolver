@@ -1,6 +1,7 @@
 """`minecraft:condition` with `property: minecraft:component` (data component predicates)."""
 
 import pytest
+from nbtlib import Int
 
 from resolver_testkit import make_getter, make_item, model_node, resolve_item_model
 
@@ -131,11 +132,85 @@ class TestNbtTypes:
         assert not matches("minecraft:custom_data", "{flag:1}", components)
         assert matches("minecraft:custom_data", "{flag:1b}", components)
 
-    def test_json_numbers_are_doubles(self):
-        # Dynamic.convert(NbtOps) turns every JSON number into a double
+    @pytest.mark.parametrize(
+        "number, snbt",
+        [
+            (1, "1b"),
+            (-128, "-128b"),
+            (256, "256s"),
+            (40000, "40000"),
+            (2**40, f"{2**40}L"),
+            (2.0, "2b"),
+            (0.5, "0.5f"),
+            (0.1, "0.1d"),
+        ],
+    )
+    def test_json_numbers_take_the_narrowest_type(self, number, snbt):
+        # JsonOps.convertTo: byte, short, int or long when integral, else float or double
+        components = {"minecraft:custom_data": {"count": number}}
+        assert matches("minecraft:custom_data", f"{{count:{snbt}}}", components)
+        assert matches("minecraft:custom_data", {"count": number}, components)
+
+    def test_json_numbers_are_not_doubles(self):
         components = {"minecraft:custom_data": {"count": 1}}
-        assert matches("minecraft:custom_data", {"count": 1}, components)
+        assert not matches("minecraft:custom_data", "{count:1d}", components)
         assert not matches("minecraft:custom_data", "{count:1}", components)
+
+    def test_json_lists_are_list_tags(self):
+        # JsonOps.convertList -> NbtOps.createList, never an array
+        components = {"minecraft:custom_data": {"list": [1, 2]}}
+        assert matches("minecraft:custom_data", "{list:[1b, 2b]}", components)
+        assert not matches("minecraft:custom_data", "{list:[B; 1b, 2b]}", components)
+
+    def test_json_lists_can_mix_number_types(self):
+        components = {"minecraft:custom_data": {"list": [1, 300]}}
+        assert matches("minecraft:custom_data", {"list": [300]}, components)
+        assert matches("minecraft:custom_data", "{list:[300s]}", components)
+
+    def test_nbt_tags_in_json_keep_their_type(self):
+        components = {"minecraft:custom_data": {"count": Int(0)}}
+        assert matches("minecraft:custom_data", "{count:0}", components)
+
+
+class TestSimpleDrawerCompactingDrawer:
+    """SimpleDrawer's new_drawer item model on its compacting drawer, whose
+    custom_data is plain JSON while the model's predicates are SNBT."""
+
+    @staticmethod
+    def drawer(**custom_data):
+        data = {"wood_type": "simpledrawer:compacting", "variant": "normal", **custom_data}
+        stored = {
+            "id": "minecraft:stone",
+            "count": 1,
+            "components": {"minecraft:custom_data": {"simpledrawer": data}},
+        }
+        return {"minecraft:container": [{"slot": 0, "item": stored}]}
+
+    @staticmethod
+    def contains(custom_data):
+        return {"items": {"contains": [{"predicates": {"minecraft:custom_data": custom_data}}]}}
+
+    @pytest.mark.parametrize("slot_count", [1, 2, 3])
+    def test_slot_count_selects_the_compacting_model(self, slot_count):
+        components = self.drawer(slot_count=slot_count)
+        value = self.contains(f"{{simpledrawer: {{slot_count: {slot_count}b }} }}")
+        assert matches("minecraft:container", value, components)
+
+    def test_other_slot_counts_do_not_match(self):
+        components = self.drawer(slot_count=3)
+        value = self.contains("{simpledrawer: {slot_count: 1b }}")
+        assert not matches("minecraft:container", value, components)
+
+    def test_wood_type(self):
+        components = self.drawer(slot_count=3)
+        value = self.contains({"simpledrawer": {"wood_type": "simpledrawer:compacting"}})
+        assert matches("minecraft:container", value, components)
+
+    def test_json_item_counts_are_bytes_not_ints(self):
+        # the game reads {"0": 0} from JSON as 0b, which `{0: 0}` (an int) does not match
+        value = self.contains("{simpledrawer: {items_counts: {0: 0, 1: 0}}}")
+        assert not matches("minecraft:container", value, self.drawer(items_counts={"0": 0, "1": 0}))
+        assert matches("minecraft:container", value, self.drawer(items_counts={"0": Int(0), "1": Int(0)}))
 
 
 class TestHolderSets:

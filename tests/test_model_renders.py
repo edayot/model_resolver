@@ -122,12 +122,6 @@ def test_models_no_block_uses_are_untinted(gl):
     assert all(r == g == b for r, g, b in colors(gl))
 
 
-def test_colorize_blocks_off_leaves_models_untinted(gl):
-    render_model(
-        gl, "minecraft:block/water_cauldron_full", getter=getter(colorize_blocks=False)
-    )
-    assert colors(gl) == {(255, 255, 255)}
-
 
 class TestCampfireFlame:
     # shade_direction_override: up

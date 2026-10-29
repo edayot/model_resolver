@@ -1069,9 +1069,6 @@ class StructureRenderTask(GenericModelRenderTask):
         task.run()
 
     def get_tints(self, model: str, palleted) -> list[TintSource]:
-        if not self.getter.opts.colorize_blocks:
-            return []
-
         # BlockColors, with the colors of the structure's biome
         colors = block_tints(self.getter, self.biome_colors, palleted.Name, palleted.Properties)
         if colors is not None:

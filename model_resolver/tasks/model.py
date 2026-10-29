@@ -131,7 +131,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
     shade_override: bool = True
 
     def get_tints(self) -> list[TintSource]:
-        if self.tints or not self.getter.opts.colorize_blocks:
+        if self.tints:
             return self.tints
         colors = model_tints(self.getter, load_biome(self.getter, self.biome), self.model)
         if colors is None:

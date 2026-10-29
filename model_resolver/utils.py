@@ -100,7 +100,6 @@ class ModelResolverOptions(BaseModel):
     use_cache: bool = False
     minecraft_version: str = "latest"
     special_rendering: bool = False
-    colorize_blocks: bool = True
     preferred_minecraft_generated: Literal["misode/mcmeta", "java"] = "misode/mcmeta"
     transparent_missingno: bool = True
     render_size: Optional[int] = None

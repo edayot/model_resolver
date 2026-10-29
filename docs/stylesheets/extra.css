@@ -1,0 +1,5 @@
+/* keep option names and defaults on one line */
+.md-typeset table:not([class]) td:not(:last-child),
+.md-typeset table:not([class]) th:not(:last-child) {
+  white-space: nowrap;
+}

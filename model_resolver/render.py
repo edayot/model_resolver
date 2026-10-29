@@ -26,7 +26,7 @@ from pathlib import Path
 from PIL import Image
 
 from model_resolver.tasks.base import AnimationType, Task, RenderError
-from model_resolver.tasks.generic_render import set_default_blend
+from model_resolver.tasks.generic_render import GlTextures, set_default_blend
 
 
 def unpremultiply(image: Image.Image) -> Image.Image:
@@ -424,7 +424,10 @@ class Render:
         glutIdleFunc(self.display)
         glutReshapeFunc(self.reshape)
 
-        glutMainLoop()
+        try:
+            glutMainLoop()
+        finally:
+            self.ctx.inject(GlTextures).clear()
 
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)
@@ -512,7 +515,10 @@ class Render:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)  # type: ignore
 
         self.current_task.dynamic_textures = self.dynamic_textures
-        self.current_task.run()
+        try:
+            self.current_task.run()
+        finally:
+            self.ctx.inject(GlTextures).release_transient()
 
         pixel_data = glReadPixels(
             0,

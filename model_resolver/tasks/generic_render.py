@@ -3,7 +3,7 @@ from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
-from beet import Texture
+from beet import Context, Texture
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -178,6 +178,65 @@ class GuiLighting:
 type TextureBindings = dict[str, TextureBindingsValue]
 
 
+def rgba(image: Image.Image) -> Image.Image:
+    """The image as RGBA, without the copy convert makes when it already is."""
+    return image if image.mode == "RGBA" else image.convert("RGBA")
+
+
+class GlTextures:
+    """The GPU copies of the images drawn by a render, shared by all its tasks.
+
+    One per beet context (`ctx.inject(GlTextures)`): a context runs one pipeline, and a
+    process can run several, each with its own OpenGL context.
+
+    Textures named by a path are uploaded once and kept until `clear`. Images made on the fly
+    (animation frames, overrides) are freed by `release_transient` once their task is drawn.
+    """
+
+    def __init__(self, ctx: Context):
+        self.by_path: dict[str, int] = {}
+        self.transient: dict[int, tuple[Image.Image, int]] = {}
+
+    @staticmethod
+    def upload(image: Image.Image, repeat: bool = False) -> int:
+        image = rgba(image)
+        tex_id: int = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, tex_id)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        if repeat:
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexImage2D(
+            GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
+            GL_RGBA, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGBA"),
+        )
+        return tex_id
+
+    def from_path(self, key: str, image: Image.Image, repeat: bool = False) -> int:
+        if key not in self.by_path:
+            self.by_path[key] = self.upload(image, repeat)
+        return self.by_path[key]
+
+    def from_image(self, image: Image.Image) -> int:
+        entry = self.transient.get(id(image))
+        if entry is None:
+            # the image is kept so its id can't be reused while the texture lives
+            entry = self.transient[id(image)] = (image, self.upload(image))
+        return entry[1]
+
+    def release_transient(self):
+        if self.transient:
+            glDeleteTextures([tex_id for _, tex_id in self.transient.values()])
+            self.transient.clear()
+
+    def clear(self):
+        self.release_transient()
+        if self.by_path:
+            glDeleteTextures(list(self.by_path.values()))
+            self.by_path.clear()
+
+
 class FrameModel(BaseModel):
     index: int
     time: Optional[int] = None
@@ -288,6 +347,10 @@ class GenericModelRenderTask(Task):
     vanilla_display_defaults: ClassVar[bool] = False
     """Items use no transform for a context their models don't define (ItemTransform.NO_TRANSFORM),
     model renders keep a block-like gui default."""
+
+    @property
+    def gl_textures(self) -> GlTextures:
+        return self.getter._ctx.inject(GlTextures)
 
     def flush(self):
         super().flush()
@@ -416,7 +479,7 @@ class GenericModelRenderTask(Task):
                 layers: list[MultiTextureResolved] = []
                 for texture, tint in value:
                     if isinstance(texture, Image.Image):
-                        layers.append((texture.convert("RGBA"), tint))
+                        layers.append((rgba(texture), tint))
                         continue
                     path = resolve_key(texture)
                     if path in self.getter.assets.textures:
@@ -429,8 +492,7 @@ class GenericModelRenderTask(Task):
                         img = self.get_missingno()
                         log.warning(f"Texture {key} not found at {path}")
 
-                    img = img.convert("RGBA")
-                    layers.append((img, tint))
+                    layers.append((rgba(img), tint))
                 res[key] = (tuple(layers), key)
             else:
                 path = resolve_key(value)
@@ -443,8 +505,7 @@ class GenericModelRenderTask(Task):
                 else:
                     img = self.get_missingno()
                     log.warning(f"Texture {key} not found at {path}")
-                img = img.convert("RGBA")
-                res[key] = (img, path)
+                res[key] = (rgba(img), path)
         return res
 
     def generate_textures_bindings(
@@ -454,46 +515,13 @@ class GenericModelRenderTask(Task):
         textures = self.load_textures(model, source)
         for key, (value, path) in textures.items():
             if isinstance(value, Image.Image):
-                tex_id: int = glGenTextures(1)
-                glBindTexture(GL_TEXTURE_2D, tex_id)
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                value = value.convert("RGBA")
-                img_data = value.tobytes("raw", "RGBA")
-                glTexImage2D(
-                    GL_TEXTURE_2D,
-                    0,
-                    GL_RGBA,
-                    value.width,
-                    value.height,
-                    0,
-                    GL_RGBA,
-                    GL_UNSIGNED_BYTE,
-                    img_data,
-                )
+                if path == "dynamic":
+                    tex_id = self.gl_textures.from_image(value)
+                else:
+                    tex_id = self.gl_textures.from_path(path, value)
                 res[key] = (((tex_id, None),), path)
             elif isinstance(value, tuple):
-                res_value: list[tuple[int, TintSource | None]] = []
-                for img, tint in value:
-                    tex_id: int = glGenTextures(1)
-                    glBindTexture(GL_TEXTURE_2D, tex_id)
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                    img = img.convert("RGBA")
-                    img_data = img.tobytes("raw", "RGBA")
-                    glTexImage2D(
-                        GL_TEXTURE_2D,
-                        0,
-                        GL_RGBA,
-                        img.width,
-                        img.height,
-                        0,
-                        GL_RGBA,
-                        GL_UNSIGNED_BYTE,
-                        img_data,
-                    )
-                    res_value.append((tex_id, tint))
-                res[key] = (tuple(res_value), path)
+                res[key] = (tuple((self.gl_textures.from_image(img), tint) for img, tint in value), path)
             else:
                 raise RenderError(f"Unknown texture type {type(value)} for key {key}")
         return res
@@ -539,18 +567,7 @@ class GenericModelRenderTask(Task):
         texture = self.getter.assets.textures.get("minecraft:misc/enchanted_glint_item")
         if texture is None:
             return None
-        image = texture.image.convert("RGBA")
-        tex_id: int = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGBA"),
-        )
-        return tex_id
+        return self.gl_textures.from_path("minecraft:misc/enchanted_glint_item", texture.image, repeat=True)
 
     def extrude_generated(self, model: MinecraftModel, source: Optional[str] = None) -> MinecraftModel:
         """Add the side faces of a builtin/generated model, they depend on its textures' alpha."""
@@ -777,21 +794,6 @@ class GenericModelRenderTask(Task):
 
         rotated_vertices = [vertices[i] for i in vertices_order]
         texcoords = [(0, 1), (2, 1), (2, 3), (0, 3)]
-        triangulated_vertices = [
-            (rotated_vertices[0], rotated_vertices[1], rotated_vertices[2]),
-            (rotated_vertices[0], rotated_vertices[2], rotated_vertices[3]),
-        ]
-        normals = []
-        for v0, v1, v2 in triangulated_vertices:
-            u = [v1[i] - v0[i] for i in range(3)]
-            v = [v2[i] - v0[i] for i in range(3)]
-            normal = [
-                u[1] * v[2] - u[2] * v[1],
-                u[2] * v[0] - u[0] * v[2],
-                u[0] * v[1] - u[1] * v[0],
-            ]
-            normals.append(normal)
-
         # glUseProgram(self.program)
         # print(glGetError())
         # self.set_uniforms(self.program)
@@ -817,9 +819,6 @@ class GenericModelRenderTask(Task):
                 glPolygonOffset(-layer_index * depht_coef, -layer_index * depht_coef)
 
             glBegin(GL_QUADS)
-            for i, (v0, v1, v2) in enumerate(triangulated_vertices):
-                normal = normals[i]
-                glNormal3fv(normal)
             for i, (uv0, uv1) in enumerate(texcoords):
                 u, v = uv[uv0], uv[uv1]
                 if uv_transform is not None:
@@ -841,16 +840,7 @@ class GenericModelRenderTask(Task):
         glDisable(GL_TEXTURE_2D)
 
     def upload_texture(self, image: Image.Image) -> int:
-        image = image.convert("RGBA")
-        tex_id: int = glGenTextures(1)
-        glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGBA"),
-        )
-        return tex_id
+        return self.gl_textures.from_image(image)
 
     def draw_quad(
         self,

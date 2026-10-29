@@ -634,13 +634,20 @@ class StructureRenderTask(GenericModelRenderTask):
             self._fluid_textures[key] = image
         return self._fluid_textures[key]
 
+    @cached_property
+    def _parsed_models(self) -> dict[str, MinecraftModel]:
+        return {}
+
     def get_parsed_model(self, key: str) -> MinecraftModel:
-        model = self.getter.assets.models.get(key)
-        if not model:
-            raise RenderError(f"Model {key} not found")
-        return MinecraftModel.model_validate(
-            resolve_model(model.data, self.getter)
-        ).bake()
+        """The baked model, shared by every block that uses it: copy it before changing it."""
+        if key not in self._parsed_models:
+            model = self.getter.assets.models.get(key)
+            if not model:
+                raise RenderError(f"Model {key} not found")
+            self._parsed_models[key] = MinecraftModel.model_validate(
+                resolve_model(model.data, self.getter)
+            ).bake()
+        return self._parsed_models[key]
 
     def get_block_variants(self, palleted: PaletteModel) -> list[Variant]:
         """The variants drawn for a block state, looked up through every pack.
@@ -1049,8 +1056,7 @@ class StructureRenderTask(GenericModelRenderTask):
         )
         model = model.bake()
         if self.images_override:
-            textures = self.get_textures(model, self.images_override)
-            model.textures = textures
+            model = model.model_copy(update={"textures": self.get_textures(model, self.images_override)})
 
         task = ModelRenderTask(
             getter=self.getter,

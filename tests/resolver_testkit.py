@@ -43,6 +43,12 @@ class FakeContext:
     def __init__(self, opts: ModelResolverOptions):
         self.opts = opts
         self.cache = OfflineCache()
+        self.services: dict[Any, Any] = {}
+
+    def inject(self, cls: Any) -> Any:
+        if cls not in self.services:
+            self.services[cls] = cls(self)
+        return self.services[cls]
 
     def validate(self, key: str, cls: Any) -> ModelResolverOptions:
         return self.opts

@@ -8,6 +8,7 @@ from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
 from typing import Optional, Literal, ClassVar, Generator, Self, Type, Union, Any
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.glint import ITEM_GLINT, GlintStyle
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import clamp, namespaced, resolve_key, validate_dispatched
 from model_resolver.minecraft_model import MISSING_MODEL_ID, MinecraftModel, missing_model, resolve_model
@@ -77,6 +78,9 @@ class ItemModelModel(ItemModelBase):
         self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         yield self
+
+    def glint(self) -> Optional[GlintStyle]:
+        return ITEM_GLINT
 
     def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         key = resolve_key(self.model)
@@ -649,72 +653,19 @@ class ItemModelBundleSelectedItem(ItemModelBase):
     type: Literal["minecraft:bundle/selected_item", "bundle/selected_item"]
 
 
-# the transformation vanilla's item definitions give each special model (26.3), column-major.
-# Special models built from the entity models themselves (copper golem statue, bell, book)
-# are not listed: their transformation applies as is.
-_FLIP_YZ = (1.0, 0, 0, 0, 0, -1.0, 0, 0, 0, 0, -1.0, 0)
-VANILLA_SPECIAL_TRANSFORMATIONS: dict[str, tuple[float, ...]] = {
-    "minecraft:banner": (0.6666667, 0, 0, 0, 0, -0.6666667, 0, 0, 0, 0, -0.6666667, 0, 0.5, 0, 0.5, 1),
-    "minecraft:shulker_box": (0.9995, 0, 0, 0, 0, -0.9995, 0, 0, 0, 0, -0.9995, 0, 0.5, 1.4995, 0.5, 1),
-    "minecraft:conduit": (1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.5, 0.5, 0.5, 1),
-    "minecraft:head": (*_FLIP_YZ, 0.5, 0, 0.5, 1),
-    "minecraft:player_head": (*_FLIP_YZ, 0.5, 0, 0.5, 1),
-    "minecraft:shield": (*_FLIP_YZ, 0, 0, 0, 1),
-}
-
-
 class ItemModelSpecial(ItemModelBase):
     type: Literal["minecraft:special", "special"]
     base: str
     model: SpecialModel
 
-    def split_transformation(self) -> tuple[Optional[Transformation], Optional[Transformation]]:
-        """(transformation, calibration) to draw the special geometry with.
-
-        Vanilla's special renderers draw entity models, which the item definition moves
-        into place with a transformation. Our special geometries are block models that
-        were calibrated with that vanilla transformation applied the old way (in pixels,
-        around the model center): that is the calibration. Whatever the item definition
-        adds on top of the vanilla transformation is applied like any other.
-        """
-        default = VANILLA_SPECIAL_TRANSFORMATIONS.get(resolve_key(self.model.root.get("type", "")))
-        if default is None:
-            return self.transformation, None
-        calibration = Transformation.from_matrix(default)  # type: ignore
-        if self.transformation is None:
-            # what the item definition asks for is "no transformation": undo vanilla's
-            inverse = np.linalg.inv(np.array(default).reshape(4, 4).T)
-            return Transformation.from_matrix(tuple(inverse.T.flatten())), calibration  # type: ignore
-        actual = np.array(self.transformation.get_matrix()).reshape(4, 4).T
-        delta = actual @ np.linalg.inv(np.array(default).reshape(4, 4).T)
-        if np.allclose(delta, np.identity(4), atol=1e-6):
-            return None, calibration
-        return Transformation.from_matrix(tuple(delta.T.flatten())), calibration  # type: ignore
-
     def get_model(self, getter: PackGetter, item: Item) -> MinecraftModel:
         if not getter.opts.special_rendering:
             return MinecraftModel()
         child = self.model.special_model.get_model(getter, item)
-        scale = self.model.special_model.get_scale()
-        rotations = self.model.special_model.get_additional_rotations()
         translations = self.model.special_model.get_additional_translations()
         child["parent"] = resolve_key(self.base)
         merged = resolve_model(child, getter, delete_parent_elements=True)
         res = MinecraftModel.model_validate(merged).bake()
-        init_scale = res.display.gui.scale
-        res.display.gui.scale = (
-            init_scale[0] * scale,
-            init_scale[1] * scale,
-            init_scale[2] * scale,
-        )
-
-        init_rotation = res.display.gui.rotation
-        if rotations:
-            res.display.gui.rotation = (
-                init_rotation[0] + rotations[0],
-                init_rotation[1] + rotations[1],
-                init_rotation[2] + rotations[2],
-            )
         init_translation = res.display.gui.translation
         if translations:
             res.display.gui.translation = (
@@ -731,6 +682,9 @@ class ItemModelSpecial(ItemModelBase):
 
     def get_tints(self, getter: PackGetter, item: Item) -> list[TintSource]:
         return self.model.special_model.get_tints(getter, item)
+
+    def glint(self) -> Optional[GlintStyle]:
+        return self.model.special_model.glint()
 
 
 class ItemModelEmpty(ItemModelBase):

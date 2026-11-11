@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.glint import ITEM_GLINT, MODEL_ATLASES, GlintStyle, has_foil
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import (
     resolve_key,
@@ -158,16 +159,14 @@ class GuiLighting:
         gui_light: str,
         display: "DisplayOptionModel",
         transformation: Optional[Transformation] = None,
-        calibration: Optional[Transformation] = None,
     ) -> "GuiLighting":
         # GuiItemAtlas scales the slot by (1, -1, 1), then ItemTransform.apply rotates
         # (rotationXYZ) and scales, then the item model transformation applies
         rx, ry, rz = (angle * pi / 180 for angle in display.rotation)
         pose = _rotate(_rotate(_rotate(np.diag([1.0, -1.0, 1.0]), "x", rx), "y", ry), "z", rz)
         pose = pose @ np.diag(display.scale)
-        for extra in (transformation, calibration):
-            if extra is not None:
-                pose = pose @ np.array(extra.get_matrix()).reshape(4, 4).T[:3, :3]
+        if transformation is not None:
+            pose = pose @ np.array(transformation.get_matrix()).reshape(4, 4).T[:3, :3]
         return cls(LIGHTS.get(gui_light, LIGHTS["side"]), np.linalg.inv(pose).T)
 
     def brightness(self, normal: np.ndarray) -> float:
@@ -175,6 +174,17 @@ class GuiLighting:
         n = n / np.linalg.norm(n)
         light0, light1 = (max(0.0, float(light @ n)) for light in self.lights)
         return min(1.0, (light0 + light1) * 0.6 + 0.4)
+
+
+GLINT_TEXTURE = "minecraft:misc/enchanted_glint_item"
+GLINT_STRENGTH = 0.75
+"""Options.glintStrength, GlintAlpha in the shaders."""
+GLINT_UNITS_PER_TICK = 50 * 0.5 * 8
+"""TextureTransform.setupGlintTexturing: milliseconds * glintSpeed (0.5 by default) * 8."""
+GLINT_LOOP_TICKS = int(np.lcm(110000, 30000) // GLINT_UNITS_PER_TICK)
+"""The glint moves along u every 110000 units and along v every 30000: 1650 ticks."""
+FRAME_SPRITE = "model_resolver:sprite"
+"""Key of `Image.info` naming the sprite an animation frame was cut from."""
 type TextureBindings = dict[str, TextureBindingsValue]
 
 
@@ -198,12 +208,12 @@ class GlTextures:
         self.transient: dict[int, tuple[Image.Image, int]] = {}
 
     @staticmethod
-    def upload(image: Image.Image, repeat: bool = False) -> int:
+    def upload(image: Image.Image, repeat: bool = False, blur: bool = False) -> int:
         image = rgba(image)
         tex_id: int = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR if blur else GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR if blur else GL_NEAREST)
         if repeat:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
@@ -213,9 +223,9 @@ class GlTextures:
         )
         return tex_id
 
-    def from_path(self, key: str, image: Image.Image, repeat: bool = False) -> int:
+    def from_path(self, key: str, image: Image.Image, repeat: bool = False, blur: bool = False) -> int:
         if key not in self.by_path:
-            self.by_path[key] = self.upload(image, repeat)
+            self.by_path[key] = self.upload(image, repeat, blur)
         return self.by_path[key]
 
     def from_image(self, image: Image.Image) -> int:
@@ -310,6 +320,8 @@ class TextureMcMetaModel(BaseModel):
 class TickGrouped(BaseModel):
     tick: dict[str, FrameState]
     duration: int
+    start: int
+    """The first tick of the frame, which sets the glint's position."""
 
 
 @dataclass
@@ -341,8 +353,11 @@ class GenericModelRenderTask(Task):
     """Keep textures aligned with the world through additional_rotations (blockstate uvlock)."""
     culled_faces: set[str] = field(default_factory=set)
     """World directions in which faces with that cullface are hidden by a neighbour."""
+    glint_tick: int = 0
+    """The game tick the enchantment glint is drawn at."""
     light: Any = field(default=None, init=False, repr=False)
-    glint: Optional[int] = field(default=None, init=False, repr=False)
+    glint_texture: Optional[int] = field(default=None, init=False, repr=False)
+    glint_style: Optional[GlintStyle] = field(default=None, init=False, repr=False)
 
     vanilla_display_defaults: ClassVar[bool] = False
     """Items use no transform for a context their models don't define (ItemTransform.NO_TRANSFORM),
@@ -386,7 +401,6 @@ class GenericModelRenderTask(Task):
         self,
         model: MinecraftModel,
         transformation: Optional[Transformation] = None,
-        calibration: Optional[Transformation] = None,
     ):
         if not self.do_rotate_camera:
             return
@@ -417,9 +431,6 @@ class GenericModelRenderTask(Task):
             glTranslatef(-8, -8, -8)
             glMultMatrixf(matrix)
             glTranslatef(8, 8, 8)
-        if calibration is not None:
-            # special models: see ItemModelSpecial.split_transformation
-            glMultMatrixf(calibration.get_matrix())
 
     def get_real_key(
         self, key: str, textures: dict[str, TextureSource]
@@ -493,7 +504,9 @@ class GenericModelRenderTask(Task):
                         log.warning(f"Texture {key} not found at {path}")
 
                     layers.append((rgba(img), tint))
-                res[key] = (tuple(layers), key)
+                # the base layer's sprite, where an entity glint is sampled
+                base = value[0][0] if value else None
+                res[key] = (tuple(layers), resolve_key(base) if isinstance(base, str) else key)
             else:
                 path = resolve_key(value)
                 if path in self.getter.assets.textures:
@@ -517,6 +530,7 @@ class GenericModelRenderTask(Task):
             if isinstance(value, Image.Image):
                 if path == "dynamic":
                     tex_id = self.gl_textures.from_image(value)
+                    path = value.info.get(FRAME_SPRITE, path)
                 else:
                     tex_id = self.gl_textures.from_path(path, value)
                 res[key] = (((tex_id, None),), path)
@@ -532,9 +546,11 @@ class GenericModelRenderTask(Task):
         tints: list[TintSource],
         source: Optional[str] = None,
         transformation: Optional[Transformation] = None,
-        calibration: Optional[Transformation] = None,
+        glint: Optional[GlintStyle] = ITEM_GLINT,
     ):
-        self.rotate_camera(model, transformation, calibration)
+        """`glint` is how the model draws the enchantment glint when the item has one, None
+        for models that never draw it (most special models)."""
+        self.rotate_camera(model, transformation)
         if model.generated_layers:
             model = self.extrude_generated(model, source)
         textures_bindings = self.generate_textures_bindings(model, source)
@@ -546,28 +562,20 @@ class GenericModelRenderTask(Task):
             lights = LIGHTS.get(model.gui_light, LIGHTS["side"])
             self.light = GuiLighting(lights, np.linalg.inv(self.lighting_pose).T)
         else:
-            self.light = GuiLighting.create(model.gui_light, display, transformation, calibration)
-        self.glint = self.load_glint() if self.has_foil() else None
+            self.light = GuiLighting.create(model.gui_light, display, transformation)
+        self.glint_texture = self.load_glint() if glint is not None and has_foil(self.item) else None
+        self.glint_style = glint
         # `shade` does nothing for items: the GUI light comes from the item shader
         for element in model.elements:
             self.draw_element(element, textures_bindings, tints)
 
-    def has_foil(self) -> bool:
-        """ItemStack.hasFoil: enchantment_glint_override, else being enchanted."""
-        components = self.item.components
-        override = components.get("minecraft:enchantment_glint_override")
-        if override is not None:
-            return bool(override)
-        enchantments = components.get("minecraft:enchantments") or {}
-        if isinstance(enchantments, dict) and isinstance(enchantments.get("levels"), dict):
-            enchantments = enchantments["levels"]
-        return len(enchantments) > 0
-
     def load_glint(self) -> Optional[int]:
-        texture = self.getter.assets.textures.get("minecraft:misc/enchanted_glint_item")
+        texture = self.getter.assets.textures.get(GLINT_TEXTURE)
         if texture is None:
             return None
-        return self.gl_textures.from_path("minecraft:misc/enchanted_glint_item", texture.image, repeat=True)
+        mcmeta = self.getter.assets.textures_mcmeta.get(GLINT_TEXTURE)
+        blur = bool(mcmeta and mcmeta.data.get("texture", {}).get("blur", False))
+        return self.gl_textures.from_path(GLINT_TEXTURE, texture.image, repeat=True, blur=blur)
 
     def extrude_generated(self, model: MinecraftModel, source: Optional[str] = None) -> MinecraftModel:
         """Add the side faces of a builtin/generated model, they depend on its textures' alpha."""
@@ -794,6 +802,12 @@ class GenericModelRenderTask(Task):
 
         rotated_vertices = [vertices[i] for i in vertices_order]
         texcoords = [(0, 1), (2, 1), (2, 3), (0, 3)]
+        vertex_uvs = []
+        for uv0, uv1 in texcoords:
+            u, v = uv[uv0], uv[uv1]
+            if uv_transform is not None:
+                u, v = (uv_transform @ np.array([u - 0.5, v - 0.5]) + 0.5).tolist()
+            vertex_uvs.append((u, v))
         # glUseProgram(self.program)
         # print(glGetError())
         # self.set_uniforms(self.program)
@@ -819,21 +833,18 @@ class GenericModelRenderTask(Task):
                 glPolygonOffset(-layer_index * depht_coef, -layer_index * depht_coef)
 
             glBegin(GL_QUADS)
-            for i, (uv0, uv1) in enumerate(texcoords):
-                u, v = uv[uv0], uv[uv1]
-                if uv_transform is not None:
-                    u, v = (uv_transform @ np.array([u - 0.5, v - 0.5]) + 0.5).tolist()
+            for vertex, (u, v) in zip(rotated_vertices, vertex_uvs):
                 glColor3f(*color)
                 glTexCoord2f(u, v)
-                glVertex3fv(rotated_vertices[i])
+                glVertex3fv(vertex)
             glEnd()
 
             # Disable polygon offset after use
             if layer_index > 0:
                 glDisable(GL_POLYGON_OFFSET_FILL)
 
-        if self.glint is not None:
-            self.draw_glint(rotated_vertices, texcoords, uv)
+        if self.glint_texture is not None:
+            self.draw_glint(rotated_vertices, vertex_uvs, bindings[1])
 
         set_default_blend()
 
@@ -865,21 +876,46 @@ class GenericModelRenderTask(Task):
             glEnd()
         glDisable(GL_TEXTURE_2D)
 
-    def draw_glint(self, vertices: list, texcoords: list[tuple[int, int]], uv: list[float]):
-        """The enchantment glint, still: TextureTransform.GLINT_TEXTURING at time 0 (a 10 degree
-        turn of the uvs scaled by 8), added to the face at the default glint strength (0.75)."""
-        glBindTexture(GL_TEXTURE_2D, self.glint)
-        # like the glint render types, only where the face itself was drawn
+    def glint_sprite_uv(self, sprite: str) -> Optional[tuple[float, float, float, float]]:
+        """Where the face's sprite is in the atlas its glint is sampled in, None to use the
+        texture's own coordinates."""
+        from model_resolver.atlas import MISSING_SPRITE, Atlases
+
+        style = self.glint_style
+        if style is None or style.atlas is None:
+            return None
+        atlases = self.getter._ctx.inject(Atlases)
+        if style.atlas == MODEL_ATLASES:
+            uv = atlases.model_sprite_uv(self.getter, sprite)
+            # an image that isn't a sprite is drawn where the game draws missing ones
+            return uv or atlases.layout(self.getter, "minecraft:blocks").uv(MISSING_SPRITE)
+        return atlases.layout(self.getter, style.atlas).uv(sprite)
+
+    def draw_glint(self, vertices: list, uvs: list[tuple[float, float]], sprite: str):
+        """The enchantment glint at `glint_tick`. Like the GLINT shaders and
+        TextureTransform.setupGlintTexturing: the glint texture is sampled at the vertex
+        uvs (in the atlas) scaled, turned by 10 degrees and moved with time, and its color
+        times the glint strength, squared, is added to the face."""
+        assert self.glint_style is not None
+        glBindTexture(GL_TEXTURE_2D, self.glint_texture)
+        # only where the face itself was drawn
         glDepthFunc(GL_EQUAL)
-        # BlendFunction.GLINT: added to the color, the alpha stays
+        # src * src + dst: glColor is the glint strength, the alpha stays
         glBlendFuncSeparate(GL_SRC_COLOR, GL_ONE, GL_ZERO, GL_ONE)
+        time = self.glint_tick * GLINT_UNITS_PER_TICK
+        offset_u = np.float32(time % 110000) / np.float32(110000)
+        offset_v = np.float32(time % 30000) / np.float32(30000)
+        rect = self.glint_sprite_uv(sprite)
+        scale = self.glint_style.scale
         c, s = cos(0.17453292), sin(0.17453292)
         glBegin(GL_QUADS)
-        for i, (uv0, uv1) in enumerate(texcoords):
-            u, v = uv[uv0] * 8, uv[uv1] * 8
-            glColor3f(0.75, 0.75, 0.75)
-            glTexCoord2f(c * u - s * v, s * u + c * v)
-            glVertex3fv(vertices[i])
+        for vertex, (u, v) in zip(vertices, uvs):
+            if rect is not None:
+                u, v = rect[0] + (rect[2] - rect[0]) * u, rect[1] + (rect[3] - rect[1]) * v
+            u, v = u * scale, v * scale
+            glColor3f(GLINT_STRENGTH, GLINT_STRENGTH, GLINT_STRENGTH)
+            glTexCoord2f(c * u - s * v - offset_u, s * u + c * v + offset_v)
+            glVertex3fv(vertex)
         glEnd()
         glDepthFunc(GL_LEQUAL)
 
@@ -916,6 +952,8 @@ class Animation:
     animation_framerate: int
 
     source: Optional[str] = None
+    glint: bool = False
+    """An enchantment glint is drawn, which moves on every tick."""
 
     cache_texture_animated: Any = None
 
@@ -927,10 +965,7 @@ class Animation:
 
     @property
     def is_animated(self) -> bool:
-        texture_animated = self.get_texture_animated()
-        if len(texture_animated) == 0:
-            return False
-        return True
+        return self.glint or len(self.get_texture_animated()) > 0
 
     def texture_paths(self) -> Generator[str, None, None]:
         for textures in self.textures:
@@ -969,9 +1004,10 @@ class Animation:
         self,
         texture_animated: dict[str, AnimatedTexture],
     ) -> list[TickGrouped]:
-        total_number_of_tick = np.lcm.reduce(
-            [len(animated.ticks) for animated in texture_animated.values()]
-        )
+        loops = [len(animated.ticks) for animated in texture_animated.values()]
+        if self.glint:
+            loops.append(GLINT_LOOP_TICKS)
+        total_number_of_tick = int(np.lcm.reduce(loops))
         ticks_grouped: list[TickGrouped] = []
         for i in range(total_number_of_tick):
             tick = {
@@ -979,26 +1015,25 @@ class Animation:
                 for texture_path, animated in texture_animated.items()
             }
             # consecutive ticks that show the same images make one longer frame
-            if len(ticks_grouped) > 0 and ticks_grouped[-1].tick == tick:
+            if len(ticks_grouped) > 0 and ticks_grouped[-1].tick == tick and not self.glint:
                 ticks_grouped[-1].duration += 1
             else:
-                ticks_grouped.append(TickGrouped(tick=tick, duration=1))
+                ticks_grouped.append(TickGrouped(tick=tick, duration=1, start=i))
         return ticks_grouped
 
     def get_frames(
         self,
-    ) -> Generator[tuple[int, tuple[dict[str, Image.Image], int]], None, None]:
+    ) -> Generator[tuple[int, tuple[dict[str, Image.Image], int, int]], None, None]:
+        """(index, (images, duration, first tick)) of each frame."""
         if not self.is_animated:
             raise RenderError("Should not be called if is_animated is False")
         texture_animated = self.get_texture_animated()
-        if len(texture_animated) == 0:
-            raise RenderError("No animated textures found")
 
         ticks_grouped = self.get_tick_grouped(texture_animated)
 
         for i, tick in enumerate(ticks_grouped):
             images = self.get_images(tick, texture_animated)
-            yield i, (images, tick.duration)
+            yield i, (images, tick.duration, tick.start)
 
     @staticmethod
     def crop_frame(image: Image.Image, index: int, frame_size: tuple[int, int]) -> Image.Image:
@@ -1021,6 +1056,7 @@ class Animation:
             if progress > 0:
                 next_frame = self.crop_frame(img, next_index, frame_size)
                 frame = self.blend_images(frame, next_frame, progress)
+            frame.info[FRAME_SPRITE] = resolve_key(texture_path)
             images[texture_path] = frame
         return images
 

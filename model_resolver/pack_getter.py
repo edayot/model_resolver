@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING, Iterator, Mapping, Protocol, Optional, Sequence, Type, overload, cast
 
 from beet import LATEST_MINECRAFT_VERSION, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
@@ -217,7 +216,5 @@ class PackGetter():
         if minecraft_version == "latest":
             minecraft_version = LATEST_MINECRAFT_VERSION
         release = vanilla.releases[minecraft_version]
-        static_models = Path(__file__).parent / "static_models"
-        static_lookup = PackGetterLookup(assets=ResourcePack(path=static_models))        
-        return cls(ctx, release, static_lookup, opts, ["_ctx", "_static_lookup", "_vanilla", ])
+        return cls(ctx, release, PackGetterLookup(), opts, ["_ctx", "_vanilla"])
         

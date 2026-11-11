@@ -7,7 +7,8 @@ from beet import Blockstate
 from model_resolver.block_colors import Biome, block_tints, load_biome
 from model_resolver.blocks import FULL_BLOCK, BlockInfo, Box, block_info
 from model_resolver.item_model.item import Item
-from model_resolver.item_model.special import SpecialModelShulkerBox
+from model_resolver.item_model.glint import has_foil
+from model_resolver.item_model.special import SpecialModel
 from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
 from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask, _axis_rotation
 from model_resolver.tasks.fluids import FluidState, Position, tesselate_fluid
@@ -96,14 +97,6 @@ def _affine(linear: np.ndarray = np.identity(3), translation=(0.0, 0.0, 0.0)) ->
     return matrix
 
 
-def camera_matrix(display: DisplayOptionModel) -> np.ndarray:
-    """The matrix rotate_camera builds for a display transform (pixels)."""
-    tx, ty, tz = display.translation
-    rx, ry, rz = display.rotation
-    linear = _rot("x", -rx) @ _rot("y", ry + 180) @ _rot("z", rz) @ np.diag(display.scale)
-    return _affine(linear, (-tx, ty, -tz))
-
-
 Y_ROTATION = {"south": 0, "west": 90, "north": 180, "east": 270}
 OPPOSITE = {"south": "north", "north": "south", "west": "east", "east": "west"}
 DYE_COLORS = (
@@ -120,6 +113,25 @@ SKULLS = {
     "player_head": "player",
 }
 GOLEM_TEXTURES = {"": "", "exposed_": "_exposed", "weathered_": "_weathered", "oxidized_": "_oxidized"}
+CHEST_TEXTURES = {
+    "chest": "normal",
+    "trapped_chest": "trapped",
+    "ender_chest": "ender",
+    "copper_chest": "copper",
+    "exposed_copper_chest": "copper_exposed",
+    "weathered_copper_chest": "copper_weathered",
+    "oxidized_copper_chest": "copper_oxidized",
+}
+"""ChestSpecialRenderer's textures, `_left` and `_right` added for double chests."""
+DIRECTION_ROTATIONS = {
+    "down": _rot("x", 180),
+    "up": np.identity(3),
+    "north": _rot("x", 90) @ _rot("z", 180),
+    "south": _rot("x", 90),
+    "west": _rot("x", 90) @ _rot("z", 90),
+    "east": _rot("x", 90) @ _rot("z", -90),
+}
+"""Direction.getRotation (Quaternionf.rotationXYZ(x, y, z) is Rx @ Ry @ Rz)."""
 
 
 def builtin_block(
@@ -171,7 +183,26 @@ def builtin_block(
         return None, {"type": "minecraft:end_cube", "effect": "portal"}, placement, {}
     if path == "end_gateway":
         return None, {"type": "minecraft:end_cube", "effect": "gateway"}, np.identity(4), {}
-    statue = path.removeprefix("waxed_")
+    unwaxed = path.removeprefix("waxed_")
+    if unwaxed in CHEST_TEXTURES:
+        # ChestRenderer.modelTransformation, the christmas textures aside (local_time is static)
+        chest_type = properties.get("type", "single")
+        suffix = "" if chest_type == "single" else f"_{chest_type}"
+        special = {"type": "minecraft:chest", "texture": f"minecraft:{CHEST_TEXTURES[unwaxed]}{suffix}", "chest_type": chest_type}
+        turn = _affine(_rot("y", -Y_ROTATION[facing]))
+        placement = _affine(translation=(0.5, 0, 0.5)) @ turn @ _affine(translation=(-0.5, 0, -0.5))
+        return f"minecraft:{unwaxed}", special, placement, {}
+    for color in ("", *(f"{color}_" for color in DYE_COLORS)):
+        if path == f"{color}shulker_box":
+            texture = f"minecraft:shulker_{color.removesuffix('_')}" if color else "minecraft:shulker"
+            # ShulkerBoxRenderer.createModelTransform
+            placement = (
+                _affine(np.identity(3) * 0.9995, (0.5, 0.5, 0.5))
+                @ _affine(DIRECTION_ROTATIONS[properties.get("facing", "up")])
+                @ _affine(np.diag([1.0, -1.0, -1.0]), (0, 1, 0))
+            )
+            return f"minecraft:{path}", {"type": "minecraft:shulker_box", "texture": texture}, placement, {}
+    statue = unwaxed
     for prefix, suffix in GOLEM_TEXTURES.items():
         if statue == f"{prefix}copper_golem_statue":
             special = {
@@ -399,36 +430,41 @@ class StructureRenderTask(GenericModelRenderTask):
         center = (16 * center[0], 16 * center[1], 16 * center[2])
         for block in self.structure.blocks:
             self.render_block(block, center)
-        for entity in self.structure.entities or []:
-            if resolve_key(entity.get("nbt", {}).get("id", "")) == "minecraft:item_display":
-                self.render_item_display(entity, center)
+        for entity, item in self.display_items():
+            self.render_item_display(entity, item, center)
         # translucent fluids go last, over what is behind them
         for block in self.structure.blocks:
             self.render_fluid(block, center)
         random.seed()
 
-    def render_item_display(self, entity: dict[str, Any], center: tuple[float, float, float]):
+    def display_items(self) -> Generator[tuple[dict[str, Any], Item], None, None]:
+        """The item_display entities that hold an item, and their item."""
+        for entity in self.structure.entities or []:
+            nbt = entity.get("nbt", {})
+            if resolve_key(nbt.get("id", "")) != "minecraft:item_display" or "item" not in nbt:
+                continue
+            stack = nbt["item"]
+            item = Item(
+                id=stack["id"],
+                count=stack.get("count", 1),
+                components=stack.get("components", {}),
+                display_context=nbt.get("item_display", "none"),
+                owner=None,
+            )
+            try:
+                item.fill(self.getter._ctx)
+            except Exception as e:
+                log.warning(f"No default components for {item.id}: {e}")
+                item.__resolved__ = True
+            yield entity, item
+
+    def render_item_display(self, entity: dict[str, Any], item: Item, center: tuple[float, float, float]):
         """An item_display entity, like DisplayRenderer: position, billboard orientation
         (fixed: rotationYXZ(-yaw, pitch, 0)), transformation, a half turn around y, then the
         item rendered for its display context."""
-        from model_resolver.tasks.item import ItemRenderTask, get_transformations
+        from model_resolver.tasks.item import ItemRenderTask
 
         nbt = entity["nbt"]
-        if "item" not in nbt:
-            return
-        stack = nbt["item"]
-        item = Item(
-            id=stack["id"],
-            count=stack.get("count", 1),
-            components=stack.get("components", {}),
-            display_context=nbt.get("item_display", "none"),
-            owner=None,
-        )
-        try:
-            item.fill(self.getter._ctx)
-        except Exception as e:
-            log.warning(f"No default components for {item.id}: {e}")
-            item.__resolved__ = True
         render = ItemRenderTask(getter=self.getter, item=item)
         try:
             resolved = list(render.get_parsed_item_model().resolve(self.getter, item))
@@ -445,7 +481,7 @@ class StructureRenderTask(GenericModelRenderTask):
         position = [16 * x - c for x, c in zip(entity["pos"], center)]
         for model in resolved:
             model_def = model.get_model(self.getter, item).bake()
-            transformation, calibration = get_transformations(model)
+            transformation = model.transformation
             display = render.get_display(model_def)
             glPushMatrix()
             glTranslatef(*position)
@@ -475,9 +511,6 @@ class StructureRenderTask(GenericModelRenderTask):
                 glMultMatrixf(local)
                 glTranslatef(8, 8, 8)
                 pose = pose @ np.array(transformation.get_matrix()).reshape(4, 4).T[:3, :3]
-            if calibration is not None:
-                glMultMatrixf(calibration.get_matrix())
-                pose = pose @ np.array(calibration.get_matrix()).reshape(4, 4).T[:3, :3]
             ModelRenderTask(
                 getter=self.getter,
                 render_size=self.render_size,
@@ -488,6 +521,8 @@ class StructureRenderTask(GenericModelRenderTask):
                 tints=model.get_tints(self.getter, item),
                 lighting="level",
                 lighting_pose=pose,
+                glint=model.glint(),
+                glint_tick=self.glint_tick,
             ).run()
             glPopMatrix()
 
@@ -513,7 +548,7 @@ class StructureRenderTask(GenericModelRenderTask):
         return self._occlusion[state]
 
     def compute_occlusion(self, palleted: PaletteModel) -> Optional[str]:
-        if resolve_key(palleted.Name).endswith("_leaves") or self.render_special(palleted):
+        if resolve_key(palleted.Name).endswith("_leaves"):
             return None
         try:
             variants = self.get_block_variants(palleted)
@@ -684,6 +719,7 @@ class StructureRenderTask(GenericModelRenderTask):
             getter=self.getter,
             animation_framerate=self.animation_framerate,
             source=self.structure_key,
+            glint=any(has_foil(item) for _, item in self.display_items()),
         )
         if not animation.is_animated:
             self.animation_mode = "multi_files"
@@ -697,7 +733,7 @@ class StructureRenderTask(GenericModelRenderTask):
             self.animated_path_padding, len(str(len(frames) - 1))
         )
 
-        for i, (images, duration) in frames:
+        for i, (images, duration, tick) in frames:
             if self.path_save:
                 new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
                     i = i,
@@ -735,6 +771,7 @@ class StructureRenderTask(GenericModelRenderTask):
                 dynamic_textures=self.dynamic_textures,
                 images_override=images,
                 animation_duration=duration,
+                glint_tick=tick,
                 display_option=self.display_option,
                 biome=self.biome,
             )
@@ -756,239 +793,35 @@ class StructureRenderTask(GenericModelRenderTask):
                 animation_framerate=self.animation_framerate,
             )
 
-    def render_special(self, palleted: PaletteModel) -> VariantModel | None:
-        if not self.getter.opts.special_rendering:
-            return None
-        shulker_block_to_textures = {
-            "minecraft:shulker_box": "minecraft:shulker",
-            "minecraft:white_shulker_box": "minecraft:shulker_white",
-            "minecraft:light_gray_shulker_box": "minecraft:shulker_light_gray",
-            "minecraft:gray_shulker_box": "minecraft:shulker_gray",
-            "minecraft:black_shulker_box": "minecraft:shulker_black",
-            "minecraft:brown_shulker_box": "minecraft:shulker_brown",
-            "minecraft:red_shulker_box": "minecraft:shulker_red",
-            "minecraft:orange_shulker_box": "minecraft:shulker_orange",
-            "minecraft:yellow_shulker_box": "minecraft:shulker_yellow",
-            "minecraft:lime_shulker_box": "minecraft:shulker_lime",
-            "minecraft:green_shulker_box": "minecraft:shulker_green",
-            "minecraft:cyan_shulker_box": "minecraft:shulker_cyan",
-            "minecraft:light_blue_shulker_box": "minecraft:shulker_light_blue",
-            "minecraft:blue_shulker_box": "minecraft:shulker_blue",
-            "minecraft:purple_shulker_box": "minecraft:shulker_purple",
-            "minecraft:magenta_shulker_box": "minecraft:shulker_magenta",
-            "minecraft:pink_shulker_box": "minecraft:shulker_pink",
-        }
-        if resolve_key(palleted.Name) in shulker_block_to_textures.keys():
-            orientation = palleted.Properties.get("facing", "up")
-            match orientation:
-                case "up":
-                    rot = (0, -90, 0)
-                case "down":
-                    rot = (0, 90, -180)
-                case "north":
-                    rot = (0, 90, -90)
-                case "south":
-                    rot = (0, -90, -90)
-                case "west":
-                    rot = (0, 180, -90)
-                case "east":
-                    rot = (0, -90, -90)
-                case _:
-                    raise ValueError(f"Invalid orientation {orientation}")
-                
-            
-            namespace, path = resolve_key(shulker_block_to_textures[resolve_key(palleted.Name)]).split(":")
-            texture = f"{namespace}:entity/shulker/{path}"
-            model = MinecraftModel.model_validate({
-                "credit": "Made with Blockbench",
-                "textures": {
-                    "0": texture,
-                },
-                "elements": [
-                    {
-                        "name": "down_down",
-                        "from": [0, 0, 0],
-                        "to": [16, 0, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "up": {"uv": [8, 7, 12, 11], "texture": "#0"},
-                            "down": {"uv": [8, 7, 12, 11], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "down_north",
-                        "from": [0, 0, 0],
-                        "to": [16, 8, 0],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "north": {"uv": [8, 11, 12, 13], "texture": "#0"},
-                            "south": {"uv": [8, 11, 12, 13], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "down_south",
-                        "from": [0, 0, 16],
-                        "to": [16, 8, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "north": {"uv": [0, 11, 4, 13], "texture": "#0"},
-                            "south": {"uv": [0, 11, 4, 13], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "down_east",
-                        "from": [16, 0, 0],
-                        "to": [16, 8, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "east": {"uv": [4, 11, 8, 13], "texture": "#0"},
-                            "west": {"uv": [4, 11, 8, 13], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "down_west",
-                        "from": [0, 0, 0],
-                        "to": [0, 8, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "east": {"uv": [12, 11, 16, 13], "texture": "#0"},
-                            "west": {"uv": [12, 11, 16, 13], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "down_up",
-                        "from": [0, 8, 0],
-                        "to": [16, 8, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "up": {"uv": [4, 7, 8, 11], "texture": "#0"},
-                            "down": {"uv": [4, 7, 8, 11], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_north",
-                        "from": [0, 4, 0],
-                        "to": [16, 16, 0],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "north": {"uv": [8, 4, 12, 7], "texture": "#0"},
-                            "south": {"uv": [8, 4, 12, 7], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_south",
-                        "from": [0, 4, 16],
-                        "to": [16, 16, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "north": {"uv": [0, 4, 4, 7], "texture": "#0"},
-                            "south": {"uv": [0, 4, 4, 7], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_west",
-                        "from": [0, 4, 0],
-                        "to": [0, 16, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "east": {"uv": [12, 4, 16, 7], "texture": "#0"},
-                            "west": {"uv": [12, 4, 16, 7], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_east",
-                        "from": [16, 4, 0],
-                        "to": [16, 16, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "east": {"uv": [4, 4, 8, 7], "texture": "#0"},
-                            "west": {"uv": [4, 4, 8, 7], "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_up",
-                        "from": [0, 16, 0],
-                        "to": [16, 16, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "up": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
-                            "down": {"uv": [4, 0, 8, 4], "rotation": 270, "texture": "#0"},
-                        },
-                    },
-                    {
-                        "name": "up_down",
-                        "from": [0, 4, 0],
-                        "to": [16, 4, 16],
-                        "rotation": {"angle": 0, "axis": "y", "origin": [8, 8, 8]},
-                        "faces": {
-                            "up": {"uv": [8, 0, 12, 4], "texture": "#0"},
-                            "down": {"uv": [8, 0, 12, 4], "texture": "#0"},
-                        },
-                    },
-                ],
-            }).bake()
-
-            init_rotation = model.display.gui.rotation
-            model.display.gui.rotation = (
-                init_rotation[0] + rot[0],
-                init_rotation[1] + rot[1],
-                init_rotation[2] + rot[2],
-            )
-            return VariantModel(
-                model=model,
-            )
-
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
         palleted = self.structure.palette[block.state]
-
-        if variant := self.render_special(palleted):
-            return self.render_variant(variant, block, center, palleted)
         for variant in self.get_block_variants(palleted):
             self.render_variant(variant, block, center, palleted)
         if self.getter.opts.special_rendering:
             self.render_builtin(block, palleted, center)
 
     def render_builtin(self, block: BlockModel, palleted: PaletteModel, center: tuple[float, float, float]):
-        """The special model BuiltInBlockModels adds to banners, heads, pots, conduits, bells,
-        enchanting tables, copper golem statues and end portals, placed by its block transformation."""
-        from model_resolver.item_model.model import ItemModelSpecial, VANILLA_SPECIAL_TRANSFORMATIONS
-
+        """The special model BuiltInBlockModels adds to banners, heads, chests, shulker boxes,
+        pots, conduits, bells, enchanting tables, copper golem statues and end portals, placed
+        by its block transformation (SpecialBlockModelWrapper)."""
         builtin = builtin_block(resolve_key(palleted.Name), palleted.Properties, block.nbt or {})
         if builtin is None:
             return
         item_id, special, placement, components = builtin
-        base = self.special_base(item_id)
-        node = ItemModelSpecial.model_validate(
-            {"type": "minecraft:special", "base": base or "minecraft:builtin/entity", "model": special}
-        )
+        special_model = SpecialModel.model_validate(special).special_model
         item = Item(id=item_id or "minecraft:stone", components=components)
         item.__resolved__ = True
-        model = node.get_model(self.getter, item)
-        # what the special geometry was calibrated with, see ItemModelSpecial.split_transformation
-        default = VANILLA_SPECIAL_TRANSFORMATIONS.get(resolve_key(special["type"]))
-        default_matrix = np.identity(4) if default is None else np.array(default, dtype=float).reshape(4, 4).T
-        delta = placement @ np.linalg.inv(default_matrix)
-        # the gui display tweaks of the special (get_additional_rotations...), relative to its base
-        base_display = (
-            MinecraftModel.model_validate(resolve_model({"parent": base}, self.getter)).display.gui
-            if base
-            else model.display.gui
-        )
-        tweaks = np.linalg.inv(camera_matrix(base_display)) @ camera_matrix(model.display.gui)
+        model = MinecraftModel.model_validate(special_model.get_model(self.getter, item))
         offset = np.array([block.pos[0] * 16, block.pos[1] * 16, block.pos[2] * 16], dtype=float)
         shift = np.array(center, dtype=float) - offset
-        delta16 = delta.copy()
-        delta16[:3, 3] *= 16
+        # the placement is in blocks from the block's corner, the geometry in pixels
+        placement16 = placement.copy()
+        placement16[:3, 3] *= 16
         glPushMatrix()
         glTranslatef(*(-shift))
         glTranslatef(-8, -8, -8)
-        glMultMatrixf(delta16.T.flatten())
+        glMultMatrixf(placement16.T.flatten())
         glTranslatef(8, 8, 8)
-        glMultMatrixf(tweaks.T.flatten())
-        pose = delta[:3, :3] @ tweaks[:3, :3]
-        if default is not None:
-            glMultMatrixf(default)
-            pose = pose @ default_matrix[:3, :3]
         glTranslatef(*shift)
         ModelRenderTask(
             getter=self.getter,
@@ -999,29 +832,13 @@ class StructureRenderTask(GenericModelRenderTask):
             do_rotate_camera=False,
             offset=tuple(offset),  # type: ignore
             center_offset=center,
-            tints=node.get_tints(self.getter, item),
+            tints=special_model.get_tints(self.getter, item),
             # block entities are lit like entities (Lighting.Entry.LEVEL)
             lighting="level",
-            lighting_pose=pose,
+            lighting_pose=placement[:3, :3],
+            glint=None,
         ).run()
         glPopMatrix()
-
-    @cached_property
-    def _special_bases(self) -> dict[str, Optional[str]]:
-        return {}
-
-    def special_base(self, item_id: Optional[str]) -> Optional[str]:
-        """The `base` of the special model in the item's definition."""
-        if item_id is None:
-            return None
-        if item_id not in self._special_bases:
-            definition = self.getter.assets.item_models.get(item_id)
-            bases = [
-                data["base"]
-                for _, data in traverse_all(definition.data if definition else {}, "base")
-            ]
-            self._special_bases[item_id] = bases[0] if bases else None
-        return self._special_bases[item_id]
 
     def render_variant(
         self,

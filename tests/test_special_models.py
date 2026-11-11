@@ -116,16 +116,9 @@ class TestTextures:
             {"minecraft:pot_decorations": decorations},
         )
         textures = model["textures"]
-        assert (
-            textures["north"] == "minecraft:entity/decorated_pot/archer_pottery_pattern"
-        )
-        assert (
-            textures["south"] == "minecraft:entity/decorated_pot/prize_pottery_pattern"
-        )
-        assert (
-            model["textures"]["east"]
-            == "minecraft:entity/decorated_pot/decorated_pot_side"
-        )
+        assert textures["back"] == "minecraft:entity/decorated_pot/archer_pottery_pattern"
+        assert textures["front"] == "minecraft:entity/decorated_pot/prize_pottery_pattern"
+        assert textures["right"] == "minecraft:entity/decorated_pot/decorated_pot_side"
 
 
 class TestBannerPatterns:

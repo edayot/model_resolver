@@ -36,7 +36,7 @@ def play(image, animation):
         animation_framerate=20,
     ).get_frames()
     result = []
-    for _, (images, duration) in played:
+    for _, (images, duration, _) in played:
         frame = images["test:block/anim"].convert("RGBA")
         pixel = frame.getpixel((0, 0))
         assert isinstance(pixel, tuple)
@@ -331,3 +331,64 @@ class TestRenderComparison:
         diff = compare_images(self.png(base), self.png(changed))
         assert not diff.ok
         assert diff.silhouette == pytest.approx(0.1)
+
+
+class TestAtlasLayout:
+    """Stitcher: where sprites land, which the enchantment glint is sampled with."""
+
+    def test_sprites_are_padded_and_sorted_by_size_then_path(self):
+        from model_resolver.atlas import stitch
+
+        layout = stitch({"b:a": (16, 16), "a:b": (16, 16), "a:big": (32, 32)}, mip=0)
+        # 34x34 first, in a 64x64 region split below then right of it, then the 18x18
+        # holders by path ("a" before "b")
+        assert layout.sprites["a:big"] == (1, 1, 32, 32)
+        assert (layout.width, layout.height) == (64, 64)
+        assert layout.sprites["b:a"][:2] == (1, 35)
+        assert layout.sprites["a:b"][:2] == (35, 1)
+
+    def test_mipmaps_pad_sprites_to_a_multiple_of_the_mip_size(self):
+        from model_resolver.atlas import mip_level, stitch
+
+        sprites = {"minecraft:a": (16, 16), "minecraft:b": (16, 16)}
+        assert mip_level(sprites, 4) == 4
+        assert mip_level({**sprites, "minecraft:c": (8, 16)}, 4) == 3
+        layout = stitch(sprites, mip=4)
+        assert layout.sprites["minecraft:a"] == (16, 16, 16, 16)
+        assert layout.uv("minecraft:a") == (16 / layout.width, 16 / layout.height, 32 / layout.width, 32 / layout.height)
+
+    def test_sprites_come_from_every_pack_and_the_items_atlas_first(self):
+        from model_resolver.atlas import Atlases
+
+        assets = ResourcePack()
+        for name in ("item/a", "block/a", "block/b"):
+            assets.textures[f"test:{name}"] = Texture(Image.new("RGBA", (16, 16)))
+        assets.atlases["minecraft:items"] = Atlas({"sources": [{"type": "directory", "source": "item", "prefix": "item/"}]})
+        assets.atlases["minecraft:blocks"] = Atlas({"sources": [{"type": "directory", "source": "block", "prefix": "block/"}]})
+        getter = make_getter(assets)
+        atlases = Atlases(None)  # type: ignore
+        assert set(atlases.layout(getter, "items").sprites) == {"test:item/a", "minecraft:missingno"}
+        assert atlases.model_sprite_uv(getter, "test:block/b") == atlases.layout(getter, "blocks").uv("test:block/b")
+        assert atlases.model_sprite_uv(getter, "test:unknown") is None
+
+
+class TestGlintAnimation:
+    def test_the_glint_loops_over_1650_ticks_one_frame_each(self):
+        from model_resolver.tasks.generic_render import GLINT_LOOP_TICKS
+
+        assert GLINT_LOOP_TICKS == 1650
+        frames = list(Animation(textures=[], getter=make_getter(), animation_framerate=20, glint=True).get_frames())
+        assert len(frames) == 1650
+        assert [(duration, tick) for _, (_, duration, tick) in frames[:3]] == [(1, 0), (1, 1), (1, 2)]
+
+    def test_textures_animate_along_with_the_glint(self):
+        image = sprite_sheet((16, 32), (16, 16))
+        assets = ResourcePack()
+        assets.textures["test:block/anim"] = Texture(image)
+        assets.textures_mcmeta["test:block/anim"] = TextureMcmeta({"animation": {"frametime": 4}})
+        animation = Animation(
+            textures=[{"x": "test:block/anim"}], getter=make_getter(assets), animation_framerate=20, glint=True
+        )
+        frames = list(animation.get_frames())
+        assert len(frames) == 6600  # lcm(8, 1650)
+        assert frames[4][1][0]["test:block/anim"].info["model_resolver:sprite"] == "test:block/anim"

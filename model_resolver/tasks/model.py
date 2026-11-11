@@ -4,6 +4,7 @@ import os
 
 from typing import Any, Optional
 from model_resolver.item_model.item import Item
+from model_resolver.item_model.glint import ITEM_GLINT, GlintStyle
 from model_resolver.minecraft_model import (
     MinecraftModel,
     resolve_model,
@@ -23,12 +24,14 @@ class ModelRenderTask(GenericModelRenderTask):
     tints: list[TintSource] = field(default_factory=list)
     item: Item = field(default_factory=lambda: Item(id="do_not_use"))
     source: Optional[str] = None
+    glint: Optional[GlintStyle] = ITEM_GLINT
+    """How the model draws the item's enchantment glint, see `render_model`."""
 
     def resolve(self) -> Generator[Task, None, None]:
         yield self
 
     def run(self):
-        self.render_model(self.model.bake(), self.tints, self.source)
+        self.render_model(self.model.bake(), self.tints, self.source, glint=self.glint)
 
     def flush(self):
         super().flush()
@@ -178,7 +181,7 @@ class ModelPathRenderTask(GenericModelRenderTask):
             self.animated_path_padding, len(str(len(frames) - 1))
         )
 
-        for i, (images, duration) in frames:
+        for i, (images, duration, tick) in frames:
             # get the images for the tick
             textures = self.get_textures(model, images)
             new_model = model.model_copy()

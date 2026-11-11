@@ -23,6 +23,7 @@ FACE_CORNERS = {
     "west": [(0, 1, 0), (0, 0, 0), (0, 0, 1), (0, 1, 1)],
     "east": [(1, 1, 1), (1, 0, 1), (1, 0, 0), (1, 1, 0)],
 }
+CUBE_DIRECTIONS = ("down", "up", "west", "north", "east", "south")
 
 
 @cache
@@ -55,8 +56,8 @@ def _euler_xyz(rotation: np.ndarray) -> tuple[float, float, float]:
     return tuple(round(math.degrees(a), 6) for a in (x, y, z))  # type: ignore
 
 
-def _polygons(cube: dict[str, Any]) -> list[tuple[list[np.ndarray], list[tuple[float, float]]]]:
-    """ModelPart.Cube: the faces of a box and the texture pixel of each corner."""
+def _polygons(cube: dict[str, Any]) -> list[tuple[str, list[np.ndarray], list[tuple[float, float]]]]:
+    """ModelPart.Cube: the visible faces of a box and the texture pixel of each corner."""
     (ox, oy, oz), (w, h, d), (gx, gy, gz) = cube["origin"], cube["size"], cube["grow"]
     min_x, min_y, min_z = ox - gx, oy - gy, oz - gz
     max_x, max_y, max_z = ox + w + gx, oy + h + gy, oz + d + gz
@@ -70,28 +71,33 @@ def _polygons(cube: dict[str, Any]) -> list[tuple[list[np.ndarray], list[tuple[f
     u, v = cube["uv"]
     u0, u1, u2, u22, u3, u4 = u, u + d, u + d + w, u + d + w + w, u + d + w + d, u + d + w + d + w
     v0, v1, v2 = v, v + d, v + d + h
+    visible = cube.get("faces", CUBE_DIRECTIONS)
     polygons = []
-    for vertices, (a, b, c, e) in (
-        ([l1, l0, t0, t1], (u1, v0, u2, v1)),
-        ([t2, t3, l3, l2], (u2, v1, u22, v0)),
-        ([t0, l0, l3, t3], (u0, v1, u1, v2)),
-        ([t1, t0, t3, t2], (u1, v1, u2, v2)),
-        ([l1, t1, t2, l2], (u2, v1, u3, v2)),
-        ([l0, l1, l2, l3], (u3, v1, u4, v2)),
+    for direction, vertices, (a, b, c, e) in (
+        ("down", [l1, l0, t0, t1], (u1, v0, u2, v1)),
+        ("up", [t2, t3, l3, l2], (u2, v1, u22, v0)),
+        ("west", [t0, l0, l3, t3], (u0, v1, u1, v2)),
+        ("north", [t1, t0, t3, t2], (u1, v1, u2, v2)),
+        ("east", [l1, t1, t2, l2], (u2, v1, u3, v2)),
+        ("south", [l0, l1, l2, l3], (u3, v1, u4, v2)),
     ):
+        if direction not in visible:
+            continue
         # ModelPart.Polygon: corners get (u1, v0), (u0, v0), (u0, v1), (u1, v1)
         uvs = [(c, b), (a, b), (a, e), (c, e)]
         if mirror:
             vertices, uvs = vertices[::-1], uvs[::-1]
-        polygons.append((vertices, uvs))
+        polygons.append((direction, vertices, uvs))
     return polygons
 
 
 def _face(
-    vertices: list[np.ndarray], uvs: list[tuple[float, float]], low: np.ndarray, high: np.ndarray
+    direction: str, vertices: list[np.ndarray], uvs: list[tuple[float, float]], low: np.ndarray, high: np.ndarray
 ) -> Optional[tuple[str, dict[str, Any]]]:
-    """The element face a polygon is, with the uv and rotation that give its corners their uvs."""
-    for name, corners in FACE_CORNERS.items():
+    """The element face a polygon is, with the uv and rotation that give its corners their uvs.
+    The polygon's own direction comes first: both sides of a flat box have the same corners."""
+    for name in sorted(FACE_CORNERS, key=lambda face: face != direction):
+        corners = FACE_CORNERS[name]
         positions = [np.where(np.array(corner) == 1, high, low) for corner in corners]
         if {tuple(np.round(p, 5)) for p in positions} != {tuple(np.round(p, 5)) for p in vertices}:
             continue
@@ -119,31 +125,41 @@ def to_elements(
     layer: dict[str, Any],
     texture: str = "#0",
     poses: Optional[dict[str, dict[str, float]]] = None,
+    part_textures: Optional[dict[str, str]] = None,
 ) -> list[dict[str, Any]]:
     """Elements of a layer. `poses` overrides part poses by name (x, y, z, xRot, yRot, zRot),
-    like the model's setupAnim."""
+    like the model's setupAnim. `part_textures` draws some parts (and their children) with
+    another texture, like renderers that submit parts one by one."""
     poses = poses or {}
+    part_textures = part_textures or {}
     width, height = layer["texture_size"]
     elements: list[dict[str, Any]] = []
 
-    def visit(part: dict[str, Any], parent: np.ndarray):
+    def visit(part: dict[str, Any], parent: np.ndarray, texture: str):
+        texture = part_textures.get(part["name"], texture)
         pose: dict[str, float] = dict(zip(("x", "y", "z", "xRot", "yRot", "zRot"), part["pose"]))
         pose.update(poses.get(part["name"], {}))
         x, y, z = pose["x"], pose["y"], pose["z"]
         x_rot, y_rot, z_rot = pose["xRot"], pose["yRot"], pose["zRot"]
         # ModelPart.translateAndRotate
         local = np.identity(4)
-        local[:3, :3] = _rotation(x_rot, y_rot, z_rot)
+        local[:3, :3] = _rotation(x_rot, y_rot, z_rot) @ np.diag(part.get("scale", (1.0, 1.0, 1.0)))
         local[:3, 3] = (x, y, z)
         matrix = parent @ local
-        rotation, translation = matrix[:3, :3], matrix[:3, 3]
+        # scales are uniform or along the part's own axes: linear = rotation @ diag(scale)
+        scale = np.linalg.norm(matrix[:3, :3], axis=0)
+        rotation, translation = matrix[:3, :3] / scale, matrix[:3, 3]
         for cube in part["cubes"]:
-            polygons = _polygons(cube)
-            corners = np.array([vertex for vertices, _ in polygons for vertex in vertices])
-            low, high = corners.min(axis=0), corners.max(axis=0)
+            # the whole box, also when some of its faces aren't drawn
+            low = (np.array(cube["origin"]) - cube["grow"]) * scale
+            high = (np.array(cube["origin"]) + cube["size"] + cube["grow"]) * scale
+            polygons = [
+                (direction, [vertex * scale for vertex in vertices], uvs)
+                for direction, vertices, uvs in _polygons(cube)
+            ]
             faces = {}
-            for vertices, uvs in polygons:
-                face = _face(vertices, uvs, low, high)
+            for direction, vertices, uvs in polygons:
+                face = _face(direction, vertices, uvs, low, high)
                 if face is not None:
                     name, data = face
                     u0, v0, u1, v1 = data["uv"]
@@ -164,7 +180,7 @@ def to_elements(
                 }
             elements.append(element)
         for child in part["children"]:
-            visit(child, matrix)
+            visit(child, matrix, texture)
 
-    visit(layer["root"], np.identity(4))
+    visit(layer["root"], np.identity(4), texture)
     return elements

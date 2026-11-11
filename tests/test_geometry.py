@@ -470,56 +470,80 @@ class TestGeneratedModels:
         assert generated(textures={"layer0": "test:a"}).gui_light == "front"
 
 
-class TestSpecialModelTransformation:
-    # special geometries are calibrated for the transformation vanilla gives them
-    BANNER = {
-        "translation": [0.5, 0, 0.5],
-        "left_rotation": [0, 0, 0, 1],
-        "right_rotation": [0, 0, 0, 1],
-        "scale": [0.6666667, -0.6666667, -0.6666667],
-    }
+class TestEntityModelSpecials:
+    """Special models are the game's entity models (scripts/generate_entity_models.py),
+    which the item definition's transformation places as is."""
 
-    def special(self, transformation):
-        from model_resolver.item_model.model import ItemModelSpecial
+    def elements(self, special, **components):
+        from model_resolver.item_model.special import SpecialModel
+        from resolver_testkit import make_getter, make_item
 
-        node = {
-            "type": "minecraft:special",
-            "base": "minecraft:item/white_banner",
-            "model": {"type": "minecraft:banner", "color": "white"},
-        }
-        if transformation is not None:
-            node["transformation"] = transformation
-        return ItemModelSpecial.model_validate(node)
+        model = SpecialModel.model_validate(special).special_model
+        return model.get_model(make_getter(), make_item(components=components))["elements"]
 
-    def test_the_vanilla_transformation_only_calibrates(self):
-        transformation, calibration = self.special(self.BANNER).split_transformation()
-        assert transformation is None
-        assert calibration is not None
+    def test_a_chest_is_the_chest_model(self):
+        bottom, lid, lock = self.elements({"type": "minecraft:chest", "texture": "minecraft:normal"})
+        assert (bottom["from"], bottom["to"]) == ([1, 0, 1], [15, 10, 15])
+        assert (lid["from"], lid["to"]) == ([1, 9, 1], [15, 14, 15])
+        assert set(bottom["faces"]) == {"down", "up", "north", "south", "west", "east"}
 
-    def test_what_a_pack_adds_is_applied_on_top(self):
-        composed = Transformation.model_validate(
-            identity_transformation(translation=[0, 1, 0])
-        ).compose(Transformation.model_validate(self.BANNER))
-        node = self.special(None)
-        node.transformation = composed
-        transformation, _ = node.split_transformation()
-        assert transformation is not None
-        assert apply(transformation, (0, 0, 0)) == pytest.approx((0, 1, 0))
+    def test_an_open_chest_turns_its_lid(self):
+        _, lid, lock = self.elements({"type": "minecraft:chest", "texture": "minecraft:normal", "openness": 1})
+        assert lid["rotation"]["x"] == pytest.approx(-90, abs=1e-4)
+        assert lock["rotation"]["origin"] == lid["rotation"]["origin"] == [0, 9, 1]
 
-    def test_types_without_a_vanilla_transformation_are_left_alone(self):
-        from model_resolver.item_model.model import ItemModelSpecial
+    def test_double_chests_hide_the_face_between_their_halves(self):
+        left = self.elements({"type": "minecraft:chest", "texture": "minecraft:normal_left", "chest_type": "left"})
+        right = self.elements({"type": "minecraft:chest", "texture": "minecraft:normal_right", "chest_type": "right"})
+        assert all("west" not in element["faces"] for element in left)
+        assert all("east" not in element["faces"] for element in right)
 
-        node = ItemModelSpecial.model_validate(
-            {
-                "type": "minecraft:special",
-                "base": "minecraft:item/chest",
-                "model": {"type": "minecraft:chest", "texture": "minecraft:normal"},
-                "transformation": identity_transformation(translation=[1, 0, 0]),
-            }
+    def test_a_dragon_head_is_scaled_by_its_part_pose(self):
+        elements = self.elements({"type": "minecraft:head", "kind": "dragon"})
+        upper_head = elements[1]
+        size = [b - a for a, b in zip(upper_head["from"], upper_head["to"])]
+        assert size == pytest.approx([12, 12, 12])
+
+    def test_a_banner_flag_hangs_from_its_bar(self):
+        pole, bar, flag = self.elements({"type": "minecraft:banner", "color": "red"})
+        assert flag["rotation"]["origin"] == pytest.approx([0, -44, 0])
+        assert flag["rotation"]["x"] == pytest.approx(-0.45, abs=1e-6)
+        wall = self.elements({"type": "minecraft:banner", "color": "red", "attachment": "wall"})
+        assert len(wall) == 2
+
+    def test_pot_sides_have_their_sherd(self):
+        elements = self.elements(
+            {"type": "minecraft:decorated_pot"},
+            **{"minecraft:pot_decorations": {"front": {"id": "minecraft:skull_pottery_sherd"}}},
         )
-        transformation, calibration = node.split_transformation()
-        assert calibration is None
-        assert apply(transformation, (0, 0, 0)) == pytest.approx((1, 0, 0))
+        sides = [element for element in elements if len(element["faces"]) == 1]
+        assert sorted(face["texture"] for e in sides for face in e["faces"].values()) == [
+            "#back", "#front", "#left", "#right"
+        ]
+
+    def test_an_open_shulker_box_raises_and_turns_its_lid(self):
+        lid, base = self.elements({"type": "minecraft:shulker_box", "texture": "minecraft:shulker", "openness": 1})
+        assert lid["rotation"]["y"] == pytest.approx(-90, abs=1e-4)
+        assert lid["rotation"]["origin"] == pytest.approx([0, 16, 0])
+
+
+class TestBuiltInBlockPlacement:
+    def test_chests_turn_around_the_block_center(self):
+        from model_resolver.tasks.structure import builtin_block
+
+        item, special, placement, _ = builtin_block("minecraft:chest", {"facing": "north", "type": "left"}, {})
+        assert special == {"type": "minecraft:chest", "texture": "minecraft:normal_left", "chest_type": "left"}
+        assert (placement @ [0, 0, 0, 1])[:3] == pytest.approx([1, 0, 1])
+
+    def test_shulker_boxes_follow_their_facing(self):
+        from model_resolver.tasks.structure import builtin_block
+
+        _, special, placement, _ = builtin_block("minecraft:red_shulker_box", {"facing": "up"}, {})
+        assert special["texture"] == "minecraft:shulker_red"
+        # the shell's bottom (y = 24 in the model, in pixels) lands on the block's floor
+        assert (placement @ [0, 24 / 16, 0, 1])[:3] == pytest.approx([0.5, 0.00025, 0.5], abs=1e-6)
+        _, _, down, _ = builtin_block("minecraft:shulker_box", {"facing": "down"}, {})
+        assert (down @ [0, 24 / 16, 0, 1])[:3] == pytest.approx([0.5, 0.99975, 0.5], abs=1e-6)
 
 
 def test_generated_sides_outline_the_opaque_pixels():

@@ -1,6 +1,6 @@
 {
-    "model": {
-      "type": "minecraft:model",
-      "model": "test:item/shield"
-    }
+  "model": {
+    "type": "minecraft:model",
+    "model": "test:item/shield"
   }
+}

@@ -4,6 +4,11 @@ Goal: publish a documentation site for model_resolver at
 https://edayot.github.io/model_resolver, built with [Zensical](https://zensical.org),
 and slim the README down to a pointer to it.
 
+**Status:** steps 1–4 and 6 of §8 are done on `real_v2` (site sources, guides,
+CI/CD guide, mkdocstrings API reference, `docs.yml` with a build-only
+`pull_request` job, README). Left: set Settings → Pages → Source to
+"GitHub Actions", merge to `master`, and check the deployed site.
+
 ## 1. Repository layout
 
 `docs/` becomes the Zensical source directory, so internal plans

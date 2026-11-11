@@ -7,7 +7,7 @@ Every gap of the original plan (IDs below) was checked against the decompiled 26
 ## Tests
 
 ```sh
-.venv/bin/python -m pytest tests --ignore=tests/test_example.py   # 339 passed, ~1 s, no GL or network
+.venv/bin/python -m pytest tests --ignore=tests/test_example.py   # 368 passed, ~1 s, no GL or network
 cd examples/test_item_model && ../../.venv/bin/beet                # one cheap end-to-end render
 ```
 
@@ -15,15 +15,17 @@ cd examples/test_item_model && ../../.venv/bin/beet                # one cheap e
 - Strict `@gap` markers are gone: every test that asserted vanilla behaviour passes. The `gap()` helper stays in `resolver_testkit.py` for new gaps.
 - `test_example.py` compares render snapshots with a tolerance ([render_compare.py](../tests/render_compare.py)): a PNG/WebP differs when more than 1% of its drawn pixels change by more than 2 levels, or more than 0.1% change silhouette. JSON is compared by value, everything else exactly.
 
-**The snapshots need one reviewed refresh.** They predate this work (and `campfire_structure`'s already lacked `campfire.nbt`). Renders of beds, banners, shields, heads, generated items with extruded sides, structures (culling, uvlock, water) and lighting all change on purpose. Review a fresh build of each example, then run `pytest tests/test_example.py --insta update`. The `potions`, `biomes` and `item_display` examples are new and already have reviewed snapshots.
+The snapshots were refreshed for this work in `0b2b8c15` (`load_vanilla`, `main`, `structure_example`, `test_item_model`, `biomes`): beds, banners, shields, heads, generated items with extruded sides, structures (culling, uvlock, water) and lighting changed on purpose. `campfire_structure`, `all_white`, `block_models`, `potions` and `item_display` pass against their current snapshots.
 
-Two examples cover the newer features: [examples/potions](../examples/potions) (potion ids, custom colors and effects on potions, splash and lingering potions and tipped arrows) [examples/biomes](../examples/biomes) (one structure with water, grass, leaves and a campfire, rendered in seven vanilla biomes and a custom one) and [examples/item_display](../examples/item_display) (item displays in every display context, with yaw and pitch, both transformation forms, a banner and an enchanted item).
+**The data-driven specials and the animated glint need another reviewed refresh.** Special models (shields, tridents, dragon and piglin heads, open chests, shulker boxes, banners), block entities in structures and enchanted items change on purpose. In `test_item_model`, 17 renders differ; its custom trident texture sits at `entity/trident.png`, the pre-26.3 path, so the trident now shows the vanilla `entity/trident/trident.png`.
+
+Three examples cover the newer features: [examples/potions](../examples/potions) (potion ids, custom colors and effects on potions, splash and lingering potions and tipped arrows) [examples/biomes](../examples/biomes) (one structure with water, grass, leaves and a campfire, rendered in seven vanilla biomes and a custom one) and [examples/item_display](../examples/item_display) (item displays in every display context, with yaw and pitch, both transformation forms, a banner and an enchanted item).
 
 ## What changed, by area
 
 ### R: pack resolution
 
-- **R1.** A file found in several packs resolves to the highest-priority copy (project, then bundled `static_models`, then vanilla). Blockstates resolve state by state through every pack's file (`PackGetter.get_stack`, `StructureRenderTask.get_block_variants`), like `BlockStateModelLoader`; cached files are never mutated. Single, ender and copper chests render again in structures.
+- **R1.** A file found in several packs resolves to the highest-priority copy (project, then vanilla). Blockstates resolve state by state through every pack's file (`PackGetter.get_stack`, `StructureRenderTask.get_block_variants`), like `BlockStateModelLoader`; cached files are never mutated. Chests are block entities (see B4).
 
 ### I: item model definitions and item stacks
 
@@ -61,9 +63,9 @@ Rewritten after `net.minecraft.core.component.predicates` ([data_component_predi
 
 ### S: special models
 
-- **S1 / S2** copper golem statues (4 poses), bell and book are built from the 26.3 entity models. [scripts/generate_entity_models.py](../scripts/generate_entity_models.py) parses the `createBodyLayer` methods into `model_resolver/data/entity_models.json`; [entity_model.py](../model_resolver/item_model/entity_model.py) turns `ModelPart` trees into elements (cube UV layout, part poses, `setupAnim` overrides). **S3** `end_cube` is a still starfield.
+- **S1 / S2** every special model of 26.3 (banner, shield, chest, heads, shulker box, trident, decorated pot, conduit, copper golem statue, bell, book) is built from the game's entity models. [scripts/generate_entity_models.py](../scripts/generate_entity_models.py) interprets the `create*Layer` methods (parameters, `if`, ternaries, calls to other classes, visible faces, scaled poses) into `model_resolver/data/entity_models.json`; [entity_model.py](../model_resolver/item_model/entity_model.py) turns `ModelPart` trees into elements (cube UV layout, part poses and scales, `setupAnim` overrides). Renderers that submit parts with different sprites (pot sides, banner flag) give those parts their own texture. **S3** `end_cube` is a still starfield.
 - **S4** head texture overrides map to `entity/<path>`. **S5** profile skin patches (`texture`), string UUIDs, `properties` without a download, and an offline fallback to `DefaultPlayerSkin.get(uuid)` (name-only profiles use the offline UUID). **S6** banner patterns use the registry's `asset_id`, inline patterns work.
-- **S7 (decision).** The older hand-made special geometries (banner, shield, heads, shulker box, conduit) were tuned with vanilla's item transformation applied the old way. Rather than re-deriving them, `ItemModelSpecial.split_transformation` applies that vanilla transformation as a *calibration* and only what an item definition adds on top with the correct semantics. Vanilla items render as before; custom transformations compose correctly. New specials (golem, bell, book) use entity-space geometry and no calibration.
+- **S7.** Special geometry is in entity model space, and the item definition's `transformation` places it as is, like `SpecialModelWrapper`: there is no calibration nor per-special display tweak any more. Only the legacy `bed`, `standing_sign` and `hanging_sign` specials (before 26.3, when the game had no such entity models left to read) keep hand-made geometry.
 
 ### A: textures and atlases
 
@@ -74,7 +76,7 @@ Rewritten after `net.minecraft.core.component.predicates` ([data_component_predi
 ### B: blockstates and structures
 
 - **B1** `uvlock` through `BlockMath.getFaceTransformation`. **B2** variant `z`. **B3** `!` terms. **B8** a state no file covers draws the missing model; `multipart` covers the states `variants` miss.
-- **B4** banners, heads, decorated pots, conduits, bells, enchanting-table books, copper golem statues and end portals / gateways draw their special model with `BuiltInBlockModels`' block transformation (`builtin_block`), using block entity NBT for patterns, sherds and profiles.
+- **B4** banners, heads, chests (single and double), shulker boxes, decorated pots, conduits, bells, enchanting-table books, copper golem statues and end portals / gateways draw their special model with `BuiltInBlockModels`' block transformation (`builtin_block`), using block entity NBT for patterns, sherds and profiles. The bundled chest models (`static_models`) are gone.
 - **B5** water and lava (waterlogged blocks included) are tesselated like `FluidRenderer`, in [fluids.py](../model_resolver/tasks/fluids.py), and drawn after the rest: corner heights averaged with the neighbours (`calculateAverageHeight`), a full height under the same fluid, a still top or the flowing texture turned along `FlowingFluid.getFlow`, sides as high as their corners with the water overlay against glass and leaves, back faces, faces hidden by the same fluid or full blocks. Water is tinted with the biome's water color. Past the structure's sides (not above or below), heights and flow assume the world goes on like the structure's edge, so water at the edge doesn't slope down into nothing; the cut sides at the edge are still drawn, like any other block side there.
   - **Animated:** the still and flowing textures take part in the structure's animation like any model texture, so `animation_mode="webp"` (or `multi_files`) animates the water. The loop is the least common multiple of every animated texture's loop (320 ticks with water, a campfire's fire and its interpolated logs).
   - **Block facts from the game:** [blocks.py](../model_resolver/blocks.py) reads `model_resolver/data/blocks.json`, generated by [scripts/generate_block_table.py](../scripts/generate_block_table.py), which runs [scripts/java/DumpBlocks.java](../scripts/java/DumpBlocks.java) against the server jar (it needs a JDK). For every state it has `isSolid` (heights: a non-solid neighbour such as grass pulls the surface down, a solid one is ignored), the fluid it holds, and its occlusion shape. `#blocks_fluid_flow` (`#blocks_motion` and signs) decides where water drains down. Blocks of other namespaces fall back to "solid unless air" and their model's full-cube check.
@@ -91,14 +93,13 @@ Rewritten after `net.minecraft.core.component.predicates` ([data_component_predi
 
 - **X1** see Tests. **X2** `render_size` under `meta.model_resolver` is the default render size; unknown keys log a warning; the dead `load_vanilla: false` lines are gone from the examples.
 - **X3 (decision).** Instead of gating on `minecraft_version`, parsing accepts both the 26.3 and the older shapes (pot decorations, predicates, `map_color`, `bed` / sign specials), and generated tables are keyed by version.
-- **X4** a still enchantment glint (`hasFoil`): the glint texture at time 0, scaled by 8 and turned 10°, added at the default strength where the item was drawn.
+- **X4** the enchantment glint (`hasFoil`), like the `GLINT` shaders: sampled with the sprite's coordinates in the items or blocks atlas ([atlas.py](../model_resolver/atlas.py) stitches them like `SpriteLoader` and `Stitcher`), scaled by 8 (0.5 for the shield and trident entity glint, which other specials don't draw), turned 10°, moving with `TextureTransform.setupGlintTexturing` at the default speed, squared and added at the default strength. Animated renders loop over its 1650 ticks.
 
 ## Still different from the game
 
 | Area | Difference |
 | --- | --- |
-| Snapshots | Stale, need the reviewed refresh described above. `load_vanilla` was not built. |
-| Specials (S7) | The calibrated geometries are only as exact as their original tuning (for example the chest lock depth). Re-deriving them from the entity models with `entity_model.py` would remove the calibration. Shulker boxes in structures still use their own hand-written code; chests come from `static_models`. |
+| Legacy specials | `bed`, `standing_sign` and `hanging_sign` (pre-26.3 item definitions) keep hand-made geometry. |
 | Built-in blocks (B4) | Placement follows the vanilla transformations, but was only checked by eye; there are no reference screenshots in the repo. |
 | Culling (B6) | Partial occluders (slabs, stairs) never cull; hidden faces are only extra work. Leaves never cull. |
 | Fluids (B5) | Shapes that depend on the world (fences, walls and panes connecting to neighbours) use the state's own occlusion shape, which is what the game does too, but the structure's blocks of other namespaces only occlude as full cubes. |
@@ -106,6 +107,12 @@ Rewritten after `net.minecraft.core.component.predicates` ([data_component_predi
 | Lighting | No ambient occlusion and no light levels: every block is fully lit. |
 | item_display | Only the `fixed` billboard; brightness and glow overrides are ignored. |
 | Player heads | Real skins need the network; offline, the default skin for the UUID. |
-| Glint | One still frame, not animated. |
+| Glint | Compasses and clocks use the regular glint, not the screen-space `SPECIAL` foil. Translucent texels keep their alpha (the shader raises it to the glint strength). |
 
 Kept static on purpose: `using_item`, `fishing_rod/cast`, `selected`, `carried`, `extended_view`, `keybind_down`, `view_entity`, `cooldown`, `time`, `compass`, `crossbow/pull`, `use_duration`, `use_cycle`, `local_time`, `context_dimension` (overworld) and the `team` tint (`default`). Users can override any of them by subclassing, as `MyImpl` does in [examples/test_item_model/my_pipeline.py](../examples/test_item_model/my_pipeline.py).
+
+## Before releasing 2.0.0
+
+- **CI.** The last runs on `real_v2` never started (GitHub account locked for billing). Re-run them once that is fixed.
+- **Windows.** `844365d8` and `0b2b8c15` failed on Windows at "Setup OpenGL and Run Tests"; `b46821c9` should fix it but was never run. The macOS job added there was never run either.
+- **Version.** semantic-release only bumps the major version on a `feat!:` commit or a `BREAKING CHANGE:` footer, and the branch's commits follow neither. Merge to `master` with such a message: renders change on purpose (lighting, blending, specials, `NO_TRANSFORM` for undefined display contexts), which breaks users' render snapshots.

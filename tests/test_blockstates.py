@@ -593,7 +593,7 @@ class TestAnimatedWater:
             animation_framerate=20,
         )
         # 16x32: two frames of 3 ticks
-        assert [duration for _, (_, duration) in animation.get_frames()] == [3, 3]
+        assert [duration for _, (_, duration, _) in animation.get_frames()] == [3, 3]
 
     def test_each_frame_draws_its_own_image(self, gl):
         frame = Image.new("RGBA", (16, 16), (255, 0, 0, 255))

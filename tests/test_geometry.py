@@ -528,21 +528,25 @@ class TestEntityModelSpecials:
 
 
 class TestBuiltInBlockPlacement:
-    def test_chests_turn_around_the_block_center(self):
+    @staticmethod
+    def builtin(name: str, properties: dict[str, str]):
         from model_resolver.tasks.structure import builtin_block
 
-        item, special, placement, _ = builtin_block("minecraft:chest", {"facing": "north", "type": "left"}, {})
+        builtin = builtin_block(name, properties, {})
+        assert builtin is not None
+        return builtin
+
+    def test_chests_turn_around_the_block_center(self):
+        item, special, placement, _ = self.builtin("minecraft:chest", {"facing": "north", "type": "left"})
         assert special == {"type": "minecraft:chest", "texture": "minecraft:normal_left", "chest_type": "left"}
         assert (placement @ [0, 0, 0, 1])[:3] == pytest.approx([1, 0, 1])
 
     def test_shulker_boxes_follow_their_facing(self):
-        from model_resolver.tasks.structure import builtin_block
-
-        _, special, placement, _ = builtin_block("minecraft:red_shulker_box", {"facing": "up"}, {})
+        _, special, placement, _ = self.builtin("minecraft:red_shulker_box", {"facing": "up"})
         assert special["texture"] == "minecraft:shulker_red"
         # the shell's bottom (y = 24 in the model, in pixels) lands on the block's floor
         assert (placement @ [0, 24 / 16, 0, 1])[:3] == pytest.approx([0.5, 0.00025, 0.5], abs=1e-6)
-        _, _, down, _ = builtin_block("minecraft:shulker_box", {"facing": "down"}, {})
+        _, _, down, _ = self.builtin("minecraft:shulker_box", {"facing": "down"})
         assert (down @ [0, 24 / 16, 0, 1])[:3] == pytest.approx([0.5, 0.99975, 0.5], abs=1e-6)
 
 

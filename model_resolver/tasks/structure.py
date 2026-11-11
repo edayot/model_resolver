@@ -50,14 +50,14 @@ class StructureFluids:
 
     def palette(self, pos: Position) -> Optional[PaletteModel]:
         state = self.state(pos)
-        return None if state is None else self.task.structure.palette[state]
+        return None if state is None else self.task.palette[state]
 
     def fluid(self, pos: Position) -> Optional[FluidState]:
         return self.task.fluid_state(self.palette(pos))
 
     def info(self, pos: Position) -> Optional[BlockInfo]:
-        palleted = self.palette(pos)
-        return None if palleted is None else self.task.block_info(palleted)
+        paletted = self.palette(pos)
+        return None if paletted is None else self.task.block_info(paletted)
 
     def solid(self, pos: Position) -> bool:
         info = self.info(pos)
@@ -78,10 +78,10 @@ class StructureFluids:
         return info.occlusion
 
     def overlay(self, pos: Position) -> bool:
-        palleted = self.palette(pos)
-        if palleted is None:
+        paletted = self.palette(pos)
+        if paletted is None:
             return False
-        path = resolve_key(palleted.Name).split(":")[1]
+        path = resolve_key(paletted.Name).split(":")[1]
         # HalfTransparentBlock and LeavesBlock
         return path.endswith(("glass", "_leaves", "ice")) or path in ("slime_block", "honey_block")
 
@@ -249,12 +249,11 @@ class StructureDataModel(BaseModel):
     blocks: list[BlockModel]
     entities: Any
 
-    @cached_property
-    def palette(self) -> list[PaletteModel]:
+    def choose_palette(self, rng: random.Random) -> list[PaletteModel]:
         if self.palette_:
             return self.palette_
         if self.palettes:
-            return random.choice(self.palettes)
+            return rng.choice(self.palettes)
         raise RenderError("No palette found")
 
 
@@ -406,6 +405,16 @@ class StructureRenderTask(GenericModelRenderTask):
             raise RenderError(f"Structure {self.structure_key} not found")
         return StructureDataModel.model_validate(structure.data)
 
+    @cached_property
+    def palette(self) -> list[PaletteModel]:
+        # its own generator: the same palette in every frame, whatever was drawn before
+        return self.structure.choose_palette(random.Random(self.random_seed))
+
+    @cached_property
+    def rng(self) -> random.Random:
+        """Picks the weighted variants, the same ones in every frame."""
+        return random.Random(self.random_seed)
+
     def rotate_camera(self):
         if not self.do_rotate_camera:
             return
@@ -423,7 +432,8 @@ class StructureRenderTask(GenericModelRenderTask):
         glScalef(scale[0], scale[1], scale[2])
 
     def run(self):
-        random.seed(self.random_seed)
+        # every run (each frame of an animation) picks the same variants
+        self.rng.seed(self.random_seed)
         self.rotate_camera()
         sx, sy, sz = self.structure.size
         center = (sx / 2, sy / 2, sz / 2)
@@ -435,7 +445,6 @@ class StructureRenderTask(GenericModelRenderTask):
         # translucent fluids go last, over what is behind them
         for block in self.structure.blocks:
             self.render_fluid(block, center)
-        random.seed()
 
     def display_items(self) -> Generator[tuple[dict[str, Any], Item], None, None]:
         """The item_display entities that hold an item, and their item."""
@@ -534,7 +543,7 @@ class StructureRenderTask(GenericModelRenderTask):
         dx, dy, dz = DIRECTIONS[direction]
         x, y, z = block.pos
         state = self.block_positions.get((x + dx, y + dy, z + dz))
-        return None if state is None else self.structure.palette[state]
+        return None if state is None else self.palette[state]
 
     @cached_property
     def _occlusion(self) -> dict[int, Optional[str]]:
@@ -544,14 +553,14 @@ class StructureRenderTask(GenericModelRenderTask):
         """"opaque" for full opaque cubes, "self" for full cubes with see-through texels
         (glass culls against glass, HalfTransparentBlock.skipRendering), else None."""
         if state not in self._occlusion:
-            self._occlusion[state] = self.compute_occlusion(self.structure.palette[state])
+            self._occlusion[state] = self.compute_occlusion(self.palette[state])
         return self._occlusion[state]
 
-    def compute_occlusion(self, palleted: PaletteModel) -> Optional[str]:
-        if resolve_key(palleted.Name).endswith("_leaves"):
+    def compute_occlusion(self, paletted: PaletteModel) -> Optional[str]:
+        if resolve_key(paletted.Name).endswith("_leaves"):
             return None
         try:
-            variants = self.get_block_variants(palleted)
+            variants = self.get_block_variants(paletted)
         except RenderError:
             return None
         if len(variants) != 1 or isinstance(variants[0], list) or not isinstance(variants[0].model, str):
@@ -572,7 +581,7 @@ class StructureRenderTask(GenericModelRenderTask):
     def culled_directions(self, block: BlockModel) -> set[str]:
         """Directions whose neighbour hides the faces that have this cullface (Block.shouldRenderFace)."""
         try:
-            name = self.structure.palette[block.state].Name
+            name = self.palette[block.state].Name
         except RenderError:
             # a variant drawn on its own, outside of a structure
             return set()
@@ -588,11 +597,11 @@ class StructureRenderTask(GenericModelRenderTask):
                 culled.add(direction)
         return culled
 
-    def block_info(self, palleted: PaletteModel) -> BlockInfo:
-        key = (palleted.Name, tuple(sorted(palleted.Properties.items())))
+    def block_info(self, paletted: PaletteModel) -> BlockInfo:
+        key = (paletted.Name, tuple(sorted(paletted.Properties.items())))
         if key not in self._block_infos:
             self._block_infos[key] = block_info(
-                self.getter.opts.minecraft_version, palleted.Name, palleted.Properties
+                self.getter.opts.minecraft_version, paletted.Name, paletted.Properties
             )
         return self._block_infos[key]
 
@@ -600,8 +609,8 @@ class StructureRenderTask(GenericModelRenderTask):
     def _block_infos(self) -> dict[Any, BlockInfo]:
         return {}
 
-    def fluid_of(self, palleted: Optional[PaletteModel]) -> Optional[str]:
-        state = self.fluid_state(palleted)
+    def fluid_of(self, paletted: Optional[PaletteModel]) -> Optional[str]:
+        state = self.fluid_state(paletted)
         return None if state is None else state.fluid
 
     def render_fluid(self, block: BlockModel, center: tuple[float, float, float]):
@@ -612,7 +621,7 @@ class StructureRenderTask(GenericModelRenderTask):
         quads = tesselate_fluid(StructureFluids(self, extend=True), pos, StructureFluids(self))
         if not quads:
             return
-        fluid = self.fluid_of(self.structure.palette[block.state])
+        fluid = self.fluid_of(self.palette[block.state])
         assert fluid is not None
         tint = self.biome_colors.water_color() if fluid == "minecraft:water" else 0xFFFFFF
         red, green, blue = ((tint >> 16) & 0xFF) / 255, ((tint >> 8) & 0xFF) / 255, (tint & 0xFF) / 255
@@ -629,19 +638,19 @@ class StructureRenderTask(GenericModelRenderTask):
     def fluid_binding(self, fluid: str, kind: str, image: Image.Image) -> int:
         key = f"{fluid}_{kind}"
         if key not in self._fluid_bindings:
-            self._fluid_bindings[key] = self.upload_texture(image)
+            self._fluid_bindings[key] = self.gl_textures.from_image(image)
         return self._fluid_bindings[key]
 
     @cached_property
     def _fluid_bindings(self) -> dict[str, int]:
         return {}
 
-    def fluid_state(self, palleted: Optional[PaletteModel]) -> Optional[FluidState]:
+    def fluid_state(self, paletted: Optional[PaletteModel]) -> Optional[FluidState]:
         """BlockState.getFluidState: water and lava by level, waterlogged blocks, and the blocks
         that always hold water (kelp, seagrass, bubble columns)."""
-        if palleted is None:
+        if paletted is None:
             return None
-        fluid = self.block_info(palleted).fluid
+        fluid = self.block_info(paletted).fluid
         return None if fluid is None else FluidState(*fluid)
 
     @cached_property
@@ -684,31 +693,31 @@ class StructureRenderTask(GenericModelRenderTask):
             ).bake()
         return self._parsed_models[key]
 
-    def get_block_variants(self, palleted: PaletteModel) -> list[Variant]:
+    def get_block_variants(self, paletted: PaletteModel) -> list[Variant]:
         """The variants drawn for a block state, looked up through every pack.
 
         Like BlockStateModelLoader.loadBlockStateDefinitionStack, a pack only replaces
         the states its blockstate file covers, the others come from the packs below.
         """
-        stack = self.getter.get_stack(Blockstate, palleted.Name)
+        stack = self.getter.get_stack(Blockstate, paletted.Name)
         if not stack:
-            raise RenderError(f"Blockstate {palleted.Name} not found")
+            raise RenderError(f"Blockstate {paletted.Name} not found")
         for file in stack:
-            variants = BlockState.model_validate(file.data).select(palleted.Properties)
+            variants = BlockState.model_validate(file.data).select(paletted.Properties)
             if variants is not None:
                 return variants
         # a state no definition covers shows the missing model
-        log.warning(f"No variant of {palleted.Name} for {palleted.Properties}, using the missing model")
+        log.warning(f"No variant of {paletted.Name} for {paletted.Properties}, using the missing model")
         return [VariantModel(model=missing_model())]
 
     def get_all_textures(self) -> Generator[dict[str, TextureSource], None, None]:
         for state in sorted({block.state for block in self.structure.blocks}):
-            for variant in self.get_block_variants(self.structure.palette[state]):
+            for variant in self.get_block_variants(self.palette[state]):
                 for option in variant if isinstance(variant, list) else [variant]:
                     if isinstance(option.model, str):
                         yield self.get_parsed_model(option.model).textures
         # the fluids are animated too
-        fluids = {self.fluid_of(self.structure.palette[block.state]) for block in self.structure.blocks}
+        fluids = {self.fluid_of(self.palette[block.state]) for block in self.structure.blocks}
         for fluid in sorted(fluid for fluid in fluids if fluid is not None):
             namespace, path = fluid.split(":")
             yield {kind: f"{namespace}:block/{path}_{kind}" for kind in ("still", "flow")}
@@ -794,17 +803,17 @@ class StructureRenderTask(GenericModelRenderTask):
             )
 
     def render_block(self, block: BlockModel, center: tuple[float, float, float]):
-        palleted = self.structure.palette[block.state]
-        for variant in self.get_block_variants(palleted):
-            self.render_variant(variant, block, center, palleted)
+        paletted = self.palette[block.state]
+        for variant in self.get_block_variants(paletted):
+            self.render_variant(variant, block, center, paletted)
         if self.getter.opts.special_rendering:
-            self.render_builtin(block, palleted, center)
+            self.render_builtin(block, paletted, center)
 
-    def render_builtin(self, block: BlockModel, palleted: PaletteModel, center: tuple[float, float, float]):
+    def render_builtin(self, block: BlockModel, paletted: PaletteModel, center: tuple[float, float, float]):
         """The special model BuiltInBlockModels adds to banners, heads, chests, shulker boxes,
         pots, conduits, bells, enchanting tables, copper golem statues and end portals, placed
         by its block transformation (SpecialBlockModelWrapper)."""
-        builtin = builtin_block(resolve_key(palleted.Name), palleted.Properties, block.nbt or {})
+        builtin = builtin_block(resolve_key(paletted.Name), paletted.Properties, block.nbt or {})
         if builtin is None:
             return
         item_id, special, placement, components = builtin
@@ -845,10 +854,10 @@ class StructureRenderTask(GenericModelRenderTask):
         variant: Variant,
         block: BlockModel,
         center: tuple[float, float, float],
-        palleted: PaletteModel,
+        paletted: PaletteModel,
     ):
         if isinstance(variant, list):
-            resolved_variant = random.choices(
+            resolved_variant = self.rng.choices(
                 variant, weights=[x.weight for x in variant]
             )[0]
         else:
@@ -861,7 +870,7 @@ class StructureRenderTask(GenericModelRenderTask):
 
         rots = resolved_variant.rotations
         tints = (
-            self.get_tints(resolved_variant.model, palleted)
+            self.get_tints(resolved_variant.model, paletted)
             if isinstance(resolved_variant.model, str)
             else []
         )
@@ -891,9 +900,9 @@ class StructureRenderTask(GenericModelRenderTask):
         )
         task.run()
 
-    def get_tints(self, model: str, palleted) -> list[TintSource]:
+    def get_tints(self, model: str, paletted) -> list[TintSource]:
         # BlockColors, with the colors of the structure's biome
-        colors = block_tints(self.getter, self.biome_colors, palleted.Name, palleted.Properties)
+        colors = block_tints(self.getter, self.biome_colors, paletted.Name, paletted.Properties)
         if colors is not None:
             return [
                 TintSourceConstant(type="minecraft:constant", value=0xFFFFFF if color is None else color)

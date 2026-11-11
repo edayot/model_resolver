@@ -503,7 +503,10 @@ source = { editable = "." }
 dependencies = [
     { name = "beet" },
     { name = "click" },
+    { name = "nbtlib" },
+    { name = "numpy" },
     { name = "pillow" },
+    { name = "pydantic" },
     { name = "pyopengl" },
 ]
 
@@ -523,7 +526,10 @@ docs = [
 requires-dist = [
     { name = "beet", specifier = ">=0.113.0b10" },
     { name = "click", specifier = ">=8.1.7" },
+    { name = "nbtlib", specifier = ">=1.12.1" },
+    { name = "numpy", specifier = ">=2.0" },
     { name = "pillow", specifier = ">10.3.0" },
+    { name = "pydantic", specifier = ">=2.0" },
     { name = "pyopengl", specifier = ">=3.1.9,<4.0.0" },
 ]
 

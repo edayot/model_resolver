@@ -4,18 +4,14 @@ A structure has no biome of its own, so a render uses one biome for every block:
 grass, foliage, dry foliage and water colors come from it like BiomeColors.getAverage*.
 """
 
-from functools import cache
-import json
-from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
-from beet import LATEST_MINECRAFT_VERSION
 from pydantic import BaseModel, Field, field_validator
 
 from model_resolver.item_model.tint_source import colormap_color
 from model_resolver.pack_getter import PackGetter
-from model_resolver.utils import clamp, log, resolve_key
+from model_resolver.utils import clamp, data_table, log, resolve_key
 
 FOLIAGE_DEFAULT = 0x48B518  # FoliageColor.FOLIAGE_DEFAULT
 DRY_FOLIAGE_DEFAULT = 0x5C3C32  # DryFoliageColor.FOLIAGE_DRY_DEFAULT
@@ -81,15 +77,9 @@ class Biome(BaseModel):
         )
 
 
-@cache
 def vanilla_biomes(version: str) -> dict[str, Any]:
     """Biomes of the vanilla data pack, see scripts/generate_biome_table.py."""
-    tables = json.loads((Path(__file__).parent / "data" / "biomes.json").read_text())
-    if version == "latest":
-        version = LATEST_MINECRAFT_VERSION
-    if version in tables:
-        return tables[version]
-    return tables[max(tables, key=lambda v: tuple(map(int, v.split("."))))]
+    return data_table("biomes", version)
 
 
 def load_biome(getter: PackGetter, biome: str | dict[str, Any]) -> Biome:

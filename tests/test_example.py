@@ -22,7 +22,7 @@ def normalize(pack: DataPack | ResourcePack):
         if isinstance(file, (PngFile, JsonFileBase, Structure)):
             file.ensure_deserialized()
             raw = file.ensure_serialized()
-            if isinstance(file, Structure):
+            if isinstance(file, Structure) and isinstance(raw, bytes):
                 # gzip headers hold the time they were written
                 file.set_content(gzip.compress(gzip.decompress(raw), mtime=0))
 

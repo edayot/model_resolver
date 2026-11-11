@@ -5,14 +5,12 @@ model's own space, in pixels: the item definition's transformation puts them in 
 like the game does.
 """
 
-from functools import cache
-import json
 import math
-from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
-from beet import LATEST_MINECRAFT_VERSION
+
+from model_resolver.utils import data_table
 
 # FaceInfo: the corners of each face, low or high on each axis, in vertex order
 FACE_CORNERS = {
@@ -26,14 +24,8 @@ FACE_CORNERS = {
 CUBE_DIRECTIONS = ("down", "up", "west", "north", "east", "south")
 
 
-@cache
 def entity_layers(version: str) -> dict[str, Any]:
-    tables = json.loads((Path(__file__).parent.parent / "data" / "entity_models.json").read_text())
-    if version == "latest":
-        version = LATEST_MINECRAFT_VERSION
-    if version in tables:
-        return tables[version]
-    return tables[max(tables, key=lambda v: tuple(map(int, v.split("."))))]
+    return data_table("entity_models", version)
 
 
 def _rotation(x: float, y: float, z: float) -> np.ndarray:

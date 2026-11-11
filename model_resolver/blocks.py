@@ -4,13 +4,9 @@
 
 from dataclasses import dataclass
 from functools import cache
-import json
-from pathlib import Path
 from typing import Any, Optional
 
-from beet import LATEST_MINECRAFT_VERSION
-
-from model_resolver.utils import resolve_key
+from model_resolver.utils import data_table, resolve_key
 
 Box = tuple[float, float, float, float, float, float]
 """min x, y, z and max x, y, z in blocks"""
@@ -18,14 +14,8 @@ Box = tuple[float, float, float, float, float, float]
 FULL_BLOCK: list[Box] = [(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)]
 
 
-@cache
 def block_table(version: str) -> dict[str, Any]:
-    tables = json.loads((Path(__file__).parent / "data" / "blocks.json").read_text())
-    if version == "latest":
-        version = LATEST_MINECRAFT_VERSION
-    if version in tables:
-        return tables[version]
-    return tables[max(tables, key=lambda v: tuple(map(int, v.split("."))))]
+    return data_table("blocks", version)
 
 
 @dataclass(frozen=True)

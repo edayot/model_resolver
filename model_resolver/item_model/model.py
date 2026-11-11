@@ -1,5 +1,4 @@
 from fractions import Fraction
-import numpy as np
 from functools import cached_property
 import math
 from pydantic import BaseModel, Field, RootModel, model_validator

@@ -155,3 +155,14 @@ def test_every_effect_has_a_color():
     effects = potion_table("26.3")["effects"]
     assert effects["minecraft:fire_resistance"] == 0xFF9900
     assert all(color != 0 for color in effects.values())
+
+
+def test_another_version_uses_the_latest_data_with_one_warning(caplog):
+    from model_resolver.utils import data_table
+
+    newest = data_table("potions", "26.3")
+    with caplog.at_level("WARNING", logger="model_resolver"):
+        assert data_table("potions", "1.20.1") is newest
+        data_table("biomes", "1.20.1")
+    (warning,) = caplog.messages
+    assert "1.20.1 is not supported" in warning

@@ -90,7 +90,7 @@ class TestAnimation:
 
 
 def bare_render(assets):
-    # resolve_altas only needs the getter and the dynamic texture table
+    # resolve_atlas only needs the getter and the dynamic texture table
     render = Render.__new__(Render)
     render.getter = make_getter(assets)
     render.dynamic_textures = {}
@@ -132,7 +132,7 @@ class TestAtlases:
         assets = ResourcePack()
         assets.textures["test:raw/thing"] = Texture(Image.new("RGBA", (1, 1)))
         render = bare_render(assets)
-        render.resolve_altas(
+        render.resolve_atlas(
             "minecraft:blocks",
             Atlas(
                 {
@@ -150,21 +150,21 @@ class TestAtlases:
 
     def test_paletted_permutation(self):
         render = bare_render(trim_assets())
-        render.resolve_altas("minecraft:items", paletted())
+        render.resolve_atlas("minecraft:items", paletted())
         image = render.dynamic_textures["minecraft:trims/items/helmet_trim_gold"]
         pixels = [image.getpixel((x, 0)) for x in range(image.width)]
         assert pixels == [(200, 150, 50, 255), (99, 99, 99, 255)]
 
     def test_paletted_permutation_separator(self):
         render = bare_render(trim_assets())
-        render.resolve_altas("minecraft:items", paletted(separator="-"))
+        render.resolve_atlas("minecraft:items", paletted(separator="-"))
         assert "minecraft:trims/items/helmet_trim-gold" in render.dynamic_textures
 
     def test_directory_source_with_a_different_prefix(self):
         assets = ResourcePack()
         assets.textures["test:custom_textures/foo"] = Texture(Image.new("RGBA", (1, 1)))
         render = bare_render(assets)
-        render.resolve_altas(
+        render.resolve_atlas(
             "minecraft:blocks",
             Atlas(
                 {
@@ -211,7 +211,7 @@ def palette_render(keys, targets, pixels):
     texture.putdata(pixels)
     assets.textures["test:thing"] = Texture(texture)
     render = bare_render(assets)
-    render.resolve_altas(
+    render.resolve_atlas(
         "minecraft:items",
         Atlas(
             {
@@ -269,7 +269,7 @@ class TestOtherAtlasSources:
                 {"sprite": "test:right", "x": 1, "y": 0, "width": 1, "height": 1}
             ],
         }
-        render.resolve_altas("minecraft:blocks", Atlas({"sources": [source]}))
+        render.resolve_atlas("minecraft:blocks", Atlas({"sources": [source]}))
         image = render.dynamic_textures["test:right"]
         assert image.size == (16, 16)
         assert image.getpixel((0, 0)) == frame_color(1)
@@ -280,7 +280,7 @@ class TestOtherAtlasSources:
         filtered.data["sources"].append(
             {"type": "minecraft:filter", "pattern": {"path": "helmet"}}
         )
-        render.resolve_altas("minecraft:items", filtered)
+        render.resolve_atlas("minecraft:items", filtered)
         assert "minecraft:trims/items/helmet_trim_gold" not in render.dynamic_textures
 
     def test_directory_sources_of_other_atlases_are_not_mapped(self):
@@ -291,7 +291,7 @@ class TestOtherAtlasSources:
         )
         render = bare_render(assets)
         source = {"type": "directory", "source": "gui/sprites", "prefix": ""}
-        render.resolve_altas("minecraft:gui", Atlas({"sources": [source]}))
+        render.resolve_atlas("minecraft:gui", Atlas({"sources": [source]}))
         assert render.dynamic_textures == {}
 
 

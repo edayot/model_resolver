@@ -2,16 +2,13 @@ import json
 import os
 import re
 import subprocess
+from pathlib import Path
 from beet import LATEST_MINECRAFT_VERSION, Context
 from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 from typing import TYPE_CHECKING, Any, Literal, Optional, Self, get_args
-from beet import Context
-from functools import lru_cache
+from functools import cache, lru_cache
 
-from pydantic import BaseModel
 import logging
-
-from beet.contrib.vanilla import Vanilla
 
 log = logging.getLogger("model_resolver")
 
@@ -78,17 +75,31 @@ def validate_dispatched[T: BaseModel](data: Any, classes: list[type[T]], what: s
     raise ValueError(f"Invalid {what} {data['type']!r}: {errors[0]}")
 
 
-class LightOptions(BaseModel):
-    """Light options."""
+_warned_versions: set[str] = set()
 
-    minecraft_light_power: float = 0.6727302277118515
-    minecraft_ambient_light: float = 0.197261163686041
-    minecraft_light_position: list[float] = [
-        -0.42341569107908505,
-        -0.6577205642540358,
-        0.4158725999762756,
-        0.0,
-    ]
+
+@cache
+def _data_tables(name: str) -> dict[str, Any]:
+    return json.loads((Path(__file__).parent / "data" / f"{name}.json").read_text())
+
+
+def data_table(name: str, version: str) -> dict[str, Any]:
+    """A table of model_resolver/data, generated from the game by scripts/generate_*.py.
+
+    Only the latest Minecraft version is supported: any other one uses the newest table.
+    """
+    tables = _data_tables(name)
+    if version == "latest":
+        version = LATEST_MINECRAFT_VERSION
+    if version in tables:
+        return tables[version]
+    newest = max(tables, key=lambda v: tuple(map(int, v.split("."))))
+    if version not in _warned_versions:
+        _warned_versions.add(version)
+        log.warning(
+            f"Minecraft {version} is not supported (only the latest version is), using the data of {newest}"
+        )
+    return tables[newest]
 
 
 _warned_options: set[str] = set()
@@ -125,9 +136,8 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
     version = getter.opts.minecraft_version
     if version == "latest":
         version = LATEST_MINECRAFT_VERSION
-    prefered = getter.opts.preferred_minecraft_generated
-    # TODO: if java is not found, fallback to misode/mcmeta
-    if prefered == "java":
+    preferred = getter.opts.preferred_minecraft_generated
+    if preferred == "java":
         # test if java is available
         try:
             subprocess.run(
@@ -138,8 +148,8 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
             )
         except (subprocess.SubprocessError, FileNotFoundError):
             log.warning("Java not found, falling back to misode/mcmeta")
-            prefered = "misode/mcmeta"
-    match prefered:
+            preferred = "misode/mcmeta"
+    match preferred:
         case "misode/mcmeta":
             url = f"https://raw.githubusercontent.com/misode/mcmeta/refs/tags/{version}-summary/item_components/data.json"
             log.info(url)
@@ -181,4 +191,4 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
                     components[resolve_key(item.name.removesuffix(".json"))] = json.load(file)["components"]
             return components
         case _:
-            raise ValueError(f"Unknown preferred_minecraft_generated: {prefered}")
+            raise ValueError(f"Unknown preferred_minecraft_generated: {preferred}")

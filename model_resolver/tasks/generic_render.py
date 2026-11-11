@@ -33,7 +33,7 @@ from model_resolver.item_model.tint_source import TintSource
 from typing import Any, ClassVar, Optional, Generator, Literal
 from PIL import Image
 from model_resolver.tasks.base import Task, RenderError
-from math import pi, cos, sin, sqrt
+from math import pi, cos, sin
 
 
 type TextureBindingsValue = tuple[tuple[tuple[int, TintSource | None], ...], str]
@@ -382,7 +382,7 @@ class GenericModelRenderTask(Task):
         resolved = {resolve_key(key): image for key, image in images.items()}
         for key, value in model.textures.items():
             if isinstance(value, Image.Image):
-                raise RenderError(f"WTF is going on")
+                raise RenderError(f"Texture {key} is already an image")
             elif isinstance(value, tuple):
                 # banner and shield layers
                 textures[key] = tuple(
@@ -611,29 +611,6 @@ class GenericModelRenderTask(Task):
         for rotation in self.additional_rotations:
             block_rotation = rotation_matrix(rotation) @ block_rotation
 
-        # texture_used = [
-        #     element.faces.get("down", None),
-        #     element.faces.get("up", None),
-        #     element.faces.get("north", None),
-        #     element.faces.get("south", None),
-        #     element.faces.get("west", None),
-        #     element.faces.get("east", None),
-        # ]
-        # texture_used = [x.texture.lstrip("#") for x in texture_used if x is not None]
-        # texture_used = list(set(texture_used))
-
-        # for texture in texture_used:
-        #     if texture not in textures_bindings:
-        #         continue
-        #     glBindTexture(GL_TEXTURE_2D, textures_bindings[texture][0])
-        #     glColor3f(1.0, 1.0, 1.0)
-        #     # get all the faces with the same texture
-        #     for face, data in element.faces.items():
-        #         if data.texture.lstrip("#") == texture:
-        #             self.draw_face(
-        #                 face, data, vertices, element.from_, element.to, tints, texture
-        #             )
-
         for face, data in element.faces.items():
             if (textvar := data.texture.lstrip("#")) not in textures_bindings:
                 continue
@@ -808,13 +785,10 @@ class GenericModelRenderTask(Task):
             if uv_transform is not None:
                 u, v = (uv_transform @ np.array([u - 0.5, v - 0.5]) + 0.5).tolist()
             vertex_uvs.append((u, v))
-        # glUseProgram(self.program)
-        # print(glGetError())
-        # self.set_uniforms(self.program)
 
         glEnable(GL_TEXTURE_2D)
 
-        depht_coef = 0.1
+        depth_coef = 0.1
 
         for layer_index, (tex_id, tint) in enumerate(bindings[0]):
             glBindTexture(GL_TEXTURE_2D, tex_id)
@@ -830,7 +804,7 @@ class GenericModelRenderTask(Task):
             # Apply depth offset for layering by modifying polygon offset
             if layer_index > 0:
                 glEnable(GL_POLYGON_OFFSET_FILL)
-                glPolygonOffset(-layer_index * depht_coef, -layer_index * depht_coef)
+                glPolygonOffset(-layer_index * depth_coef, -layer_index * depth_coef)
 
             glBegin(GL_QUADS)
             for vertex, (u, v) in zip(rotated_vertices, vertex_uvs):
@@ -849,9 +823,6 @@ class GenericModelRenderTask(Task):
         set_default_blend()
 
         glDisable(GL_TEXTURE_2D)
-
-    def upload_texture(self, image: Image.Image) -> int:
-        return self.gl_textures.from_image(image)
 
     def draw_quad(
         self,
@@ -956,12 +927,6 @@ class Animation:
     """An enchantment glint is drawn, which moves on every tick."""
 
     cache_texture_animated: Any = None
-
-    @property
-    def duration_coef(self):
-        if self.animation_framerate % 20 != 0 and self.animation_framerate > 0:
-            raise TypeError(f"animation_frame must be a positive multiple of 20")
-        return self.animation_framerate // 20
 
     @property
     def is_animated(self) -> bool:

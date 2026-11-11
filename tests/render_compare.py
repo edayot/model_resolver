@@ -2,7 +2,7 @@
 
 CI's Mesa renders differ from local GPU renders: in most images 7-20% of the drawn pixels
 are off by one level (rounding), and a few edge texels flip. A real change is far bigger
-(see X1 in docs/migration-plan.md for the measurements behind these thresholds).
+(see X1 in plans/migration-plan.md for the measurements behind these thresholds).
 """
 
 import gzip

@@ -1,4 +1,5 @@
 import io
+import os
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
@@ -40,12 +41,6 @@ class Task:
     saved_img: Optional[Image.Image] = None
 
     tasks: list["Task"] = field(default_factory=list)
-
-    @property
-    def duration_coef(self):
-        if self.animation_framerate % 20 != 0 and self.animation_framerate > 0:
-            raise TypeError(f"animation_frame must be a positive multiple of 20")
-        return self.animation_framerate // 20
 
     ensure_params: bool = False
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)

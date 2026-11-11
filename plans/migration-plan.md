@@ -39,7 +39,7 @@ Three examples cover the newer features: [examples/potions](../examples/potions)
 
 ### T: tints
 
-- **T1** potions use `custom_color`, else the average color of the visible effects weighted by amplifier + 1. The effect and potion tables are generated from the jar by [scripts/generate_potion_table.py](../scripts/generate_potion_table.py) into `model_resolver/data/potions.json` (one entry per version, the closest one is used).
+- **T1** potions use `custom_color`, else the average color of the visible effects weighted by amplifier + 1. The effect and potion tables are generated from the jar by [scripts/generate_potion_table.py](../scripts/generate_potion_table.py) into `model_resolver/data/potions.json` (one entry per version, see X3).
 - **T2** firework averages `firework_explosion` colors. **T3** `custom_model_data` falls back to `default`. **T4** float `[r, g, b]` colors (float32 like Java). **T5** the grass colormap is sampled like `ColorMapColorUtil`, and out-of-range values are rejected.
 
 ### P: component predicates
@@ -92,7 +92,7 @@ Rewritten after `net.minecraft.core.component.predicates` ([data_component_predi
 ### X: infrastructure
 
 - **X1** see Tests. **X2** `render_size` under `meta.model_resolver` is the default render size; unknown keys log a warning; the dead `load_vanilla: false` lines are gone from the examples.
-- **X3 (decision).** Instead of gating on `minecraft_version`, parsing accepts both the 26.3 and the older shapes (pot decorations, predicates, `map_color`, `bed` / sign specials), and generated tables are keyed by version.
+- **X3 (decision).** Instead of gating on `minecraft_version`, parsing accepts both the 26.3 and the older shapes (pot decorations, predicates, `map_color`, `bed` / sign specials), and generated tables are keyed by version. Only the latest version is supported: `utils.data_table` loads every table, and a version without an entry uses the newest one with a warning.
 - **X4** the enchantment glint (`hasFoil`), like the `GLINT` shaders: sampled with the sprite's coordinates in the items or blocks atlas ([atlas.py](../model_resolver/atlas.py) stitches them like `SpriteLoader` and `Stitcher`), scaled by 8 (0.5 for the shield and trident entity glint, which other specials don't draw), turned 10°, moving with `TextureTransform.setupGlintTexturing` at the default speed, squared and added at the default strength. Animated renders loop over its 1650 ticks.
 
 ## Still different from the game

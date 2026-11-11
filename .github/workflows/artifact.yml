@@ -24,10 +24,19 @@ jobs:
           enable-cache: true
       - name: Sync Python dependencies
         run: uv sync --dev
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install npm dependencies
+        run: npm install
+      - name: Run npm check
+        run: npm run check
       - name: Unit tests (no OpenGL needed)
         run: uv run pytest tests --ignore=tests/test_example.py
       - name: Setup OpenGL and Run Tests
-        uses: edayot/model_resolver@master
+        uses: ./
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}
@@ -67,7 +76,7 @@ jobs:
         run: uv run pytest tests --ignore=tests/test_example.py
       - uses: ssciwr/setup-mesa-dist-win@v2
       - name: Setup OpenGL and Run Tests
-        uses: edayot/model_resolver@master
+        uses: ./
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GIT_HASH: ${{ github.sha }}

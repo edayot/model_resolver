@@ -22,21 +22,6 @@ class PackGetterLookup:
 
 
 @overload
-def get_by_namespace_proxy[T: NamespaceFile](context: NamespaceProxy[T], vanilla: NamespaceProxy[T], key: str) -> T: ...
-@overload
-def get_by_namespace_proxy[T: NamespaceFile](context: NamespaceContainer[T], vanilla: NamespaceContainer[T], key: str) -> T: ...
-
-def get_by_namespace_proxy[T: NamespaceFile](context: NamespaceProxy[T] | NamespaceContainer[T], vanilla: NamespaceProxy[T] | NamespaceContainer[T], key: str) -> T:
-    res = context.get(key)
-    if res is None:
-        res = vanilla.get(key)
-        if res is None:
-            raise KeyError(key)
-    return res
-
-
-
-@overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]], key: str) -> T: ...
 @overload
 def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceContainer[T]], key: str) -> T: ...

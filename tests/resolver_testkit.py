@@ -16,7 +16,7 @@ from model_resolver.item_model.item import Item
 from model_resolver.pack_getter import PackGetter, PackGetterLookup
 from model_resolver.utils import ModelResolverOptions
 
-PLAN = "docs/migration-plan.md"
+PLAN = "plans/migration-plan.md"
 
 
 def gap(item_id: str, reason: str):

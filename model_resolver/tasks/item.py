@@ -5,7 +5,7 @@ from model_resolver.tasks.model import AnimatedResultTask
 from model_resolver.minecraft_model import (
     MinecraftModel,
 )
-from model_resolver.item_model.model import ItemModel, ItemModelResolvable, ItemModelSpecial
+from model_resolver.item_model.model import ItemModel
 from model_resolver.item_model.glint import GlintStyle, has_foil
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.item_model.tint_source import TintSource

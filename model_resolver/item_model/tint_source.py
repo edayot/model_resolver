@@ -1,15 +1,11 @@
-from functools import cache
-import json
 import math
-from pathlib import Path
 import numpy as np
 from pydantic import BaseModel, Field
 from typing import Any, Literal, Optional, Union
-from beet import LATEST_MINECRAFT_VERSION
 from PIL import Image
 from model_resolver.item_model.item import Item
 from model_resolver.pack_getter import PackGetter
-from model_resolver.utils import resolve_key
+from model_resolver.utils import data_table, resolve_key
 
 type Color = int | tuple[float, float, float]
 
@@ -145,15 +141,9 @@ class TintSourcePotion(TintSourceBase):
         return to_rgb(potion_color(contents, self.default, getter.opts.minecraft_version))
 
 
-@cache
 def potion_table(version: str) -> dict[str, Any]:
     """Effects of every potion and color of every effect, see scripts/generate_potion_table.py."""
-    tables = json.loads((Path(__file__).parent.parent / "data" / "potions.json").read_text())
-    if version == "latest":
-        version = LATEST_MINECRAFT_VERSION
-    if version in tables:
-        return tables[version]
-    return tables[max(tables, key=lambda v: tuple(map(int, v.split("."))))]
+    return data_table("potions", version)
 
 
 def potion_effects(contents: Any, version: str) -> list[dict[str, Any]]:

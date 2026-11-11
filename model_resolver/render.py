@@ -15,14 +15,13 @@ from model_resolver.tasks.item import ItemRenderTask
 from model_resolver.tasks.model import ModelPathRenderTask, ModelRenderTask
 from model_resolver.tasks.structure import StructureRenderTask
 from model_resolver.utils import (
-    LightOptions,
     ModelResolverOptions,
     resolve_key,
     DEFAULT_RENDER_SIZE,
     log,
 )
 from model_resolver.pack_getter import PackGetter
-from typing import Any, Literal, Optional, TypedDict
+from typing import Any, Literal, Optional
 from pathlib import Path
 from PIL import Image
 
@@ -40,19 +39,6 @@ def unpremultiply(image: Image.Image) -> Image.Image:
     return Image.fromarray(data.astype(np.uint8), "RGBA")
 
 
-class AtlasDict(TypedDict, total=False):
-    type: str
-    textures: list[str]
-    palette_key: str
-    permutations: dict[str, str]
-    separator: str
-    resource: str
-    sprite: str
-    source: str
-    prefix: str
-    pattern: dict[str, str]
-
-
 class AppendList[T: Any](list[T]):
     def append[U](self, object: U) -> U:
         super().append(object) # pyright: ignore[reportArgumentType]
@@ -65,7 +51,6 @@ class Render:
 
     tasks: AppendList[Task] = field(default_factory=AppendList)
     tasks_index: int = 0
-    light: LightOptions = field(default_factory=LightOptions)
     dynamic_textures: dict[str, Image.Image] = field(default_factory=dict)
     default_render_size: int = DEFAULT_RENDER_SIZE
     default_animated_path_padding: int = 3
@@ -230,7 +215,7 @@ class Render:
 
     def resolve_dynamic_textures(self):
         log.info(f"Resolving dynamic textures")
-        # first, resolve all vanilla altas
+        # first, resolve all vanilla atlas
         cache = self.ctx.cache.get("model_resolver_dynamic_textures")
         assert cache
         opts = self.ctx.validate("model_resolver", ModelResolverOptions)
@@ -248,7 +233,7 @@ class Render:
         }
         for key, atlas in atlases.items():
             log.info(f"Creating atlas {key}")
-            self.resolve_altas(key, atlas)
+            self.resolve_atlas(key, atlas)
         if not opts.use_cache:
             return
         log.info("Caching dynamic textures")
@@ -283,7 +268,7 @@ class Render:
                 data[k : k + 4] = bytes((*target[:3], alpha * target[3] // 255))
         return Image.frombytes("RGBA", texture.size, bytes(data))
 
-    def resolve_altas(self, key: str, atlas: Atlas):
+    def resolve_atlas(self, key: str, atlas: Atlas):
         """Add the sprites an atlas defines under another name than their texture to dynamic_textures."""
         added: list[str] = []
         for source in atlas.data["sources"]:
@@ -306,7 +291,7 @@ class Render:
                 for texture in source["textures"]:
                     for variant, color_palette_path in source["permutations"].items():
                         added.append(
-                            self.resolve_altas_texture(
+                            self.resolve_atlas_texture(
                                 texture, variant, source, color_palette_path, separator
                             )
                         )
@@ -357,7 +342,7 @@ class Render:
             added.append(sprite)
         return added
 
-    def resolve_altas_texture(
+    def resolve_atlas_texture(
         self,
         texture: str,
         variant: str,
@@ -397,6 +382,10 @@ class Render:
         self.dynamic_textures[new_texture_path] = img
         return new_texture_path
 
+    # the names these methods had before 2.0
+    resolve_altas = resolve_atlas
+    resolve_altas_texture = resolve_atlas_texture
+
     def run(self):
         self.resolve_dynamic_textures()
         glutInit()
@@ -408,14 +397,6 @@ class Render:
         if HAVE_FREEGLUT:
             glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)
-
-        # Enable lighting
-        glLightfv(GL_LIGHT0, GL_POSITION, self.light.minecraft_light_position)
-        glLightfv(GL_LIGHT0, GL_AMBIENT, [self.light.minecraft_ambient_light] * 4)
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, [self.light.minecraft_light_power] * 4)
-
-        glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 0.0, 10.0, 0.0])
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, [1.0] * 4)
 
         new_tasks = AppendList[Task]()
         for task in self.tasks:

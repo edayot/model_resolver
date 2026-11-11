@@ -1,8 +1,9 @@
+import gzip
 import os
 from pathlib import Path
 
 import pytest
-from beet import DataPack, ResourcePack, run_beet
+from beet import DataPack, JsonFileBase, PngFile, ResourcePack, Structure, run_beet
 from pytest_insta import SnapshotFixture
 from pytest_insta.fixture import SnapshotRecorder
 
@@ -11,6 +12,19 @@ from render_compare import pack_differences
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 EXAMPLES = [f for f in os.listdir("examples") if not f.startswith("nosnap_")]
+
+
+def normalize(pack: DataPack | ResourcePack):
+    """Re-encode the files the way beet writes them. A file nothing read is copied as is, and
+    the snapshot comparison reads files in an order that changes between runs, so without this
+    a recorded png (or json, nbt) flips between its source bytes and beet's encoding."""
+    for _, file in pack.list_files():
+        if isinstance(file, (PngFile, JsonFileBase, Structure)):
+            file.ensure_deserialized()
+            raw = file.ensure_serialized()
+            if isinstance(file, Structure):
+                # gzip headers hold the time they were written
+                file.set_content(gzip.compress(gzip.decompress(raw), mtime=0))
 
 
 def assert_matches(
@@ -31,6 +45,7 @@ def assert_matches(
         assert pack_differences(expected, pack) == []
     else:
         # recording (--insta update, or a new snapshot): a proxy that stores what it's compared with
+        normalize(pack)
         assert expected == pack
 
 

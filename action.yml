@@ -39,18 +39,6 @@ runs:
       if: runner.os == 'Windows'
       uses: ssciwr/setup-mesa-dist-win@v2
 
-    - name: Setup OpenGL (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew install freeglut || echo "freeglut already installed"
-        brew install --cask xquartz || echo "xquartz already installed"
-        # Persist environment variables to subsequent steps via $GITHUB_ENV.
-        echo "DYLD_LIBRARY_PATH=$(brew --prefix freeglut)/lib:${DYLD_LIBRARY_PATH:-}" >> $GITHUB_ENV
-        echo "LIBGL_ALWAYS_SOFTWARE=1" >> $GITHUB_ENV
-        # Add XQuartz binaries (including Xvfb/xdpyinfo) to PATH for subsequent steps.
-        echo "/opt/X11/bin" >> $GITHUB_PATH
-      shell: bash
-
     - name: Execute Commands (Linux)
       if: runner.os == 'Linux'
       run: |
@@ -72,43 +60,9 @@ runs:
 
     - name: Execute Commands (macOS)
       if: runner.os == 'macOS'
+      # PyOpenGL uses Apple's GLUT.framework (Cocoa, not X11): the runner's window
+      # server and Apple software renderer are enough, no XQuartz/Xvfb/freeglut.
       run: |
-        set -euo pipefail
-
-        XVFB_BIN="/opt/X11/bin/Xvfb"
-        XDPYINFO_BIN="/opt/X11/bin/xdpyinfo"
-
-        export DISPLAY=:99
-        export LIBGL_ALWAYS_SOFTWARE=1
-        export LIBGL_ALWAYS_INDIRECT=1
-        # Start a headless X server for OpenGL contexts on CI.
-        "$XVFB_BIN" "$DISPLAY" -screen 0 2560x1440x24 +extension GLX +extension RENDER +iglx -ac &
-        XVFB_PID=$!
-        trap 'kill "$XVFB_PID" >/dev/null 2>&1 || true' EXIT
-
-        # Wait for Xvfb to accept connections before starting OpenGL clients.
-        for _ in $(seq 1 30); do
-          if "$XDPYINFO_BIN" -display "$DISPLAY" >/dev/null 2>&1; then
-            break
-          fi
-          sleep 1
-        done
-
-        if ! "$XDPYINFO_BIN" -display "$DISPLAY" >/dev/null 2>&1; then
-          echo "Xvfb did not become ready on $DISPLAY"
-          exit 1
-        fi
-
-        if ! "$XDPYINFO_BIN" -display "$DISPLAY" | grep -q "GLX"; then
-          echo "GLX extension is not available on $DISPLAY"
-          "$XDPYINFO_BIN" -display "$DISPLAY" || true
-          exit 1
-        fi
-
-        if command -v glxinfo >/dev/null 2>&1; then
-          glxinfo -B || true
-        fi
-
         echo "set -e" > /tmp/commands.sh
         echo "${{ inputs.commands }}" >> /tmp/commands.sh
         chmod +x /tmp/commands.sh

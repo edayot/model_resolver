@@ -1,5 +1,6 @@
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
+from OpenGL.GLUT import HAVE_FREEGLUT
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from model_resolver.minecraft_model import DisplayOptionModel, MinecraftModel
 from model_resolver.my_glut_init import glutInit
@@ -404,7 +405,8 @@ class Render:
         glutInitWindowPosition(100, 100)
         glutCreateWindow(b"Model Resolver window")
         glutHideWindow()
-        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
+        if HAVE_FREEGLUT:
+            glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
         glClearColor(0.0, 0.0, 0.0, 0.0)
 
         # Enable lighting
@@ -425,9 +427,24 @@ class Render:
         glutReshapeFunc(self.reshape)
 
         try:
-            glutMainLoop()
+            if HAVE_FREEGLUT:
+                glutMainLoop()
+            else:
+                # Apple's GLUT.framework (what PyOpenGL loads on macOS) has no
+                # glutLeaveMainLoop, so glutMainLoop would never return. Rendering
+                # goes through an FBO anyway, so drive the loop ourselves.
+                self.reshape(512, 512)
+                while self.tasks_index < len(self.tasks):
+                    self.display()
         finally:
             self.ctx.inject(GlTextures).clear()
+
+    def leave_main_loop(self):
+        # freeglut destroys the GL context when glutMainLoop returns, so free the
+        # textures while it is still current (Windows' opengl32 errors without one)
+        self.ctx.inject(GlTextures).clear()
+        if HAVE_FREEGLUT:
+            glutLeaveMainLoop()
 
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)
@@ -438,17 +455,17 @@ class Render:
 
     def display(self):
         if self.tasks_index >= len(self.tasks):
-            glutLeaveMainLoop()
+            self.leave_main_loop()
             return
         try:
             log.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
             x = self.real_display()
         except:
-            glutLeaveMainLoop()
+            self.leave_main_loop()
             raise
         self.tasks_index += x
         if self.tasks_index >= len(self.tasks):
-            glutLeaveMainLoop()
+            self.leave_main_loop()
             log.debug(f"Rendering task ended")
             return
 

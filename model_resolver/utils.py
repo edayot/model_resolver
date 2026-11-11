@@ -50,22 +50,32 @@ def literal_values(cls: type[BaseModel], field: str) -> tuple[Any, ...]:
     return get_args(info.annotation) if info else ()
 
 
-def validate_dispatched[T: BaseModel](data: Any, classes: list[type[T]], what: str) -> T:
+def validate_dispatched[
+    T: BaseModel
+](data: Any, classes: list[type[T]], what: str) -> T:
     """Validate `data` with the class its `type` (and `property`) selects, like a dispatch codec.
 
     Classes registered later win, so subclasses can replace built-in implementations.
     """
     if not isinstance(data, dict):
         raise ValueError(f"Invalid {what}, expected an object: {data!r}")
-    candidates = [cls for cls in reversed(classes) if data.get("type") in literal_values(cls, "type")]
+    candidates = [
+        cls
+        for cls in reversed(classes)
+        if data.get("type") in literal_values(cls, "type")
+    ]
     if not candidates:
         raise ValueError(f"Unknown {what} type {data.get('type')!r}")
     if any("property" in cls.model_fields for cls in candidates):
         candidates = [
-            cls for cls in candidates if data.get("property") in literal_values(cls, "property")
+            cls
+            for cls in candidates
+            if data.get("property") in literal_values(cls, "property")
         ]
         if not candidates:
-            raise ValueError(f"Unknown {what} property {data.get('property')!r} for {data['type']!r}")
+            raise ValueError(
+                f"Unknown {what} property {data.get('property')!r} for {data['type']!r}"
+            )
     errors: list[ValidationError] = []
     for cls in candidates:
         try:
@@ -128,10 +138,10 @@ class ModelResolverOptions(BaseModel):
         return self
 
 
-
 @lru_cache
 def get_default_components(ctx: Context) -> dict[str, Any]:
     from model_resolver.pack_getter import PackGetter
+
     getter = PackGetter.from_context(ctx)
     version = getter.opts.minecraft_version
     if version == "latest":
@@ -186,9 +196,13 @@ def get_default_components(ctx: Context) -> dict[str, Any]:
                 }
             # examples/load_vanilla/.beet_cache/model_resolver_components/0x0/generated/reports/minecraft/components/item
             components = {}
-            for item in (path / "generated" / "reports" / "minecraft" / "components" / "item").glob("*.json"):
+            for item in (
+                path / "generated" / "reports" / "minecraft" / "components" / "item"
+            ).glob("*.json"):
                 with open(item) as file:
-                    components[resolve_key(item.name.removesuffix(".json"))] = json.load(file)["components"]
+                    components[resolve_key(item.name.removesuffix(".json"))] = (
+                        json.load(file)["components"]
+                    )
             return components
         case _:
             raise ValueError(f"Unknown preferred_minecraft_generated: {preferred}")

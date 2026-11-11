@@ -41,7 +41,7 @@ def unpremultiply(image: Image.Image) -> Image.Image:
 
 class AppendList[T: Any](list[T]):
     def append[U](self, object: U) -> U:
-        super().append(object) # pyright: ignore[reportArgumentType]
+        super().append(object)  # pyright: ignore[reportArgumentType]
         return object
 
 
@@ -253,7 +253,9 @@ class Render:
         keys = np.asarray(palette.convert("RGBA")).reshape(-1, 4).tolist()
         targets = np.asarray(color_palette.convert("RGBA")).reshape(-1, 4).tolist()
         if len(keys) != len(targets):
-            raise RenderError(f"PaletteMapping has different sizes: {len(keys)} != {len(targets)}")
+            raise RenderError(
+                f"PaletteMapping has different sizes: {len(keys)} != {len(targets)}"
+            )
         mapping: dict[tuple[int, ...], list[int]] = {}
         for key, target in zip(keys, targets):
             if key[3] != 0:
@@ -280,12 +282,16 @@ class Render:
                 resource = resolve_key(source["resource"])
                 sprite = resolve_key(source.get("sprite", source["resource"]))
                 if resource in self.getter.assets.textures:
-                    self.dynamic_textures[sprite] = self.getter.assets.textures[resource].image
+                    self.dynamic_textures[sprite] = self.getter.assets.textures[
+                        resource
+                    ].image
                     added.append(sprite)
             elif source_type == "minecraft:directory":
                 # the other atlases hold gui, particle or painting sprites that models can't use
                 if resolve_key(key) in ("minecraft:blocks", "minecraft:items"):
-                    added.extend(self.resolve_atlas_directory(source["source"], source["prefix"]))
+                    added.extend(
+                        self.resolve_atlas_directory(source["source"], source["prefix"])
+                    )
             elif source_type == "minecraft:paletted_permutations":
                 separator = source.get("separator", "_")
                 for texture in source["textures"]:
@@ -319,7 +325,9 @@ class Render:
                 continue
             sprite = f"{namespace}:{prefix}{path.removeprefix(directory)}"
             if sprite != resolve_key(texture):
-                self.dynamic_textures[sprite] = self.getter.assets.textures[texture].image
+                self.dynamic_textures[sprite] = self.getter.assets.textures[
+                    texture
+                ].image
                 added.append(sprite)
         return added
 

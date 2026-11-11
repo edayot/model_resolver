@@ -9,7 +9,8 @@ def beet_default(ctx: Context):
     tasks: dict[str, StructureRenderTask] = {}
     for structure in ctx.data.structures.keys():
         tasks[structure] = render.add_structure_task(
-            structure, animation_mode="one_file",
+            structure,
+            animation_mode="one_file",
             display_option=DisplayOptionModel(
                 scale=(1.5, 1.5, 1.5),
                 rotation=(30, 225, 0),
@@ -23,4 +24,3 @@ def beet_default(ctx: Context):
             ctx.assets.textures[path] = Texture(task.tasks[0].saved_img)
         else:
             ctx.assets.textures[path] = Texture(task.saved_img)
-

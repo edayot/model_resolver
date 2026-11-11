@@ -15,7 +15,9 @@ from model_resolver.tasks.base import Task, RenderError
 from model_resolver.utils import resolve_key
 
 
-type ResolvedModel = tuple[MinecraftModel, list[TintSource], Optional[Transformation], Optional[GlintStyle]]
+type ResolvedModel = tuple[
+    MinecraftModel, list[TintSource], Optional[Transformation], Optional[GlintStyle]
+]
 
 
 @dataclass(kw_only=True)
@@ -77,7 +79,8 @@ class ItemRenderTask(GenericModelRenderTask):
             getter=self.getter,
             animation_framerate=self.animation_framerate,
             source=str(self.item),
-            glint=has_foil(self.item) and any(model.glint() for model in item_model_models),
+            glint=has_foil(self.item)
+            and any(model.glint() for model in item_model_models),
         )
         if not animation.is_animated:
             self.animation_mode = "multi_files"
@@ -109,18 +112,24 @@ class ItemRenderTask(GenericModelRenderTask):
                 )
 
             if self.path_save:
-                new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_save = (
+                    self.path_save
+                    / "{i:0{animated_path_padding}}_{duration}.png".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + "/{i:0{animated_path_padding}}_{duration}".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_ctx = (
+                    self.path_ctx
+                    + "/{i:0{animated_path_padding}}_{duration}".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_ctx = None

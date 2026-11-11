@@ -9,21 +9,36 @@ class Vector(NamedTuple):
     y: float
     z: float
 
+
 class Quaternion(NamedTuple):
     x: float
     y: float
     z: float
     w: float
 
+
 class AxisAngle(BaseModel):
     axis: Vector
     angle: float
 
+
 type Matrix = tuple[
-    float, float, float, float,
-    float, float, float, float,
-    float, float, float, float,
-    float, float, float, float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
 ]
 
 type Rotation = Union[AxisAngle, Quaternion]
@@ -34,17 +49,31 @@ def _rotation_to_quaternion(rotation: Rotation) -> Quaternion:
         return rotation
     half = rotation.angle / 2.0
     s = math.sin(half)
-    return Quaternion(rotation.axis.x * s, rotation.axis.y * s, rotation.axis.z * s, math.cos(half))
+    return Quaternion(
+        rotation.axis.x * s, rotation.axis.y * s, rotation.axis.z * s, math.cos(half)
+    )
 
 
 def _quat_to_mat4(q: Quaternion) -> Matrix:
     """Column-major 4x4 rotation matrix from quaternion."""
     x, y, z, w = q
     return (
-        1-2*(y*y+z*z), 2*(x*y+w*z),   2*(x*z-w*y),   0,  # col 0
-        2*(x*y-w*z),   1-2*(x*x+z*z), 2*(y*z+w*x),   0,  # col 1
-        2*(x*z+w*y),   2*(y*z-w*x),   1-2*(x*x+y*y), 0,  # col 2
-        0,             0,             0,              1,  # col 3
+        1 - 2 * (y * y + z * z),
+        2 * (x * y + w * z),
+        2 * (x * z - w * y),
+        0,  # col 0
+        2 * (x * y - w * z),
+        1 - 2 * (x * x + z * z),
+        2 * (y * z + w * x),
+        0,  # col 1
+        2 * (x * z + w * y),
+        2 * (y * z - w * x),
+        1 - 2 * (x * x + y * y),
+        0,  # col 2
+        0,
+        0,
+        0,
+        1,  # col 3
     )
 
 
@@ -53,24 +82,55 @@ def _mat4_mul(a: Matrix, b: Matrix) -> Matrix:
     result = [0.0] * 16
     for col in range(4):
         for row in range(4):
-            result[col * 4 + row] = sum(a[k * 4 + row] * b[col * 4 + k] for k in range(4))
+            result[col * 4 + row] = sum(
+                a[k * 4 + row] * b[col * 4 + k] for k in range(4)
+            )
     return tuple(result)  # type: ignore
 
 
-def _compose(translation: Vector, left_rotation: Rotation, scale: Vector, right_rotation: Rotation) -> Matrix:
+def _compose(
+    translation: Vector,
+    left_rotation: Rotation,
+    scale: Vector,
+    right_rotation: Rotation,
+) -> Matrix:
     """Column-major matrix for T * L * S * R (matches Mojang's Transformation.compose)."""
     t: Matrix = (
-        1, 0, 0, 0,  # col 0
-        0, 1, 0, 0,  # col 1
-        0, 0, 1, 0,  # col 2
-        translation.x, translation.y, translation.z, 1,  # col 3
+        1,
+        0,
+        0,
+        0,  # col 0
+        0,
+        1,
+        0,
+        0,  # col 1
+        0,
+        0,
+        1,
+        0,  # col 2
+        translation.x,
+        translation.y,
+        translation.z,
+        1,  # col 3
     )
     l = _quat_to_mat4(_rotation_to_quaternion(left_rotation))
     s: Matrix = (
-        scale.x, 0, 0, 0,  # col 0
-        0, scale.y, 0, 0,  # col 1
-        0, 0, scale.z, 0,  # col 2
-        0, 0, 0, 1,         # col 3
+        scale.x,
+        0,
+        0,
+        0,  # col 0
+        0,
+        scale.y,
+        0,
+        0,  # col 1
+        0,
+        0,
+        scale.z,
+        0,  # col 2
+        0,
+        0,
+        0,
+        1,  # col 3
     )
     r = _quat_to_mat4(_rotation_to_quaternion(right_rotation))
     return _mat4_mul(_mat4_mul(_mat4_mul(t, l), s), r)
@@ -82,10 +142,9 @@ class TransformationDecomposed(BaseModel):
     translation: Vector
     scale: Vector
 
-type TransformationType = Union[
-    Matrix, 
-    TransformationDecomposed
-]
+
+type TransformationType = Union[Matrix, TransformationDecomposed]
+
 
 def _transpose(m: Matrix) -> Matrix:
     return tuple(m[(i & 3) * 4 + (i >> 2)] for i in range(16))  # type: ignore
@@ -117,5 +176,6 @@ class Transformation(RootModel[TransformationType]):
 
     def compose(self, other: "Transformation") -> "Transformation":
         """Compose transformations: self * other (self applied after other)."""
-        return Transformation.from_matrix(_mat4_mul(self.get_matrix(), other.get_matrix()))
-
+        return Transformation.from_matrix(
+            _mat4_mul(self.get_matrix(), other.get_matrix())
+        )

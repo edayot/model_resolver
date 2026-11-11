@@ -617,7 +617,13 @@ def test_structure_palettes_in_both_formats(entry):
     from model_resolver.tasks.structure import StructureDataModel
 
     structure = StructureDataModel.model_validate(
-        {"DataVersion": 5023, "size": [1, 1, 1], "palette": [entry], "blocks": [], "entities": []}
+        {
+            "DataVersion": 5023,
+            "size": [1, 1, 1],
+            "palette": [entry],
+            "blocks": [],
+            "entities": [],
+        }
     )
     (palette,) = structure.choose_palette(random.Random(0))
     assert (palette.Name, palette.Properties) == ("minecraft:water", {"level": "1"})
@@ -627,7 +633,13 @@ def test_a_structure_with_several_palettes_always_uses_the_same_one():
     from model_resolver.tasks.structure import StructureDataModel
 
     palettes = [[{"Name": f"minecraft:block_{i}"}] for i in range(16)]
-    data = {"DataVersion": 5023, "size": [1, 1, 1], "palettes": palettes, "blocks": [], "entities": []}
+    data = {
+        "DataVersion": 5023,
+        "size": [1, 1, 1],
+        "palettes": palettes,
+        "blocks": [],
+        "entities": [],
+    }
     picked = set()
     for _ in range(8):
         # the task that looks for animated textures, then the task of each frame

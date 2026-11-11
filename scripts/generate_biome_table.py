@@ -17,7 +17,13 @@ from pathlib import Path
 
 OUTPUT = Path(__file__).parent.parent / "model_resolver" / "data" / "biomes.json"
 PREFIX = "data/minecraft/worldgen/biome/"
-EFFECTS = ("water_color", "grass_color", "foliage_color", "dry_foliage_color", "grass_color_modifier")
+EFFECTS = (
+    "water_color",
+    "grass_color",
+    "foliage_color",
+    "dry_foliage_color",
+    "grass_color_modifier",
+)
 
 
 def main():

@@ -3,7 +3,14 @@ from model_resolver.item_model.tint_source import TintSource
 from model_resolver.utils import clamp, resolve_key
 from model_resolver.pack_getter import PackGetter
 from copy import deepcopy
-from pydantic import BaseModel, Field, ConfigDict, AliasChoices, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    AliasChoices,
+    field_validator,
+    model_validator,
+)
 from typing import Annotated, Literal, Optional
 from PIL import Image
 
@@ -82,6 +89,7 @@ class SingleAxisRotationModel(BaseModel):
             origin=self.origin, x=x, y=y, z=z, rescale=self.rescale
         )
 
+
 class MultiAxisRotationModel(BaseModel):
     origin: tuple[float, float, float]
     x: float = 0
@@ -94,6 +102,7 @@ class MultiAxisRotationModel(BaseModel):
 
 
 type RotationModel = SingleAxisRotationModel | MultiAxisRotationModel
+
 
 class FaceModel(BaseModel):
     uv: Optional[tuple[float, float, float, float]] = None
@@ -124,9 +133,11 @@ type MultiTextureResolved = tuple[Image.Image, TintSource | None]
 type ResolvableTexture = None | str | Image.Image | tuple[MultiTexture, ...]
 type ResolvedTexture = Image.Image | tuple[MultiTextureResolved, ...]
 
+
 class TextureDict(BaseModel):
     sprite: str
     force_translucent: bool = False
+
 
 type TextureSource = str | Image.Image | tuple[MultiTexture, ...] | TextureDict
 
@@ -178,8 +189,16 @@ class MinecraftModel(BaseModel):
                         "from": [0, 0, 7.5],
                         "to": [16, 16, 8.5],
                         "faces": {
-                            "south": {"texture": texture, "uv": [0, 0, 16, 16], "tintindex": i},
-                            "north": {"texture": texture, "uv": [16, 0, 0, 16], "tintindex": i},
+                            "south": {
+                                "texture": texture,
+                                "uv": [0, 0, 16, 16],
+                                "tintindex": i,
+                            },
+                            "north": {
+                                "texture": texture,
+                                "uv": [16, 0, 0, 16],
+                                "tintindex": i,
+                            },
                         },
                     }
                 )
@@ -229,7 +248,9 @@ def extruded_sides(image: Image.Image, layer: int) -> list[ElementModel]:
                             rotation=None,
                             shade=True,
                             light_emission=0,
-                            faces={face: FaceModel(texture=texture, uv=uv, tintindex=layer)},
+                            faces={
+                                face: FaceModel(texture=texture, uv=uv, tintindex=layer)
+                            },
                         )
                     )
     return sides
@@ -243,12 +264,21 @@ def missing_model() -> MinecraftModel:
     face = {"texture": "#missingno", "uv": [0, 0, 16, 16]}
     return MinecraftModel.model_validate(
         {
-            "display": {"gui": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1, 1, 1]}},
+            "display": {
+                "gui": {
+                    "rotation": [0, 0, 0],
+                    "translation": [0, 0, 0],
+                    "scale": [1, 1, 1],
+                }
+            },
             "elements": [
                 {
                     "from": [0, 0, 0],
                     "to": [16, 16, 16],
-                    "faces": {name: face for name in ("down", "up", "north", "south", "west", "east")},
+                    "faces": {
+                        name: face
+                        for name in ("down", "up", "north", "south", "west", "east")
+                    },
                 }
             ],
         }

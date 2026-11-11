@@ -30,7 +30,14 @@ def entity_layers(version: str) -> dict[str, Any]:
 
 def _rotation(x: float, y: float, z: float) -> np.ndarray:
     # Quaternionf.rotationZYX(z, y, x): x first, then y, then z (radians)
-    cx, sx, cy, sy, cz, sz = math.cos(x), math.sin(x), math.cos(y), math.sin(y), math.cos(z), math.sin(z)
+    cx, sx, cy, sy, cz, sz = (
+        math.cos(x),
+        math.sin(x),
+        math.cos(y),
+        math.sin(y),
+        math.cos(z),
+        math.sin(z),
+    )
     rx = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
     ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
     rz = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
@@ -48,7 +55,9 @@ def _euler_xyz(rotation: np.ndarray) -> tuple[float, float, float]:
     return tuple(round(math.degrees(a), 6) for a in (x, y, z))  # type: ignore
 
 
-def _polygons(cube: dict[str, Any]) -> list[tuple[str, list[np.ndarray], list[tuple[float, float]]]]:
+def _polygons(
+    cube: dict[str, Any]
+) -> list[tuple[str, list[np.ndarray], list[tuple[float, float]]]]:
     """ModelPart.Cube: the visible faces of a box and the texture pixel of each corner."""
     (ox, oy, oz), (w, h, d), (gx, gy, gz) = cube["origin"], cube["size"], cube["grow"]
     min_x, min_y, min_z = ox - gx, oy - gy, oz - gz
@@ -61,7 +70,14 @@ def _polygons(cube: dict[str, Any]) -> list[tuple[str, list[np.ndarray], list[tu
     l0, l1 = np.array([min_x, min_y, max_z]), np.array([max_x, min_y, max_z])
     l2, l3 = np.array([max_x, max_y, max_z]), np.array([min_x, max_y, max_z])
     u, v = cube["uv"]
-    u0, u1, u2, u22, u3, u4 = u, u + d, u + d + w, u + d + w + w, u + d + w + d, u + d + w + d + w
+    u0, u1, u2, u22, u3, u4 = (
+        u,
+        u + d,
+        u + d + w,
+        u + d + w + w,
+        u + d + w + d,
+        u + d + w + d + w,
+    )
     v0, v1, v2 = v, v + d, v + d + h
     visible = cube.get("faces", CUBE_DIRECTIONS)
     polygons = []
@@ -84,20 +100,29 @@ def _polygons(cube: dict[str, Any]) -> list[tuple[str, list[np.ndarray], list[tu
 
 
 def _face(
-    direction: str, vertices: list[np.ndarray], uvs: list[tuple[float, float]], low: np.ndarray, high: np.ndarray
+    direction: str,
+    vertices: list[np.ndarray],
+    uvs: list[tuple[float, float]],
+    low: np.ndarray,
+    high: np.ndarray,
 ) -> Optional[tuple[str, dict[str, Any]]]:
     """The element face a polygon is, with the uv and rotation that give its corners their uvs.
-    The polygon's own direction comes first: both sides of a flat box have the same corners."""
+    The polygon's own direction comes first: both sides of a flat box have the same corners.
+    """
     for name in sorted(FACE_CORNERS, key=lambda face: face != direction):
         corners = FACE_CORNERS[name]
         positions = [np.where(np.array(corner) == 1, high, low) for corner in corners]
-        if {tuple(np.round(p, 5)) for p in positions} != {tuple(np.round(p, 5)) for p in vertices}:
+        if {tuple(np.round(p, 5)) for p in positions} != {
+            tuple(np.round(p, 5)) for p in vertices
+        }:
             continue
         if np.allclose(low, high):
             return None
         corner_uvs = []
         for position in positions:
-            index = min(range(4), key=lambda i: float(np.abs(vertices[i] - position).sum()))
+            index = min(
+                range(4), key=lambda i: float(np.abs(vertices[i] - position).sum())
+            )
             corner_uvs.append(uvs[index])
         for shift in range(4):
             # CuboidFace.getU / getV: corner (i + shift) % 4 takes min u for 0, 1 and min v for 0, 3
@@ -108,7 +133,12 @@ def _face(
                 us["min" if k in (0, 1) else "max"].add(round(cu, 5))
                 vs["min" if k in (0, 3) else "max"].add(round(cv, 5))
             if all(len(x) == 1 for x in (*us.values(), *vs.values())):
-                uv = (us["min"].pop(), vs["min"].pop(), us["max"].pop(), vs["max"].pop())
+                uv = (
+                    us["min"].pop(),
+                    vs["min"].pop(),
+                    us["max"].pop(),
+                    vs["max"].pop(),
+                )
                 return name, {"uv": uv, "rotation": shift * 90}
     return None
 
@@ -129,13 +159,17 @@ def to_elements(
 
     def visit(part: dict[str, Any], parent: np.ndarray, texture: str):
         texture = part_textures.get(part["name"], texture)
-        pose: dict[str, float] = dict(zip(("x", "y", "z", "xRot", "yRot", "zRot"), part["pose"]))
+        pose: dict[str, float] = dict(
+            zip(("x", "y", "z", "xRot", "yRot", "zRot"), part["pose"])
+        )
         pose.update(poses.get(part["name"], {}))
         x, y, z = pose["x"], pose["y"], pose["z"]
         x_rot, y_rot, z_rot = pose["xRot"], pose["yRot"], pose["zRot"]
         # ModelPart.translateAndRotate
         local = np.identity(4)
-        local[:3, :3] = _rotation(x_rot, y_rot, z_rot) @ np.diag(part.get("scale", (1.0, 1.0, 1.0)))
+        local[:3, :3] = _rotation(x_rot, y_rot, z_rot) @ np.diag(
+            part.get("scale", (1.0, 1.0, 1.0))
+        )
         local[:3, 3] = (x, y, z)
         matrix = parent @ local
         # scales are uniform or along the part's own axes: linear = rotation @ diag(scale)
@@ -155,7 +189,12 @@ def to_elements(
                 if face is not None:
                     name, data = face
                     u0, v0, u1, v1 = data["uv"]
-                    data["uv"] = [u0 * 16 / width, v0 * 16 / height, u1 * 16 / width, v1 * 16 / height]
+                    data["uv"] = [
+                        u0 * 16 / width,
+                        v0 * 16 / height,
+                        u1 * 16 / width,
+                        v1 * 16 / height,
+                    ]
                     faces[name] = {**data, "texture": texture}
             angles = _euler_xyz(rotation)
             element: dict[str, Any] = {

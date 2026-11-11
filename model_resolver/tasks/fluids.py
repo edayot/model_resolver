@@ -63,8 +63,20 @@ class FluidQuad:
     """Also drawn from behind (the top and the sides seen from inside the fluid)."""
 
 
-HORIZONTAL = {"north": (0, 0, -1), "south": (0, 0, 1), "west": (-1, 0, 0), "east": (1, 0, 0)}
-CARDINAL = {"down": 0.5, "up": 1.0, "north": 0.8, "south": 0.8, "west": 0.6, "east": 0.6}
+HORIZONTAL = {
+    "north": (0, 0, -1),
+    "south": (0, 0, 1),
+    "west": (-1, 0, 0),
+    "east": (1, 0, 0),
+}
+CARDINAL = {
+    "down": 0.5,
+    "up": 1.0,
+    "north": 0.8,
+    "south": 0.8,
+    "west": 0.6,
+    "east": 0.6,
+}
 
 
 def offset(pos: Position, *steps: tuple[int, int, int]) -> Position:
@@ -76,11 +88,20 @@ def offset(pos: Position, *steps: tuple[int, int, int]) -> Position:
 
 UP, DOWN = (0, 1, 0), (0, -1, 0)
 DIRECTIONS = {**HORIZONTAL, "up": UP, "down": DOWN}
-OPPOSITE = {"north": "south", "south": "north", "west": "east", "east": "west", "up": "down", "down": "up"}
+OPPOSITE = {
+    "north": "south",
+    "south": "north",
+    "west": "east",
+    "east": "west",
+    "up": "down",
+    "down": "up",
+}
 EPSILON = 1e-7
 
 
-def face_rectangles(shape: list[Box], direction: str) -> list[tuple[float, float, float, float]]:
+def face_rectangles(
+    shape: list[Box], direction: str
+) -> list[tuple[float, float, float, float]]:
     """The parts of a shape on one face of its block (Shapes.getFaceShape), as rectangles over
     the two other axes."""
     step = DIRECTIONS[direction]
@@ -88,19 +109,35 @@ def face_rectangles(shape: list[Box], direction: str) -> list[tuple[float, float
     u, v = (i for i in range(3) if i != axis)
     rectangles = []
     for box in shape:
-        on_face = box[axis + 3] >= 1 - EPSILON if step[axis] > 0 else box[axis] <= EPSILON
+        on_face = (
+            box[axis + 3] >= 1 - EPSILON if step[axis] > 0 else box[axis] <= EPSILON
+        )
         if on_face:
             rectangles.append((box[u], box[v], box[u + 3], box[v + 3]))
     return rectangles
 
 
-def covered(area: tuple[float, float, float, float], rectangles: list[tuple[float, float, float, float]]) -> bool:
+def covered(
+    area: tuple[float, float, float, float],
+    rectangles: list[tuple[float, float, float, float]],
+) -> bool:
     """Whether the rectangles cover the area, cell by cell between their edges."""
-    us = sorted({area[0], area[2], *(r[0] for r in rectangles), *(r[2] for r in rectangles)})
-    vs = sorted({area[1], area[3], *(r[1] for r in rectangles), *(r[3] for r in rectangles)})
+    us = sorted(
+        {area[0], area[2], *(r[0] for r in rectangles), *(r[2] for r in rectangles)}
+    )
+    vs = sorted(
+        {area[1], area[3], *(r[1] for r in rectangles), *(r[3] for r in rectangles)}
+    )
     for u0, u1 in zip(us, us[1:]):
         for v0, v1 in zip(vs, vs[1:]):
-            if u1 <= area[0] or u0 >= area[2] or v1 <= area[1] or v0 >= area[3] or u1 - u0 < EPSILON or v1 - v0 < EPSILON:
+            if (
+                u1 <= area[0]
+                or u0 >= area[2]
+                or v1 <= area[1]
+                or v0 >= area[3]
+                or u1 - u0 < EPSILON
+                or v1 - v0 < EPSILON
+            ):
                 continue
             cu, cv = (u0 + u1) / 2, (v0 + v1) / 2
             if not any(r[0] <= cu <= r[2] and r[1] <= cv <= r[3] for r in rectangles):
@@ -130,8 +167,12 @@ def occluded_by_state(direction: str, height: float, occluder: list[Box]) -> boo
     return covered(area, face)
 
 
-def occluded_by_neighbour(world: "FluidWorld", pos: Position, direction: str, height: float) -> bool:
-    return occluded_by_state(direction, height, world.occlusion(offset(pos, DIRECTIONS[direction])))
+def occluded_by_neighbour(
+    world: "FluidWorld", pos: Position, direction: str, height: float
+) -> bool:
+    return occluded_by_state(
+        direction, height, world.occlusion(offset(pos, DIRECTIONS[direction]))
+    )
 
 
 def occluded_by_self(world: "FluidWorld", pos: Position, direction: str) -> bool:
@@ -153,7 +194,12 @@ def height(world: FluidWorld, fluid: str, pos: Position) -> float:
 
 
 def average_height(
-    world: FluidWorld, fluid: str, own: float, height2: float, height1: float, corner: Position
+    world: FluidWorld,
+    fluid: str,
+    own: float,
+    height2: float,
+    height1: float,
+    corner: Position,
 ) -> float:
     """FluidRenderer.calculateAverageHeight: heights of 0.8 and more weigh 10 times more."""
     if height1 >= 1 or height2 >= 1:
@@ -191,7 +237,11 @@ def flow(world: FluidWorld, state: FluidState, pos: Position) -> tuple[float, fl
         if neighbour_height == 0:
             below = world.fluid(offset(neighbour_pos, DOWN))
             # the fluid can fall into a neighbour not in #blocks_fluid_flow
-            if not world.blocks_flow(neighbour_pos) and below is not None and below.fluid == state.fluid:
+            if (
+                not world.blocks_flow(neighbour_pos)
+                and below is not None
+                and below.fluid == state.fluid
+            ):
                 distance = state.own_height - (below.own_height - MAX_FLUID_HEIGHT)
         else:
             distance = state.own_height - neighbour_height
@@ -220,19 +270,31 @@ def tesselate_fluid(
 
     def should_render(direction: str) -> bool:
         # FluidRenderer.shouldRenderFace
-        return not same(offset(pos, DIRECTIONS[direction])) and not occluded_by_self(faces, pos, direction)
+        return not same(offset(pos, DIRECTIONS[direction])) and not occluded_by_self(
+            faces, pos, direction
+        )
 
     render_up = not same(offset(pos, UP))
-    render_down = should_render("down") and not occluded_by_neighbour(faces, pos, "down", MAX_FLUID_HEIGHT)
+    render_down = should_render("down") and not occluded_by_neighbour(
+        faces, pos, "down", MAX_FLUID_HEIGHT
+    )
     own = height(world, fluid, pos)
     if own >= 1:
         north_east = north_west = south_east = south_west = 1.0
     else:
-        heights = {name: height(world, fluid, offset(pos, step)) for name, step in HORIZONTAL.items()}
+        heights = {
+            name: height(world, fluid, offset(pos, step))
+            for name, step in HORIZONTAL.items()
+        }
 
         def corner(a: str, b: str) -> float:
             return average_height(
-                world, fluid, own, heights[a], heights[b], offset(pos, HORIZONTAL[a], HORIZONTAL[b])
+                world,
+                fluid,
+                own,
+                heights[a],
+                heights[b],
+                offset(pos, HORIZONTAL[a], HORIZONTAL[b]),
             )
 
         north_east = corner("north", "east")
@@ -266,7 +328,12 @@ def tesselate_fluid(
         vertices = [(0.0, nw, 0.0), (0.0, sw, 1.0), (1.0, se, 1.0), (1.0, ne, 0.0)]
         quads.append(FluidQuad(vertices, uvs, texture, CARDINAL["up"], True))
     if render_down:
-        vertices = [(0.0, bottom, 0.0), (1.0, bottom, 0.0), (1.0, bottom, 1.0), (0.0, bottom, 1.0)]
+        vertices = [
+            (0.0, bottom, 0.0),
+            (1.0, bottom, 0.0),
+            (1.0, bottom, 1.0),
+            (0.0, bottom, 1.0),
+        ]
         uvs = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
         quads.append(FluidQuad(vertices, uvs, "still", CARDINAL["down"], False))
     e = 0.001
@@ -278,12 +345,20 @@ def tesselate_fluid(
     }
     for name, (h0, h1, (x0, z0), (x1, z1)) in sides.items():
         neighbour = offset(pos, HORIZONTAL[name])
-        if not should_render(name) or occluded_by_neighbour(faces, pos, name, max(h0, h1)):
+        if not should_render(name) or occluded_by_neighbour(
+            faces, pos, name, max(h0, h1)
+        ):
             continue
         overlay = fluid == "minecraft:water" and faces.overlay(neighbour)
         vertices = [(x0, h0, z0), (x1, h1, z1), (x1, bottom, z1), (x0, bottom, z0)]
         # the top of the flowing texture's left half, as high as the corners
         uvs = [(0.0, (1 - h0) * 0.5), (0.5, (1 - h1) * 0.5), (0.5, 0.5), (0.0, 0.5)]
-        shade = CARDINAL["up"] * (CARDINAL["north"] if name in ("north", "south") else CARDINAL["west"])
-        quads.append(FluidQuad(vertices, uvs, "overlay" if overlay else "flow", shade, not overlay))
+        shade = CARDINAL["up"] * (
+            CARDINAL["north"] if name in ("north", "south") else CARDINAL["west"]
+        )
+        quads.append(
+            FluidQuad(
+                vertices, uvs, "overlay" if overlay else "flow", shade, not overlay
+            )
+        )
     return quads

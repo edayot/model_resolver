@@ -122,7 +122,6 @@ def test_models_no_block_uses_are_untinted(gl):
     assert all(r == g == b for r, g, b in colors(gl))
 
 
-
 class TestCampfireFlame:
     # shade_direction_override: up
     def test_a_model_render_lights_the_flame_like_a_top_face(self, gl):

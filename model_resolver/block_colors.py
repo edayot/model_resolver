@@ -31,7 +31,13 @@ class BiomeEffects(BaseModel):
     dry_foliage_color: Optional[int] = None
     grass_color_modifier: str = "none"
 
-    @field_validator("water_color", "grass_color", "foliage_color", "dry_foliage_color", mode="before")
+    @field_validator(
+        "water_color",
+        "grass_color",
+        "foliage_color",
+        "dry_foliage_color",
+        mode="before",
+    )
     @classmethod
     def color(cls, value: Any) -> Any:
         return None if value is None else parse_color(value)
@@ -67,13 +73,18 @@ class Biome(BaseModel):
     def foliage_color(self, getter: PackGetter) -> int:
         if self.effects.foliage_color is not None:
             return self.effects.foliage_color
-        return colormap_color(getter, "minecraft:colormap/foliage", *self.climate(), FOLIAGE_DEFAULT)
+        return colormap_color(
+            getter, "minecraft:colormap/foliage", *self.climate(), FOLIAGE_DEFAULT
+        )
 
     def dry_foliage_color(self, getter: PackGetter) -> int:
         if self.effects.dry_foliage_color is not None:
             return self.effects.dry_foliage_color
         return colormap_color(
-            getter, "minecraft:colormap/dry_foliage", *self.climate(), DRY_FOLIAGE_DEFAULT
+            getter,
+            "minecraft:colormap/dry_foliage",
+            *self.climate(),
+            DRY_FOLIAGE_DEFAULT,
         )
 
 
@@ -113,8 +124,24 @@ def redstone_color(power: int) -> int:
     return channel(r) << 16 | channel(g) << 8 | channel(b)
 
 
-GRASS = {"fern", "short_grass", "potted_fern", "bush", "large_fern", "tall_grass", "grass_block", "sugar_cane"}
-FOLIAGE = {"oak_leaves", "jungle_leaves", "acacia_leaves", "dark_oak_leaves", "vine", "mangrove_leaves"}
+GRASS = {
+    "fern",
+    "short_grass",
+    "potted_fern",
+    "bush",
+    "large_fern",
+    "tall_grass",
+    "grass_block",
+    "sugar_cane",
+}
+FOLIAGE = {
+    "oak_leaves",
+    "jungle_leaves",
+    "acacia_leaves",
+    "dark_oak_leaves",
+    "vine",
+    "mangrove_leaves",
+}
 CONSTANT = {
     "spruce_leaves": 0x619961,
     "birch_leaves": 0x80A755,
@@ -171,18 +198,26 @@ def model_blocks(getter: PackGetter) -> dict[str, tuple[str, dict[str, str]]]:
     for block in getter.assets.blockstates:
         data = getter.assets.blockstates[block].data
         for key, apply in (data.get("variants") or {}).items():
-            properties = dict(pair.split("=", 1) for pair in key.split(",") if "=" in pair)
+            properties = dict(
+                pair.split("=", 1) for pair in key.split(",") if "=" in pair
+            )
             add(apply, resolve_key(block), properties)
         for part in data.get("multipart") or []:
             when = part.get("when") or {}
             # simple conditions only, enough for the properties tints read (power, age)
-            properties = {k: str(v).split("|")[0] for k, v in when.items() if k not in ("OR", "AND")}
+            properties = {
+                k: str(v).split("|")[0]
+                for k, v in when.items()
+                if k not in ("OR", "AND")
+            }
             add(part.get("apply"), resolve_key(block), properties)
     setattr(getter, "_model_blocks", result)
     return result
 
 
-def model_tints(getter: PackGetter, biome: Biome, model: str) -> Optional[list[Optional[int]]]:
+def model_tints(
+    getter: PackGetter, biome: Biome, model: str
+) -> Optional[list[Optional[int]]]:
     """The tints of a block model shown on its own: those of the block that uses it."""
     block = model_blocks(getter).get(resolve_key(model))
     if block is None:

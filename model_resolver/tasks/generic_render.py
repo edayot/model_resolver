@@ -9,7 +9,12 @@ from dataclasses import dataclass, field
 import numpy as np
 from pydantic import BaseModel
 from model_resolver.item_model.item import Item
-from model_resolver.item_model.glint import ITEM_GLINT, MODEL_ATLASES, GlintStyle, has_foil
+from model_resolver.item_model.glint import (
+    ITEM_GLINT,
+    MODEL_ATLASES,
+    GlintStyle,
+    has_foil,
+)
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import (
     resolve_key,
@@ -43,7 +48,9 @@ def set_default_blend():
     """BlendFunction.TRANSLUCENT: colors mix by the source alpha, the alpha accumulates.
     Over the transparent clear color this leaves colors multiplied by their alpha, which
     Render.display divides out."""
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
+    glBlendFuncSeparate(
+        GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA
+    )
 
 
 def rotation_matrix(rotation: RotationModel) -> np.ndarray:
@@ -135,12 +142,25 @@ def _items_flat_pose() -> np.ndarray:
     return _rotate(_rotate(np.identity(3), "y", -0.3926991), "x", 2.3561945)
 
 
-CARDINAL_LIGHTING = {"down": 0.5, "up": 1.0, "north": 0.8, "south": 0.8, "west": 0.6, "east": 0.6}
+CARDINAL_LIGHTING = {
+    "down": 0.5,
+    "up": 1.0,
+    "north": 0.8,
+    "south": 0.8,
+    "west": 0.6,
+    "east": 0.6,
+}
 """CardinalLighting.DEFAULT, the shading of block faces in the overworld."""
 
 LIGHTS: dict[str, tuple[np.ndarray, np.ndarray]] = {
-    "side": (_items_3d_pose() @ DIFFUSE_LIGHTS[0], _items_3d_pose() @ DIFFUSE_LIGHTS[1]),
-    "front": (_items_flat_pose() @ DIFFUSE_LIGHTS[0], _items_flat_pose() @ DIFFUSE_LIGHTS[1]),
+    "side": (
+        _items_3d_pose() @ DIFFUSE_LIGHTS[0],
+        _items_3d_pose() @ DIFFUSE_LIGHTS[1],
+    ),
+    "front": (
+        _items_flat_pose() @ DIFFUSE_LIGHTS[0],
+        _items_flat_pose() @ DIFFUSE_LIGHTS[1],
+    ),
 }
 """Lighting.Entry.ITEMS_3D (gui_light side) and ITEMS_FLAT (front), in GUI pose space."""
 
@@ -163,7 +183,9 @@ class GuiLighting:
         # GuiItemAtlas scales the slot by (1, -1, 1), then ItemTransform.apply rotates
         # (rotationXYZ) and scales, then the item model transformation applies
         rx, ry, rz = (angle * pi / 180 for angle in display.rotation)
-        pose = _rotate(_rotate(_rotate(np.diag([1.0, -1.0, 1.0]), "x", rx), "y", ry), "z", rz)
+        pose = _rotate(
+            _rotate(_rotate(np.diag([1.0, -1.0, 1.0]), "x", rx), "y", ry), "z", rz
+        )
         pose = pose @ np.diag(display.scale)
         if transformation is not None:
             pose = pose @ np.array(transformation.get_matrix()).reshape(4, 4).T[:3, :3]
@@ -212,18 +234,31 @@ class GlTextures:
         image = rgba(image)
         tex_id: int = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR if blur else GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR if blur else GL_NEAREST)
+        glTexParameteri(
+            GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR if blur else GL_NEAREST
+        )
+        glTexParameteri(
+            GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR if blur else GL_NEAREST
+        )
         if repeat:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexImage2D(
-            GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0,
-            GL_RGBA, GL_UNSIGNED_BYTE, image.tobytes("raw", "RGBA"),
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA,
+            image.width,
+            image.height,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            image.tobytes("raw", "RGBA"),
         )
         return tex_id
 
-    def from_path(self, key: str, image: Image.Image, repeat: bool = False, blur: bool = False) -> int:
+    def from_path(
+        self, key: str, image: Image.Image, repeat: bool = False, blur: bool = False
+    ) -> int:
         if key not in self.by_path:
             self.by_path[key] = self.upload(image, repeat, blur)
         return self.by_path[key]
@@ -373,7 +408,10 @@ class GenericModelRenderTask(Task):
 
     def get_display(self, model: MinecraftModel) -> DisplayOptionModel:
         context = self.item.display_context
-        if self.vanilla_display_defaults and context not in model.display.model_fields_set:
+        if (
+            self.vanilla_display_defaults
+            and context not in model.display.model_fields_set
+        ):
             return DisplayOptionModel()
         return model.display.get(context)
 
@@ -386,7 +424,14 @@ class GenericModelRenderTask(Task):
             elif isinstance(value, tuple):
                 # banner and shield layers
                 textures[key] = tuple(
-                    (resolved.get(resolve_key(texture), texture) if isinstance(texture, str) else texture, tint)
+                    (
+                        (
+                            resolved.get(resolve_key(texture), texture)
+                            if isinstance(texture, str)
+                            else texture
+                        ),
+                        tint,
+                    )
                     for texture, tint in value
                 )
             elif isinstance(value, TextureDict):
@@ -506,7 +551,10 @@ class GenericModelRenderTask(Task):
                     layers.append((rgba(img), tint))
                 # the base layer's sprite, where an entity glint is sampled
                 base = value[0][0] if value else None
-                res[key] = (tuple(layers), resolve_key(base) if isinstance(base, str) else key)
+                res[key] = (
+                    tuple(layers),
+                    resolve_key(base) if isinstance(base, str) else key,
+                )
             else:
                 path = resolve_key(value)
                 if path in self.getter.assets.textures:
@@ -535,7 +583,12 @@ class GenericModelRenderTask(Task):
                     tex_id = self.gl_textures.from_path(path, value)
                 res[key] = (((tex_id, None),), path)
             elif isinstance(value, tuple):
-                res[key] = (tuple((self.gl_textures.from_image(img), tint) for img, tint in value), path)
+                res[key] = (
+                    tuple(
+                        (self.gl_textures.from_image(img), tint) for img, tint in value
+                    ),
+                    path,
+                )
             else:
                 raise RenderError(f"Unknown texture type {type(value)} for key {key}")
         return res
@@ -563,7 +616,9 @@ class GenericModelRenderTask(Task):
             self.light = GuiLighting(lights, np.linalg.inv(self.lighting_pose).T)
         else:
             self.light = GuiLighting.create(model.gui_light, display, transformation)
-        self.glint_texture = self.load_glint() if glint is not None and has_foil(self.item) else None
+        self.glint_texture = (
+            self.load_glint() if glint is not None and has_foil(self.item) else None
+        )
         self.glint_style = glint
         # `shade` does nothing for items: the GUI light comes from the item shader
         for element in model.elements:
@@ -575,9 +630,13 @@ class GenericModelRenderTask(Task):
             return None
         mcmeta = self.getter.assets.textures_mcmeta.get(GLINT_TEXTURE)
         blur = bool(mcmeta and mcmeta.data.get("texture", {}).get("blur", False))
-        return self.gl_textures.from_path(GLINT_TEXTURE, texture.image, repeat=True, blur=blur)
+        return self.gl_textures.from_path(
+            GLINT_TEXTURE, texture.image, repeat=True, blur=blur
+        )
 
-    def extrude_generated(self, model: MinecraftModel, source: Optional[str] = None) -> MinecraftModel:
+    def extrude_generated(
+        self, model: MinecraftModel, source: Optional[str] = None
+    ) -> MinecraftModel:
         """Add the side faces of a builtin/generated model, they depend on its textures' alpha."""
         textures = self.load_textures(model, source)
         elements = list(model.elements)
@@ -601,7 +660,9 @@ class GenericModelRenderTask(Task):
         vertices = self.get_vertices(
             from_element_centered, to_element_centered, element.rotation
         )
-        linear = rotation_matrix(element.rotation) if element.rotation else np.identity(3)
+        linear = (
+            rotation_matrix(element.rotation) if element.rotation else np.identity(3)
+        )
         for rotation in self.additional_rotations:
             vertices = self.rotate_vertices(vertices, rotation)
             linear = rotation_matrix(rotation) @ linear
@@ -615,7 +676,10 @@ class GenericModelRenderTask(Task):
             if (textvar := data.texture.lstrip("#")) not in textures_bindings:
                 continue
             if data.cullface and self.culled_faces:
-                if nearest_direction(block_rotation @ FACE_NORMALS[data.cullface]) in self.culled_faces:
+                if (
+                    nearest_direction(block_rotation @ FACE_NORMALS[data.cullface])
+                    in self.culled_faces
+                ):
                     continue
             self.draw_face(
                 face,
@@ -625,7 +689,9 @@ class GenericModelRenderTask(Task):
                 element.to,
                 tints,
                 textures_bindings[textvar],
-                self.face_brightness(element, nearest_direction(normals @ FACE_NORMALS[face])),
+                self.face_brightness(
+                    element, nearest_direction(normals @ FACE_NORMALS[face])
+                ),
                 uv_lock_transform(block_rotation, face) if self.uv_lock else None,
             )
 
@@ -711,7 +777,9 @@ class GenericModelRenderTask(Task):
         origin += np.array(self.offset, dtype=float)
         matrix = rotation_matrix(rotation)
         for point in vertices:
-            point[0], point[1], point[2] = (matrix @ (np.array(point, dtype=float) - origin) + origin).tolist()
+            point[0], point[1], point[2] = (
+                matrix @ (np.array(point, dtype=float) - origin) + origin
+            ).tolist()
         return vertices
 
     def draw_face(
@@ -799,7 +867,11 @@ class GenericModelRenderTask(Task):
             if real_tint is not None:
                 color = real_tint.resolve(self.getter, item=self.item)
                 color = (color[0] / 255, color[1] / 255, color[2] / 255)
-            color = (color[0] * brightness, color[1] * brightness, color[2] * brightness)
+            color = (
+                color[0] * brightness,
+                color[1] * brightness,
+                color[2] * brightness,
+            )
 
             # Apply depth offset for layering by modifying polygon offset
             if layer_index > 0:
@@ -847,7 +919,9 @@ class GenericModelRenderTask(Task):
             glEnd()
         glDisable(GL_TEXTURE_2D)
 
-    def glint_sprite_uv(self, sprite: str) -> Optional[tuple[float, float, float, float]]:
+    def glint_sprite_uv(
+        self, sprite: str
+    ) -> Optional[tuple[float, float, float, float]]:
         """Where the face's sprite is in the atlas its glint is sampled in, None to use the
         texture's own coordinates."""
         from model_resolver.atlas import MISSING_SPRITE, Atlases
@@ -859,7 +933,9 @@ class GenericModelRenderTask(Task):
         if style.atlas == MODEL_ATLASES:
             uv = atlases.model_sprite_uv(self.getter, sprite)
             # an image that isn't a sprite is drawn where the game draws missing ones
-            return uv or atlases.layout(self.getter, "minecraft:blocks").uv(MISSING_SPRITE)
+            return uv or atlases.layout(self.getter, "minecraft:blocks").uv(
+                MISSING_SPRITE
+            )
         return atlases.layout(self.getter, style.atlas).uv(sprite)
 
     def draw_glint(self, vertices: list, uvs: list[tuple[float, float]], sprite: str):
@@ -882,7 +958,10 @@ class GenericModelRenderTask(Task):
         glBegin(GL_QUADS)
         for vertex, (u, v) in zip(vertices, uvs):
             if rect is not None:
-                u, v = rect[0] + (rect[2] - rect[0]) * u, rect[1] + (rect[3] - rect[1]) * v
+                u, v = (
+                    rect[0] + (rect[2] - rect[0]) * u,
+                    rect[1] + (rect[3] - rect[1]) * v,
+                )
             u, v = u * scale, v * scale
             glColor3f(GLINT_STRENGTH, GLINT_STRENGTH, GLINT_STRENGTH)
             glTexCoord2f(c * u - s * v - offset_u, s * u + c * v + offset_v)
@@ -961,7 +1040,9 @@ class Animation:
             ticks = mcmeta.animation.resolve_ticks(image.width, image.height)
             if ticks:
                 frame_size = mcmeta.animation.frame_size(image.width, image.height)
-                texture_animated[resolve_key(texture_path)] = AnimatedTexture(ticks, frame_size)
+                texture_animated[resolve_key(texture_path)] = AnimatedTexture(
+                    ticks, frame_size
+                )
         self.cache_texture_animated = texture_animated
         return texture_animated
 
@@ -980,7 +1061,11 @@ class Animation:
                 for texture_path, animated in texture_animated.items()
             }
             # consecutive ticks that show the same images make one longer frame
-            if len(ticks_grouped) > 0 and ticks_grouped[-1].tick == tick and not self.glint:
+            if (
+                len(ticks_grouped) > 0
+                and ticks_grouped[-1].tick == tick
+                and not self.glint
+            ):
                 ticks_grouped[-1].duration += 1
             else:
                 ticks_grouped.append(TickGrouped(tick=tick, duration=1, start=i))
@@ -1001,7 +1086,9 @@ class Animation:
             yield i, (images, tick.duration, tick.start)
 
     @staticmethod
-    def crop_frame(image: Image.Image, index: int, frame_size: tuple[int, int]) -> Image.Image:
+    def crop_frame(
+        image: Image.Image, index: int, frame_size: tuple[int, int]
+    ) -> Image.Image:
         width, height = frame_size
         row_size = image.width // width
         x, y = (index % row_size) * width, (index // row_size) * height

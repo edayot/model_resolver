@@ -38,8 +38,18 @@ LAYERS: dict[str, tuple[str, str, list[Any], Optional[tuple[int, int]]]] = {
     "double_chest_right": ("ChestModel", "createDoubleBodyRightLayer", [], None),
     "conduit_shell": ("ConduitRenderer", "createShellLayer", [], None),
     "copper_golem": ("CopperGolemModel", "createBodyLayer", [], None),
-    "copper_golem_running": ("CopperGolemModel", "createRunningPoseBodyLayer", [], None),
-    "copper_golem_sitting": ("CopperGolemModel", "createSittingPoseBodyLayer", [], None),
+    "copper_golem_running": (
+        "CopperGolemModel",
+        "createRunningPoseBodyLayer",
+        [],
+        None,
+    ),
+    "copper_golem_sitting": (
+        "CopperGolemModel",
+        "createSittingPoseBodyLayer",
+        [],
+        None,
+    ),
     "copper_golem_star": ("CopperGolemModel", "createStarPoseBodyLayer", [], None),
     "decorated_pot_base": ("DecoratedPotRenderer", "createBaseLayer", [], None),
     "decorated_pot_sides": ("DecoratedPotRenderer", "createSidesLayer", [], None),
@@ -75,13 +85,22 @@ class Classes:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(self.archive.read(path))
             subprocess.run(
-                ["java", "-jar", str(self.cfr), str(target), "--outputdir", str(self.workdir / "src")],
+                [
+                    "java",
+                    "-jar",
+                    str(self.cfr),
+                    str(target),
+                    "--outputdir",
+                    str(self.workdir / "src"),
+                ],
                 check=True,
                 capture_output=True,
             )
             text = (self.workdir / "src" / path.replace(".class", ".java")).read_text()
             # without the rest of the jar on its classpath, CFR adds casts: (float)8.0f, (MeshDefinition)mesh
-            self.sources[name] = re.sub(r"\((?:float|int|double|[A-Z]\w*)\)(?=[\w(-])", "", text)
+            self.sources[name] = re.sub(
+                r"\((?:float|int|double|[A-Z]\w*)\)(?=[\w(-])", "", text
+            )
         return self.sources[name]
 
     def method(self, name: str, method: str) -> tuple[str, list[str], str]:
@@ -135,7 +154,9 @@ def statements(body: str) -> list[str]:
             continue
         depth += char in "([{"
         depth -= char in ")]}"
-        ends_block = char == "}" and depth == 0 and not body[i + 1 :].lstrip().startswith("else")
+        ends_block = (
+            char == "}" and depth == 0 and not body[i + 1 :].lstrip().startswith("else")
+        )
         if depth == 0 and (char == ";" or ends_block):
             result.append(" ".join(current.removesuffix(";").split()))
             current = ""
@@ -187,7 +208,9 @@ class Interpreter:
 
     def run(self, name: str, method: str, args: list[Any]) -> Any:
         owner, params, body = self.classes.method(name, method)
-        constants = dict(re.findall(r'String (\w+) = "([^"]*)";', self.classes.source(owner)))
+        constants = dict(
+            re.findall(r'String (\w+) = "([^"]*)";', self.classes.source(owner))
+        )
         env: dict[str, Any] = {**constants, **dict(zip(params, args))}
         return self.execute(body, env)
 
@@ -209,7 +232,9 @@ class Interpreter:
                 continue
             if statement.startswith("return "):
                 return self.value(statement[len("return ") :], env)
-            declaration = re.match(r"(?:final )?[\w.]+(?:<[\w, <>]+>)? (\w+) = (.+)$", statement)
+            declaration = re.match(
+                r"(?:final )?[\w.]+(?:<[\w, <>]+>)? (\w+) = (.+)$", statement
+            )
             if declaration:
                 env[declaration.group(1)] = self.value(declaration.group(2), env)
             else:
@@ -219,11 +244,27 @@ class Interpreter:
     def number(self, text: str, env: dict[str, Any]) -> float:
         """Evaluate a Java float expression such as -1.5707964f or Math.PI / 2.0f."""
         text = text.strip()
-        text = re.sub(r"(?<=[\d.])[fFdDL]\b", "", text).replace("Math.PI", repr(math.pi))
-        text = re.sub(r"\b[a-zA-Z_]\w*\b", lambda m: repr(env[m.group(0)]) if m.group(0) in env else m.group(0), text)
+        text = re.sub(r"(?<=[\d.])[fFdDL]\b", "", text).replace(
+            "Math.PI", repr(math.pi)
+        )
+        text = re.sub(
+            r"\b[a-zA-Z_]\w*\b",
+            lambda m: repr(env[m.group(0)]) if m.group(0) in env else m.group(0),
+            text,
+        )
         tree = ast.parse(text, mode="eval")
         for node in ast.walk(tree):
-            if not isinstance(node, (ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant, ast.operator, ast.unaryop)):
+            if not isinstance(
+                node,
+                (
+                    ast.Expression,
+                    ast.BinOp,
+                    ast.UnaryOp,
+                    ast.Constant,
+                    ast.operator,
+                    ast.unaryop,
+                ),
+            ):
                 raise ValueError(f"not a number: {text}")
         return float(eval(compile(tree, "<number>", "eval")))
 
@@ -237,7 +278,9 @@ class Interpreter:
         ternary = split_args(expr, "?")
         if len(ternary) == 2:
             choices = split_args(ternary[1], ":")
-            return self.value(choices[0] if self.value(ternary[0], env) else choices[1], env)
+            return self.value(
+                choices[0] if self.value(ternary[0], env) else choices[1], env
+            )
         if expr in ("true", "false"):
             return expr == "true"
         if expr.startswith('"'):
@@ -253,7 +296,11 @@ class Interpreter:
         head = re.match(r"(new \w+|\w+)", expr)
         if head is None or head.end() == len(expr):
             return self.number(expr, env)
-        chain = calls(expr[head.end() :]) if not head.group(1).startswith("new ") else calls(expr[len("new ") :])
+        chain = (
+            calls(expr[head.end() :])
+            if not head.group(1).startswith("new ")
+            else calls(expr[len("new ") :])
+        )
         if not chain:
             # Math.PI / 2.0f, 1.5707964f
             return self.number(expr, env)
@@ -272,7 +319,13 @@ class Interpreter:
             return self.pose(chain, env)
         if name == "LayerDefinition":
             ((_, (mesh, width, height)),) = chain
-            return {"texture_size": [int(self.float(width, env)), int(self.float(height, env))], "root": self.value(mesh, env)["root"]}
+            return {
+                "texture_size": [
+                    int(self.float(width, env)),
+                    int(self.float(height, env)),
+                ],
+                "root": self.value(mesh, env)["root"],
+            }
         if name == "Util" and chain[0][0] == "allOfEnumExcept":
             excluded = {self.value(arg, env) for arg in chain[0][1]}
             return [d for d in DIRECTIONS if d not in excluded]
@@ -285,23 +338,31 @@ class Interpreter:
         result = self.run(name, method, [self.value(arg, env) for arg in args])
         return self.method_calls(result, chain[1:], env)
 
-    def method_calls(self, target: Any, chain: list[tuple[str, list[str]]], env: dict[str, Any]) -> Any:
+    def method_calls(
+        self, target: Any, chain: list[tuple[str, list[str]]], env: dict[str, Any]
+    ) -> Any:
         for method, args in chain:
             if method == "getRoot":
                 target = target["root"]
             elif method == "getChild":
                 name = self.value(args[0], env)
-                target = next(child for child in target["children"] if child["name"] == name)
+                target = next(
+                    child for child in target["children"] if child["name"] == name
+                )
             elif method == "addOrReplaceChild":
                 name, cubes, pose = (self.value(arg, env) for arg in args)
                 part = new_part(name, pose, [dict(cube) for cube in cubes])
-                target["children"] = [c for c in target["children"] if c["name"] != name] + [part]
+                target["children"] = [
+                    c for c in target["children"] if c["name"] != name
+                ] + [part]
                 target = part
             else:
                 raise ValueError(f"unknown method {method}")
         return target
 
-    def cubes(self, chain: list[tuple[str, list[str]]], env: dict[str, Any]) -> list[dict]:
+    def cubes(
+        self, chain: list[tuple[str, list[str]]], env: dict[str, Any]
+    ) -> list[dict]:
         result: list[dict] = []
         uv, mirror = [0.0, 0.0], False
         for name, args in chain:
@@ -339,7 +400,9 @@ class Interpreter:
                 raise ValueError(f"unknown CubeListBuilder method {name}")
         return result
 
-    def pose(self, chain: list[tuple[str, list[str]]], env: dict[str, Any]) -> dict[str, Any]:
+    def pose(
+        self, chain: list[tuple[str, list[str]]], env: dict[str, Any]
+    ) -> dict[str, Any]:
         """[x, y, z, xRot, yRot, zRot] and the scale of a PartPose expression."""
         pose, scale = [0.0] * 6, [1.0] * 3
         for name, args in chain:
@@ -351,7 +414,10 @@ class Interpreter:
             elif name == "offsetAndRotation":
                 pose = values
             elif name == "scaled":
-                scale = [s * f for s, f in zip(scale, values * 3 if len(values) == 1 else values)]
+                scale = [
+                    s * f
+                    for s, f in zip(scale, values * 3 if len(values) == 1 else values)
+                ]
             else:
                 raise ValueError(f"unknown pose {name}")
         return {"pose": pose, "scale": scale}

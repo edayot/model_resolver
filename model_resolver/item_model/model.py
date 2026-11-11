@@ -2,7 +2,10 @@ from fractions import Fraction
 from functools import cached_property
 import math
 from pydantic import BaseModel, Field, RootModel, model_validator
-from model_resolver.item_model.data_component_predicate import Context, component_predicate
+from model_resolver.item_model.data_component_predicate import (
+    Context,
+    component_predicate,
+)
 from model_resolver.item_model.tint_source import TintSource
 from model_resolver.item_model.special import SpecialModel
 from typing import Optional, Literal, ClassVar, Generator, Self, Type, Union, Any
@@ -10,7 +13,12 @@ from model_resolver.item_model.item import Item
 from model_resolver.item_model.glint import ITEM_GLINT, GlintStyle
 from model_resolver.item_model.transformation import Transformation
 from model_resolver.utils import clamp, namespaced, resolve_key, validate_dispatched
-from model_resolver.minecraft_model import MISSING_MODEL_ID, MinecraftModel, missing_model, resolve_model
+from model_resolver.minecraft_model import (
+    MISSING_MODEL_ID,
+    MinecraftModel,
+    missing_model,
+    resolve_model,
+)
 from model_resolver.pack_getter import PackGetter
 
 ItemModelBaseClass: list[Type["ItemModelBase"]] = []
@@ -51,11 +59,15 @@ class ItemModelBase(BaseModel):
         ):
             ItemModelBaseClass.append(cls)
         return super().__init_subclass__(**kwargs)
-    
-    def resolve_with_compose(self, getter: PackGetter, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+
+    def resolve_with_compose(
+        self,
+        getter: PackGetter,
+        item: Item,
+        parent_transformation: Optional[Transformation],
+    ) -> Generator["ItemModelResolvable", None, None]:
         for res in self.resolve(getter, item):
             yield res.with_compose(parent_transformation)
-    
 
     def with_compose(self, parent_transformation: Optional[Transformation]) -> Self:
         # a copy: parsed item models are cached, resolving one must not change it
@@ -64,7 +76,9 @@ class ItemModelBase(BaseModel):
         if self.transformation is None:
             return self.model_copy(update={"transformation": parent_transformation})
         return self.model_copy(
-            update={"transformation": parent_transformation.compose(self.transformation)}
+            update={
+                "transformation": parent_transformation.compose(self.transformation)
+            }
         )
 
 
@@ -144,9 +158,13 @@ class ItemModelConditionBase(ItemModelBase):
         self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
         if self.resolve_condition(getter, item):
-            yield from self.on_true.resolve_with_compose(getter, item, self.transformation)
+            yield from self.on_true.resolve_with_compose(
+                getter, item, self.transformation
+            )
         else:
-            yield from self.on_false.resolve_with_compose(getter, item, self.transformation)
+            yield from self.on_false.resolve_with_compose(
+                getter, item, self.transformation
+            )
 
 
 class ItemModelConditionUsingItem(ItemModelConditionBase):
@@ -171,7 +189,9 @@ class ItemModelConditionComponent(ItemModelConditionBase):
     value: Any
 
     def resolve_condition(self, getter: PackGetter, item: Item) -> bool:
-        return component_predicate(self.predicate, self.value).matches(Context(getter, item))
+        return component_predicate(self.predicate, self.value).matches(
+            Context(getter, item)
+        )
 
 
 class ItemModelConditionDamaged(ItemModelConditionBase):
@@ -328,7 +348,9 @@ class ItemModelSelectBase(ItemModelBase):
                     duplicates.append(value)
                 seen.append(value)
         if duplicates:
-            raise ValueError(f"Duplicate case conditions: {', '.join(map(str, duplicates))}")
+            raise ValueError(
+                f"Duplicate case conditions: {', '.join(map(str, duplicates))}"
+            )
         return self
 
     def get_fallback(self) -> "ItemModelRecursive":
@@ -349,7 +371,9 @@ class ItemModelSelectBase(ItemModelBase):
     def resolve(
         self, getter: PackGetter, item: Item
     ) -> Generator["ItemModelResolvable", None, None]:
-        yield from self.resolve_select(getter, item).resolve_with_compose(getter, item, self.transformation)
+        yield from self.resolve_select(getter, item).resolve_with_compose(
+            getter, item, self.transformation
+        )
 
 
 class ItemModelSelectMainHand(ItemModelSelectBase):
@@ -459,7 +483,9 @@ class ItemModelSelectCustomModelData(ItemModelSelectBase):
     index: Optional[int] = 0
 
     def resolve_select(self, getter: PackGetter, item: Item) -> "ItemModelRecursive":
-        strings = (item.components.get("minecraft:custom_model_data") or {}).get("strings", [])
+        strings = (item.components.get("minecraft:custom_model_data") or {}).get(
+            "strings", []
+        )
         index = self.index or 0
         return self.resolve_case(strings[index] if 0 <= index < len(strings) else None)
 
@@ -717,7 +743,12 @@ class ItemModelRecursive(RootModel[Any]):
     ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve(getter, item)
 
-    def resolve_with_compose(self, getter: PackGetter, item: Item, parent_transformation: Optional[Transformation]) -> Generator["ItemModelResolvable", None, None]:
+    def resolve_with_compose(
+        self,
+        getter: PackGetter,
+        item: Item,
+        parent_transformation: Optional[Transformation],
+    ) -> Generator["ItemModelResolvable", None, None]:
         yield from self.model.resolve_with_compose(getter, item, parent_transformation)
 
 

@@ -59,7 +59,9 @@ class Item(BaseModel):
 
     @property
     def defaults(self) -> dict[str, Any]:
-        return {resolve_key(key): value for key, value in self.default_components.items()}
+        return {
+            resolve_key(key): value for key, value in self.default_components.items()
+        }
 
     @property
     def components(self) -> dict[str, Any]:

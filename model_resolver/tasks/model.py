@@ -48,7 +48,9 @@ class AnimatedResultTask(Task):
         """One image per output frame: a game tick lasts 1/20 s, whatever the framerate."""
         count = max(1, round(len(images_by_tick) * self.animation_framerate / 20))
         return [
-            images_by_tick[min(len(images_by_tick) - 1, k * 20 // self.animation_framerate)]
+            images_by_tick[
+                min(len(images_by_tick) - 1, k * 20 // self.animation_framerate)
+            ]
             for k in range(count)
         ]
 
@@ -136,11 +138,15 @@ class ModelPathRenderTask(GenericModelRenderTask):
     def get_tints(self) -> list[TintSource]:
         if self.tints:
             return self.tints
-        colors = model_tints(self.getter, load_biome(self.getter, self.biome), self.model)
+        colors = model_tints(
+            self.getter, load_biome(self.getter, self.biome), self.model
+        )
         if colors is None:
             return []
         return [
-            TintSourceConstant(type="minecraft:constant", value=0xFFFFFF if color is None else color)
+            TintSourceConstant(
+                type="minecraft:constant", value=0xFFFFFF if color is None else color
+            )
             for color in colors
         ]
 
@@ -187,18 +193,24 @@ class ModelPathRenderTask(GenericModelRenderTask):
             new_model = model.model_copy()
             new_model.textures = textures
             if self.path_save:
-                new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_save = (
+                    self.path_save
+                    / "{i:0{animated_path_padding}}_{duration}.png".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + "/{i:0{animated_path_padding}}_{duration}".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_ctx = (
+                    self.path_ctx
+                    + "/{i:0{animated_path_padding}}_{duration}".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_ctx = None

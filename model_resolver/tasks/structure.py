@@ -10,7 +10,11 @@ from model_resolver.item_model.item import Item
 from model_resolver.item_model.glint import has_foil
 from model_resolver.item_model.special import SpecialModel
 from model_resolver.item_model.tint_source import TintSource, TintSourceConstant
-from model_resolver.tasks.generic_render import Animation, GenericModelRenderTask, _axis_rotation
+from model_resolver.tasks.generic_render import (
+    Animation,
+    GenericModelRenderTask,
+    _axis_rotation,
+)
 from model_resolver.tasks.fluids import FluidState, Position, tesselate_fluid
 from model_resolver.item_model.transformation import Transformation
 import numpy as np
@@ -74,7 +78,11 @@ class StructureFluids:
         if not info.known:
             # a block of another namespace: occluding when it's a full opaque cube
             state = self.state(pos)
-            return FULL_BLOCK if state is not None and self.task.occlusion(state) == "opaque" else []
+            return (
+                FULL_BLOCK
+                if state is not None and self.task.occlusion(state) == "opaque"
+                else []
+            )
         return info.occlusion
 
     def overlay(self, pos: Position) -> bool:
@@ -83,14 +91,19 @@ class StructureFluids:
             return False
         path = resolve_key(paletted.Name).split(":")[1]
         # HalfTransparentBlock and LeavesBlock
-        return path.endswith(("glass", "_leaves", "ice")) or path in ("slime_block", "honey_block")
+        return path.endswith(("glass", "_leaves", "ice")) or path in (
+            "slime_block",
+            "honey_block",
+        )
 
 
 def _rot(axis: str, degrees: float) -> np.ndarray:
     return _axis_rotation(axis, degrees)
 
 
-def _affine(linear: np.ndarray = np.identity(3), translation=(0.0, 0.0, 0.0)) -> np.ndarray:
+def _affine(
+    linear: np.ndarray = np.identity(3), translation=(0.0, 0.0, 0.0)
+) -> np.ndarray:
     matrix = np.identity(4)
     matrix[:3, :3] = linear
     matrix[:3, 3] = translation
@@ -100,8 +113,22 @@ def _affine(linear: np.ndarray = np.identity(3), translation=(0.0, 0.0, 0.0)) ->
 Y_ROTATION = {"south": 0, "west": 90, "north": 180, "east": 270}
 OPPOSITE = {"south": "north", "north": "south", "west": "east", "east": "west"}
 DYE_COLORS = (
-    "white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
-    "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black",
+    "white",
+    "orange",
+    "magenta",
+    "light_blue",
+    "yellow",
+    "lime",
+    "pink",
+    "gray",
+    "light_gray",
+    "cyan",
+    "purple",
+    "blue",
+    "brown",
+    "green",
+    "red",
+    "black",
 )
 SKULLS = {
     "skeleton_skull": "skeleton",
@@ -112,7 +139,12 @@ SKULLS = {
     "piglin_head": "piglin",
     "player_head": "player",
 }
-GOLEM_TEXTURES = {"": "", "exposed_": "_exposed", "weathered_": "_weathered", "oxidized_": "_oxidized"}
+GOLEM_TEXTURES = {
+    "": "",
+    "exposed_": "_exposed",
+    "weathered_": "_weathered",
+    "oxidized_": "_oxidized",
+}
 CHEST_TEXTURES = {
     "chest": "normal",
     "trapped_chest": "trapped",
@@ -145,11 +177,19 @@ def builtin_block(
         wall = skull.replace("_skull", "_wall_skull").replace("_head", "_wall_head")
         if path not in (skull, wall):
             continue
-        special = {"type": "minecraft:player_head"} if kind == "player" else {"type": "minecraft:head", "kind": kind}
+        special = (
+            {"type": "minecraft:player_head"}
+            if kind == "player"
+            else {"type": "minecraft:head", "kind": kind}
+        )
         components = {"minecraft:profile": nbt["profile"]} if "profile" in nbt else {}
         if path == skull:
             # SkullBlockRenderer.createGroundTransformation
-            placement = _affine(translation=(0.5, 0, 0.5)) @ _affine(_rot("y", -segment)) @ _affine(np.diag([-1.0, -1.0, 1.0]))
+            placement = (
+                _affine(translation=(0.5, 0, 0.5))
+                @ _affine(_rot("y", -segment))
+                @ _affine(np.diag([-1.0, -1.0, 1.0]))
+            )
         else:
             step_x, _, step_z = DIRECTIONS[facing]
             placement = _affine(
@@ -162,46 +202,100 @@ def builtin_block(
             wall = "wall" in path
             angle = Y_ROTATION[facing] if wall else segment
             # BannerRenderer.modelTransformation
-            placement = _affine(_rot("y", -angle) @ np.diag([0.6666667, -0.6666667, -0.6666667]), (0.5, 0, 0.5))
-            special = {"type": "minecraft:banner", "color": color, "attachment": "wall" if wall else "ground"}
-            components = {"minecraft:banner_patterns": nbt["patterns"]} if "patterns" in nbt else {}
+            placement = _affine(
+                _rot("y", -angle) @ np.diag([0.6666667, -0.6666667, -0.6666667]),
+                (0.5, 0, 0.5),
+            )
+            special = {
+                "type": "minecraft:banner",
+                "color": color,
+                "attachment": "wall" if wall else "ground",
+            }
+            components = (
+                {"minecraft:banner_patterns": nbt["patterns"]}
+                if "patterns" in nbt
+                else {}
+            )
             return f"minecraft:{color}_banner", special, placement, components
     if path == "conduit":
-        return "minecraft:conduit", {"type": "minecraft:conduit"}, _affine(translation=(0.5, 0.5, 0.5)), {}
+        return (
+            "minecraft:conduit",
+            {"type": "minecraft:conduit"},
+            _affine(translation=(0.5, 0.5, 0.5)),
+            {},
+        )
     if path == "decorated_pot":
         turn = _affine(_rot("y", 180 - Y_ROTATION[facing]))
-        placement = _affine(translation=(0.5, 0.5, 0.5)) @ turn @ _affine(translation=(-0.5, -0.5, -0.5))
-        components = {"minecraft:pot_decorations": nbt["sherds"]} if "sherds" in nbt else {}
-        return "minecraft:decorated_pot", {"type": "minecraft:decorated_pot"}, placement, components
+        placement = (
+            _affine(translation=(0.5, 0.5, 0.5))
+            @ turn
+            @ _affine(translation=(-0.5, -0.5, -0.5))
+        )
+        components = (
+            {"minecraft:pot_decorations": nbt["sherds"]} if "sherds" in nbt else {}
+        )
+        return (
+            "minecraft:decorated_pot",
+            {"type": "minecraft:decorated_pot"},
+            placement,
+            components,
+        )
     if path == "bell":
         return None, {"type": "minecraft:bell"}, np.identity(4), {}
     if path == "enchanting_table":
         placement = _affine(_rot("z", 180) @ _rot("x", 90), (0.5, 0.8125, 0.5))
-        return None, {"type": "minecraft:book", "open_angle": 0, "page1": 0, "page2": 0}, placement, {}
+        return (
+            None,
+            {"type": "minecraft:book", "open_angle": 0, "page1": 0, "page2": 0},
+            placement,
+            {},
+        )
     if path == "end_portal":
         placement = _affine(np.diag([1.0, 0.375, 1.0]), (0, 0.375, 0))
         return None, {"type": "minecraft:end_cube", "effect": "portal"}, placement, {}
     if path == "end_gateway":
-        return None, {"type": "minecraft:end_cube", "effect": "gateway"}, np.identity(4), {}
+        return (
+            None,
+            {"type": "minecraft:end_cube", "effect": "gateway"},
+            np.identity(4),
+            {},
+        )
     unwaxed = path.removeprefix("waxed_")
     if unwaxed in CHEST_TEXTURES:
         # ChestRenderer.modelTransformation, the christmas textures aside (local_time is static)
         chest_type = properties.get("type", "single")
         suffix = "" if chest_type == "single" else f"_{chest_type}"
-        special = {"type": "minecraft:chest", "texture": f"minecraft:{CHEST_TEXTURES[unwaxed]}{suffix}", "chest_type": chest_type}
+        special = {
+            "type": "minecraft:chest",
+            "texture": f"minecraft:{CHEST_TEXTURES[unwaxed]}{suffix}",
+            "chest_type": chest_type,
+        }
         turn = _affine(_rot("y", -Y_ROTATION[facing]))
-        placement = _affine(translation=(0.5, 0, 0.5)) @ turn @ _affine(translation=(-0.5, 0, -0.5))
+        placement = (
+            _affine(translation=(0.5, 0, 0.5))
+            @ turn
+            @ _affine(translation=(-0.5, 0, -0.5))
+        )
         return f"minecraft:{unwaxed}", special, placement, {}
     for color in ("", *(f"{color}_" for color in DYE_COLORS)):
         if path == f"{color}shulker_box":
-            texture = f"minecraft:shulker_{color.removesuffix('_')}" if color else "minecraft:shulker"
+            texture = (
+                f"minecraft:shulker_{color.removesuffix('_')}"
+                if color
+                else "minecraft:shulker"
+            )
             # ShulkerBoxRenderer.createModelTransform
             placement = (
                 _affine(np.identity(3) * 0.9995, (0.5, 0.5, 0.5))
                 @ _affine(DIRECTION_ROTATIONS[properties.get("facing", "up")])
                 @ _affine(np.diag([1.0, -1.0, -1.0]), (0, 1, 0))
             )
-            return f"minecraft:{path}", {"type": "minecraft:shulker_box", "texture": texture}, placement, {}
+            return (
+                f"minecraft:{path}",
+                {"type": "minecraft:shulker_box", "texture": texture},
+                placement,
+                {},
+            )
     statue = unwaxed
     for prefix, suffix in GOLEM_TEXTURES.items():
         if statue == f"{prefix}copper_golem_statue":
@@ -268,9 +362,15 @@ class VariantModel(BaseModel):
     @property
     def rotations(self) -> list[RotationModel]:
         # Quadrant.fromXYZAngles: x, then y, then z, each quarter turn is a negative one
-        axes: tuple[tuple[Literal["x", "y", "z"], int], ...] = (("x", self.x), ("y", self.y), ("z", self.z))
+        axes: tuple[tuple[Literal["x", "y", "z"], int], ...] = (
+            ("x", self.x),
+            ("y", self.y),
+            ("z", self.z),
+        )
         rotations: list[RotationModel] = [
-            SingleAxisRotationModel(origin=(8, 8, 8), axis=axis, angle=-angle, rescale=False)
+            SingleAxisRotationModel(
+                origin=(8, 8, 8), axis=axis, angle=-angle, rescale=False
+            )
             for axis, angle in axes
             if angle % 360 != 0
         ]
@@ -450,7 +550,10 @@ class StructureRenderTask(GenericModelRenderTask):
         """The item_display entities that hold an item, and their item."""
         for entity in self.structure.entities or []:
             nbt = entity.get("nbt", {})
-            if resolve_key(nbt.get("id", "")) != "minecraft:item_display" or "item" not in nbt:
+            if (
+                resolve_key(nbt.get("id", "")) != "minecraft:item_display"
+                or "item" not in nbt
+            ):
                 continue
             stack = nbt["item"]
             item = Item(
@@ -467,7 +570,9 @@ class StructureRenderTask(GenericModelRenderTask):
                 item.__resolved__ = True
             yield entity, item
 
-    def render_item_display(self, entity: dict[str, Any], item: Item, center: tuple[float, float, float]):
+    def render_item_display(
+        self, entity: dict[str, Any], item: Item, center: tuple[float, float, float]
+    ):
         """An item_display entity, like DisplayRenderer: position, billboard orientation
         (fixed: rotationYXZ(-yaw, pitch, 0)), transformation, a half turn around y, then the
         item rendered for its display context."""
@@ -482,10 +587,19 @@ class StructureRenderTask(GenericModelRenderTask):
             return
         yaw, pitch = (nbt.get("Rotation") or [0.0, 0.0])[:2]
         if nbt.get("billboard", "fixed") != "fixed":
-            log.warning("Only fixed item_display billboards are supported, drawing it fixed")
+            log.warning(
+                "Only fixed item_display billboards are supported, drawing it fixed"
+            )
         entity_transformation = Transformation.model_validate(
-            nbt.get("transformation", {"translation": [0, 0, 0], "left_rotation": [0, 0, 0, 1],
-                                        "right_rotation": [0, 0, 0, 1], "scale": [1, 1, 1]})
+            nbt.get(
+                "transformation",
+                {
+                    "translation": [0, 0, 0],
+                    "left_rotation": [0, 0, 0, 1],
+                    "right_rotation": [0, 0, 0, 1],
+                    "scale": [1, 1, 1],
+                },
+            )
         )
         position = [16 * x - c for x, c in zip(entity["pos"], center)]
         for model in resolved:
@@ -502,7 +616,10 @@ class StructureRenderTask(GenericModelRenderTask):
             matrix = list(entity_transformation.get_matrix())
             matrix[12:15] = [x * 16 for x in matrix[12:15]]
             glMultMatrixf(matrix)
-            pose = pose @ np.array(entity_transformation.get_matrix()).reshape(4, 4).T[:3, :3]
+            pose = (
+                pose
+                @ np.array(entity_transformation.get_matrix()).reshape(4, 4).T[:3, :3]
+            )
             glRotatef(180, 0, 1, 0)
             pose = pose @ _rot("y", 180)
             # ItemTransform.apply in pixels: translate, rotationXYZ, scale (then translate(-0.5),
@@ -511,7 +628,12 @@ class StructureRenderTask(GenericModelRenderTask):
             for angle, axis in zip(display.rotation, ((1, 0, 0), (0, 1, 0), (0, 0, 1))):
                 glRotatef(angle, *axis)
             glScalef(*display.scale)
-            pose = pose @ _rot("x", display.rotation[0]) @ _rot("y", display.rotation[1]) @ _rot("z", display.rotation[2])
+            pose = (
+                pose
+                @ _rot("x", display.rotation[0])
+                @ _rot("y", display.rotation[1])
+                @ _rot("z", display.rotation[2])
+            )
             pose = pose @ np.diag(display.scale)
             if transformation is not None:
                 local = list(transformation.get_matrix())
@@ -519,7 +641,9 @@ class StructureRenderTask(GenericModelRenderTask):
                 glTranslatef(-8, -8, -8)
                 glMultMatrixf(local)
                 glTranslatef(8, 8, 8)
-                pose = pose @ np.array(transformation.get_matrix()).reshape(4, 4).T[:3, :3]
+                pose = (
+                    pose @ np.array(transformation.get_matrix()).reshape(4, 4).T[:3, :3]
+                )
             ModelRenderTask(
                 getter=self.getter,
                 render_size=self.render_size,
@@ -550,7 +674,7 @@ class StructureRenderTask(GenericModelRenderTask):
         return {}
 
     def occlusion(self, state: int) -> Optional[str]:
-        """"opaque" for full opaque cubes, "self" for full cubes with see-through texels
+        """ "opaque" for full opaque cubes, "self" for full cubes with see-through texels
         (glass culls against glass, HalfTransparentBlock.skipRendering), else None."""
         if state not in self._occlusion:
             self._occlusion[state] = self.compute_occlusion(self.palette[state])
@@ -563,19 +687,32 @@ class StructureRenderTask(GenericModelRenderTask):
             variants = self.get_block_variants(paletted)
         except RenderError:
             return None
-        if len(variants) != 1 or isinstance(variants[0], list) or not isinstance(variants[0].model, str):
+        if (
+            len(variants) != 1
+            or isinstance(variants[0], list)
+            or not isinstance(variants[0].model, str)
+        ):
             return None
         model = self.get_parsed_model(variants[0].model)
         full = [
             element
             for element in model.elements
-            if element.from_ == (0, 0, 0) and element.to == (16, 16, 16) and len(element.faces) == 6
+            if element.from_ == (0, 0, 0)
+            and element.to == (16, 16, 16)
+            and len(element.faces) == 6
             and element.rotation is None
         ]
         if not full:
             return None
-        images = [image for image, _ in self.load_textures(model).values() if isinstance(image, Image.Image)]
-        opaque = all(image.convert("RGBA").getchannel("A").getextrema()[0] == 255 for image in images)
+        images = [
+            image
+            for image, _ in self.load_textures(model).values()
+            if isinstance(image, Image.Image)
+        ]
+        opaque = all(
+            image.convert("RGBA").getchannel("A").getextrema()[0] == 255
+            for image in images
+        )
         return "opaque" if opaque else "self"
 
     def culled_directions(self, block: BlockModel) -> set[str]:
@@ -590,9 +727,13 @@ class StructureRenderTask(GenericModelRenderTask):
             neighbour = self.neighbour(block, direction)
             if neighbour is None:
                 continue
-            kind = self.occlusion(self.block_positions[tuple(  # type: ignore
-                a + b for a, b in zip(block.pos, DIRECTIONS[direction])
-            )])
+            kind = self.occlusion(
+                self.block_positions[
+                    tuple(  # type: ignore
+                        a + b for a, b in zip(block.pos, DIRECTIONS[direction])
+                    )
+                ]
+            )
             if kind == "opaque" or (kind == "self" and neighbour.Name == name):
                 culled.add(direction)
         return culled
@@ -618,22 +759,38 @@ class StructureRenderTask(GenericModelRenderTask):
         flowing towards lower neighbours. Past the structure's sides the world is assumed to
         go on like its edge, so water at the edge doesn't slope down into nothing."""
         pos: Position = tuple(block.pos)  # type: ignore
-        quads = tesselate_fluid(StructureFluids(self, extend=True), pos, StructureFluids(self))
+        quads = tesselate_fluid(
+            StructureFluids(self, extend=True), pos, StructureFluids(self)
+        )
         if not quads:
             return
         fluid = self.fluid_of(self.palette[block.state])
         assert fluid is not None
-        tint = self.biome_colors.water_color() if fluid == "minecraft:water" else 0xFFFFFF
-        red, green, blue = ((tint >> 16) & 0xFF) / 255, ((tint >> 8) & 0xFF) / 255, (tint & 0xFF) / 255
+        tint = (
+            self.biome_colors.water_color() if fluid == "minecraft:water" else 0xFFFFFF
+        )
+        red, green, blue = (
+            ((tint >> 16) & 0xFF) / 255,
+            ((tint >> 8) & 0xFF) / 255,
+            (tint & 0xFF) / 255,
+        )
         # where center_element puts a block's model space (pixels, centered on the model)
         shift = np.array(center, dtype=float) + 8 - 16 * np.array(pos, dtype=float)
         for quad in quads:
             image = self.fluid_texture(fluid, quad.texture)
             if image is None:
                 continue
-            vertices = [tuple(16 * np.array(vertex) - shift) for vertex in quad.vertices]
+            vertices = [
+                tuple(16 * np.array(vertex) - shift) for vertex in quad.vertices
+            ]
             color = (red * quad.shade, green * quad.shade, blue * quad.shade)
-            self.draw_quad(self.fluid_binding(fluid, quad.texture, image), vertices, quad.uvs, color, quad.back_face)
+            self.draw_quad(
+                self.fluid_binding(fluid, quad.texture, image),
+                vertices,
+                quad.uvs,
+                color,
+                quad.back_face,
+            )
 
     def fluid_binding(self, fluid: str, kind: str, image: Image.Image) -> int:
         key = f"{fluid}_{kind}"
@@ -707,7 +864,9 @@ class StructureRenderTask(GenericModelRenderTask):
             if variants is not None:
                 return variants
         # a state no definition covers shows the missing model
-        log.warning(f"No variant of {paletted.Name} for {paletted.Properties}, using the missing model")
+        log.warning(
+            f"No variant of {paletted.Name} for {paletted.Properties}, using the missing model"
+        )
         return [VariantModel(model=missing_model())]
 
     def get_all_textures(self) -> Generator[dict[str, TextureSource], None, None]:
@@ -717,10 +876,14 @@ class StructureRenderTask(GenericModelRenderTask):
                     if isinstance(option.model, str):
                         yield self.get_parsed_model(option.model).textures
         # the fluids are animated too
-        fluids = {self.fluid_of(self.palette[block.state]) for block in self.structure.blocks}
+        fluids = {
+            self.fluid_of(self.palette[block.state]) for block in self.structure.blocks
+        }
         for fluid in sorted(fluid for fluid in fluids if fluid is not None):
             namespace, path = fluid.split(":")
-            yield {kind: f"{namespace}:block/{path}_{kind}" for kind in ("still", "flow")}
+            yield {
+                kind: f"{namespace}:block/{path}_{kind}" for kind in ("still", "flow")
+            }
 
     def resolve(self) -> Generator[Task, None, None]:
         animation = Animation(
@@ -744,18 +907,24 @@ class StructureRenderTask(GenericModelRenderTask):
 
         for i, (images, duration, tick) in frames:
             if self.path_save:
-                new_path_save = self.path_save / "{i:0{animated_path_padding}}_{duration}.png".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_save = (
+                    self.path_save
+                    / "{i:0{animated_path_padding}}_{duration}.png".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_save = None
             if self.path_ctx:
-                new_path_ctx = self.path_ctx + "/{i:0{animated_path_padding}}_{duration}".format(
-                    i = i,
-                    duration = duration,
-                    animated_path_padding = animated_path_padding
+                new_path_ctx = (
+                    self.path_ctx
+                    + "/{i:0{animated_path_padding}}_{duration}".format(
+                        i=i,
+                        duration=duration,
+                        animated_path_padding=animated_path_padding,
+                    )
                 )
             else:
                 new_path_ctx = None
@@ -809,19 +978,30 @@ class StructureRenderTask(GenericModelRenderTask):
         if self.getter.opts.special_rendering:
             self.render_builtin(block, paletted, center)
 
-    def render_builtin(self, block: BlockModel, paletted: PaletteModel, center: tuple[float, float, float]):
+    def render_builtin(
+        self,
+        block: BlockModel,
+        paletted: PaletteModel,
+        center: tuple[float, float, float],
+    ):
         """The special model BuiltInBlockModels adds to banners, heads, chests, shulker boxes,
         pots, conduits, bells, enchanting tables, copper golem statues and end portals, placed
         by its block transformation (SpecialBlockModelWrapper)."""
-        builtin = builtin_block(resolve_key(paletted.Name), paletted.Properties, block.nbt or {})
+        builtin = builtin_block(
+            resolve_key(paletted.Name), paletted.Properties, block.nbt or {}
+        )
         if builtin is None:
             return
         item_id, special, placement, components = builtin
         special_model = SpecialModel.model_validate(special).special_model
         item = Item(id=item_id or "minecraft:stone", components=components)
         item.__resolved__ = True
-        model = MinecraftModel.model_validate(special_model.get_model(self.getter, item))
-        offset = np.array([block.pos[0] * 16, block.pos[1] * 16, block.pos[2] * 16], dtype=float)
+        model = MinecraftModel.model_validate(
+            special_model.get_model(self.getter, item)
+        )
+        offset = np.array(
+            [block.pos[0] * 16, block.pos[1] * 16, block.pos[2] * 16], dtype=float
+        )
         shift = np.array(center, dtype=float) - offset
         # the placement is in blocks from the block's corner, the geometry in pixels
         placement16 = placement.copy()
@@ -882,7 +1062,9 @@ class StructureRenderTask(GenericModelRenderTask):
         )
         model = model.bake()
         if self.images_override:
-            model = model.model_copy(update={"textures": self.get_textures(model, self.images_override)})
+            model = model.model_copy(
+                update={"textures": self.get_textures(model, self.images_override)}
+            )
 
         task = ModelRenderTask(
             getter=self.getter,
@@ -902,10 +1084,15 @@ class StructureRenderTask(GenericModelRenderTask):
 
     def get_tints(self, model: str, paletted) -> list[TintSource]:
         # BlockColors, with the colors of the structure's biome
-        colors = block_tints(self.getter, self.biome_colors, paletted.Name, paletted.Properties)
+        colors = block_tints(
+            self.getter, self.biome_colors, paletted.Name, paletted.Properties
+        )
         if colors is not None:
             return [
-                TintSourceConstant(type="minecraft:constant", value=0xFFFFFF if color is None else color)
+                TintSourceConstant(
+                    type="minecraft:constant",
+                    value=0xFFFFFF if color is None else color,
+                )
                 for color in colors
             ]
 

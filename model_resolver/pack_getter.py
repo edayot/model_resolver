@@ -1,7 +1,27 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterator, Mapping, Protocol, Optional, Sequence, Type, overload, cast
+from typing import (
+    TYPE_CHECKING,
+    Iterator,
+    Mapping,
+    Protocol,
+    Optional,
+    Sequence,
+    Type,
+    overload,
+    cast,
+)
 
-from beet import LATEST_MINECRAFT_VERSION, Context, DataPack, Namespace, NamespaceContainer, NamespaceFile, NamespaceProxy, Pack, ResourcePack
+from beet import (
+    LATEST_MINECRAFT_VERSION,
+    Context,
+    DataPack,
+    Namespace,
+    NamespaceContainer,
+    NamespaceFile,
+    NamespaceProxy,
+    Pack,
+    ResourcePack,
+)
 from beet.contrib.vanilla import Vanilla, Release
 
 from model_resolver.utils import ModelResolverOptions
@@ -10,7 +30,7 @@ from model_resolver.utils import ModelResolverOptions
 class PackGetterProtocol(Protocol):
     @property
     def assets(self) -> Optional[ResourcePack]: ...
-    
+
     @property
     def data(self) -> Optional[DataPack]: ...
 
@@ -22,11 +42,18 @@ class PackGetterLookup:
 
 
 @overload
-def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]], key: str) -> T: ...
+def get_by_lookup_order[
+    T: NamespaceFile
+](lookups: list[NamespaceProxy[T]], key: str) -> T: ...
 @overload
-def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceContainer[T]], key: str) -> T: ...
+def get_by_lookup_order[
+    T: NamespaceFile
+](lookups: list[NamespaceContainer[T]], key: str) -> T: ...
 
-def get_by_lookup_order[T: NamespaceFile](lookups: list[NamespaceProxy[T]] | list[NamespaceContainer[T]], key: str) -> T:
+
+def get_by_lookup_order[
+    T: NamespaceFile
+](lookups: list[NamespaceProxy[T]] | list[NamespaceContainer[T]], key: str) -> T:
     for lookup in lookups:
         res = lookup.get(key)
         if res is not None:
@@ -52,17 +79,16 @@ def get_pack[T: Pack](pack: Type[T], thing: PackGetterProtocol) -> T:
     raise ValueError(f"Pack type {pack} is not valid")
 
 
-
 @dataclass
 class PackGetterNamespaceContainerProxy[T: NamespaceFile](Mapping[str, T]):
     lookups: list[NamespaceContainer[T]]
 
     def __getitem__(self, key: str):
         return get_by_lookup_order(self.lookups, key)
-    
+
     def __iter__(self) -> Iterator[str]:
         return iter_lookup_keys(self.lookups)
-    
+
     def __len__(self) -> int:
         return len({key for lookup in self.lookups for key in lookup})
 
@@ -73,12 +99,13 @@ class PackGetterNamespaceProxy[T: NamespaceFile](Mapping[str, T]):
 
     def __getitem__(self, key: str):
         return get_by_lookup_order(self.lookups, key)
-    
+
     def __iter__(self) -> Iterator[str]:
         return iter_lookup_keys(self.lookups)
 
     def __len__(self) -> int:
         return len({key for lookup in self.lookups for key in lookup})
+
 
 @dataclass
 class PackGetterNamespacePackProxy:
@@ -88,21 +115,30 @@ class PackGetterNamespacePackProxy:
         namespace_lookups = []
         for lookup in self.lookups:
             if not hasattr(lookup, name):
-                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+                raise AttributeError(
+                    f"'{type(self).__name__}' object has no attribute '{name}'"
+                )
             lookup_proxy = getattr(lookup, name)
             if not isinstance(lookup_proxy, NamespaceContainer):
-                raise TypeError(f"Attribute {name} of {lookup} is not a NamespaceContainer")
+                raise TypeError(
+                    f"Attribute {name} of {lookup} is not a NamespaceContainer"
+                )
             namespace_lookups.append(lookup_proxy)
         return PackGetterNamespaceContainerProxy(namespace_lookups)
+
 
 @dataclass
 class PackGetterPackProxy[T: Pack](Mapping[str, Namespace]):
     """A merged view of packs, resolved in lookup order."""
+
     _pack: Type[T]
     _getter: PackGetter
 
     def _lookups(self) -> list[T]:
-        return [get_pack(self._pack, getattr(self._getter, lookup)) for lookup in self._getter.lookups]
+        return [
+            get_pack(self._pack, getattr(self._getter, lookup))
+            for lookup in self._getter.lookups
+        ]
 
     @overload
     def __getitem__(self, key: str): ...
@@ -110,7 +146,7 @@ class PackGetterPackProxy[T: Pack](Mapping[str, Namespace]):
     @overload
     def __getitem__(self, key: type[NamespaceFile]): ...
 
-    def __getitem__(self, key: type[NamespaceFile] | str): 
+    def __getitem__(self, key: type[NamespaceFile] | str):
         lookups = self._lookups()
         if isinstance(key, type):
             return PackGetterNamespaceProxy([lookup[key] for lookup in lookups])
@@ -123,13 +159,15 @@ class PackGetterPackProxy[T: Pack](Mapping[str, Namespace]):
         namespace_lookups = []
         for lookup in self._lookups():
             if not hasattr(lookup, name):
-                raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+                raise AttributeError(
+                    f"'{type(self).__name__}' object has no attribute '{name}'"
+                )
             lookup_proxy = getattr(lookup, name)
             if not isinstance(lookup_proxy, NamespaceProxy):
                 raise TypeError(f"Attribute {name} of {lookup} is not a NamespaceProxy")
             namespace_lookups.append(lookup_proxy)
         return PackGetterNamespaceProxy(namespace_lookups)
-    
+
     def __iter__(self):
         seen: set[str] = set()
         for lookup in self._lookups():
@@ -142,14 +180,16 @@ class PackGetterPackProxy[T: Pack](Mapping[str, Namespace]):
     def __len__(self) -> int:
         return len({key for lookup in self._lookups() for key in lookup})
 
+
 @dataclass
 class PackGetterPackProxyDescriptor[T: Pack]:
     _pack: Type[T]
+
     def __get__(self, instance, owner) -> PackGetterPackProxy[T]:
-        return PackGetterPackProxy(self._pack, instance) 
+        return PackGetterPackProxy(self._pack, instance)
 
 
-class PackGetter():
+class PackGetter:
     _ctx: Context
     _vanilla: Release
     _static_lookup: PackGetterLookup
@@ -160,15 +200,20 @@ class PackGetter():
         assets: ResourcePack
         data: DataPack
     else:
-        assets: PackGetterPackProxyDescriptor[ResourcePack] = PackGetterPackProxyDescriptor(ResourcePack)
-        data:   PackGetterPackProxyDescriptor[DataPack]     = PackGetterPackProxyDescriptor(DataPack)
+        assets: PackGetterPackProxyDescriptor[ResourcePack] = (
+            PackGetterPackProxyDescriptor(ResourcePack)
+        )
+        data: PackGetterPackProxyDescriptor[DataPack] = PackGetterPackProxyDescriptor(
+            DataPack
+        )
 
-    def __init__(self, 
-        ctx: Context, 
-        vanilla: Release, 
-        static_lookup: PackGetterLookup, 
-        opts: ModelResolverOptions, 
-        lookups: list[str]
+    def __init__(
+        self,
+        ctx: Context,
+        vanilla: Release,
+        static_lookup: PackGetterLookup,
+        opts: ModelResolverOptions,
+        lookups: list[str],
     ) -> None:
         self.lookups = lookups
         self._ctx = ctx
@@ -176,13 +221,19 @@ class PackGetter():
         self._static_lookup = static_lookup
         self.opts = opts
 
-    def get_stack[T: NamespaceFile](self, file_type: Type[T], key: str, exclude: Sequence[str] = ()) -> list[T]:
+    def get_stack[
+        T: NamespaceFile
+    ](self, file_type: Type[T], key: str, exclude: Sequence[str] = ()) -> list[T]:
         """Every pack's copy of a file, highest priority first.
 
         Most files are plain overrides (see `get_by_lookup_order`), but Minecraft resolves
         blockstates state by state through this stack (`BlockStateModelLoader`).
         """
-        pack = ResourcePack if file_type in ResourcePack.namespace_type.field_map else DataPack
+        pack = (
+            ResourcePack
+            if file_type in ResourcePack.namespace_type.field_map
+            else DataPack
+        )
         stack: list[T] = []
         for lookup in self.lookups:
             if lookup in exclude:
@@ -191,7 +242,6 @@ class PackGetter():
             if res is not None:
                 stack.append(res)
         return stack
-
 
     @classmethod
     def from_context(cls, ctx: Context, version: str | None = None):
@@ -202,4 +252,3 @@ class PackGetter():
             minecraft_version = LATEST_MINECRAFT_VERSION
         release = vanilla.releases[minecraft_version]
         return cls(ctx, release, PackGetterLookup(), opts, ["_ctx", "_vanilla"])
-        

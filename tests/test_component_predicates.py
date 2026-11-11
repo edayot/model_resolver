@@ -178,7 +178,11 @@ class TestSimpleDrawerCompactingDrawer:
 
     @staticmethod
     def drawer(**custom_data):
-        data = {"wood_type": "simpledrawer:compacting", "variant": "normal", **custom_data}
+        data = {
+            "wood_type": "simpledrawer:compacting",
+            "variant": "normal",
+            **custom_data,
+        }
         stored = {
             "id": "minecraft:stone",
             "count": 1,
@@ -188,7 +192,11 @@ class TestSimpleDrawerCompactingDrawer:
 
     @staticmethod
     def contains(custom_data):
-        return {"items": {"contains": [{"predicates": {"minecraft:custom_data": custom_data}}]}}
+        return {
+            "items": {
+                "contains": [{"predicates": {"minecraft:custom_data": custom_data}}]
+            }
+        }
 
     @pytest.mark.parametrize("slot_count", [1, 2, 3])
     def test_slot_count_selects_the_compacting_model(self, slot_count):
@@ -203,14 +211,22 @@ class TestSimpleDrawerCompactingDrawer:
 
     def test_wood_type(self):
         components = self.drawer(slot_count=3)
-        value = self.contains({"simpledrawer": {"wood_type": "simpledrawer:compacting"}})
+        value = self.contains(
+            {"simpledrawer": {"wood_type": "simpledrawer:compacting"}}
+        )
         assert matches("minecraft:container", value, components)
 
     def test_json_item_counts_are_bytes_not_ints(self):
         # the game reads {"0": 0} from JSON as 0b, which `{0: 0}` (an int) does not match
         value = self.contains("{simpledrawer: {items_counts: {0: 0, 1: 0}}}")
-        assert not matches("minecraft:container", value, self.drawer(items_counts={"0": 0, "1": 0}))
-        assert matches("minecraft:container", value, self.drawer(items_counts={"0": Int(0), "1": Int(0)}))
+        assert not matches(
+            "minecraft:container", value, self.drawer(items_counts={"0": 0, "1": 0})
+        )
+        assert matches(
+            "minecraft:container",
+            value,
+            self.drawer(items_counts={"0": Int(0), "1": Int(0)}),
+        )
 
 
 class TestHolderSets:

@@ -57,7 +57,9 @@ class Atlases:
             self.layouts[atlas] = stitch(sprites, mip_level(sprites, max_mip))
         return self.layouts[atlas]
 
-    def model_sprite_uv(self, getter: PackGetter, sprite: str) -> Optional[tuple[float, float, float, float]]:
+    def model_sprite_uv(
+        self, getter: PackGetter, sprite: str
+    ) -> Optional[tuple[float, float, float, float]]:
         """MaterialBaker: a model texture comes from the items atlas, else the blocks atlas."""
         for atlas in ("minecraft:items", "minecraft:blocks"):
             uv = self.layout(getter, atlas).uv(resolve_key(sprite))
@@ -93,7 +95,9 @@ def atlas_sprites(getter: PackGetter, atlas: str) -> dict[str, tuple[int, int]]:
     return sprites
 
 
-def run_source(getter: PackGetter, source: dict[str, Any], sprites: dict[str, tuple[int, int]]):
+def run_source(
+    getter: PackGetter, source: dict[str, Any], sprites: dict[str, tuple[int, int]]
+):
     source_type = resolve_key(source["type"])
     if source_type == "minecraft:single":
         resource = resolve_key(source["resource"])
@@ -107,7 +111,9 @@ def run_source(getter: PackGetter, source: dict[str, Any], sprites: dict[str, tu
             if path.startswith(directory):
                 size = sprite_size(getter, texture)
                 if size is not None:
-                    sprites[f"{namespace}:{source['prefix']}{path.removeprefix(directory)}"] = size
+                    sprites[
+                        f"{namespace}:{source['prefix']}{path.removeprefix(directory)}"
+                    ] = size
     elif source_type == "minecraft:paletted_permutations":
         separator = source.get("separator", "_")
         for texture in source["textures"]:
@@ -183,15 +189,27 @@ class Region:
             spare_width, spare_height = self.width - width, self.height - height
             if spare_height > 0 and spare_width > 0:
                 if max(self.height, spare_width) >= max(self.width, spare_height):
-                    self.sub_slots.append(Region(self.x, self.y + height, width, spare_height))
-                    self.sub_slots.append(Region(self.x + width, self.y, spare_width, self.height))
+                    self.sub_slots.append(
+                        Region(self.x, self.y + height, width, spare_height)
+                    )
+                    self.sub_slots.append(
+                        Region(self.x + width, self.y, spare_width, self.height)
+                    )
                 else:
-                    self.sub_slots.append(Region(self.x + width, self.y, spare_width, height))
-                    self.sub_slots.append(Region(self.x, self.y + height, self.width, spare_height))
+                    self.sub_slots.append(
+                        Region(self.x + width, self.y, spare_width, height)
+                    )
+                    self.sub_slots.append(
+                        Region(self.x, self.y + height, self.width, spare_height)
+                    )
             elif spare_width == 0:
-                self.sub_slots.append(Region(self.x, self.y + height, width, spare_height))
+                self.sub_slots.append(
+                    Region(self.x, self.y + height, width, spare_height)
+                )
             elif spare_height == 0:
-                self.sub_slots.append(Region(self.x + width, self.y, spare_width, height))
+                self.sub_slots.append(
+                    Region(self.x + width, self.y, spare_width, height)
+                )
         return any(slot.add(holder) for slot in self.sub_slots)
 
     def walk(self, output: dict[str, tuple[int, int]]):
@@ -255,6 +273,7 @@ def stitch(sprites: dict[str, tuple[int, int]], mip: int) -> AtlasLayout:
         width=storage_x,
         height=storage_y,
         sprites={
-            name: (x + padding, y + padding, *sprites[name]) for name, (x, y) in positions.items()
+            name: (x + padding, y + padding, *sprites[name])
+            for name, (x, y) in positions.items()
         },
     )

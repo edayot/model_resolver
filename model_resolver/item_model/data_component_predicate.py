@@ -65,7 +65,8 @@ type HolderSet = Union[str, list[Union[str, dict[str, Any]]]]
 
 
 def iter_tagged_id(
-    value: Union[HolderSet, dict[str, Any], None], proxy: NamespaceProxy[Any] | None = None
+    value: Union[HolderSet, dict[str, Any], None],
+    proxy: NamespaceProxy[Any] | None = None,
 ) -> Generator[str, None, None]:
     """
     A generator that yields all the ids in a holder set: an id, a #tag or a list of ids.
@@ -106,7 +107,11 @@ def holder_set_contains(
     """Whether a registry id is in the holder set. An inline value never is."""
     if not isinstance(value, str):
         return False
-    proxy = getattr(ctx.getter.data, f"{registry}_tags", None) if _has_tag(holder_set) else None
+    proxy = (
+        getattr(ctx.getter.data, f"{registry}_tags", None)
+        if _has_tag(holder_set)
+        else None
+    )
     return resolve_key(value) in iter_tagged_id(holder_set, proxy)
 
 
@@ -139,7 +144,9 @@ class CollectionPredicate[P: ElementPredicate](BaseModel):
                 return False
         if self.count is not None:
             for entry in self.count:
-                if not entry.count.matches(sum(entry.test.test(v, ctx) for v in values)):
+                if not entry.count.matches(
+                    sum(entry.test.test(v, ctx) for v in values)
+                ):
                     return False
         return self.size is None or self.size.matches(len(values))
 
@@ -174,7 +181,9 @@ class DamagePredicate(DataComponentPredicateBase):
 
     def matches_value(self, value: Any, ctx: Context) -> bool:
         max_damage = ctx.item.components.get("minecraft:max_damage", 0)
-        return self.durability.matches(max_damage - value) and self.damage.matches(value)
+        return self.durability.matches(max_damage - value) and self.damage.matches(
+            value
+        )
 
 
 class EnchantmentPredicate(BaseModel):
@@ -194,7 +203,9 @@ class EnchantmentPredicate(BaseModel):
         return ctx.getter.data.enchantment_tags if _has_tag(self.enchantments) else None
 
 
-class EnchantmentsPredicate(RootModel[list[EnchantmentPredicate]], DataComponentPredicateBase):
+class EnchantmentsPredicate(
+    RootModel[list[EnchantmentPredicate]], DataComponentPredicateBase
+):
     component: ClassVar[str] = "minecraft:enchantments"
     root: list[EnchantmentPredicate]
 
@@ -223,10 +234,14 @@ class MobEffectInstancePredicate(BaseModel):
             return False
         if self.ambient is not None and self.ambient != effect.get("ambient", False):
             return False
-        return self.visible is None or self.visible == effect.get("show_particles", True)
+        return self.visible is None or self.visible == effect.get(
+            "show_particles", True
+        )
 
 
-class MobEffectsPredicate(RootModel[dict[str, MobEffectInstancePredicate]], ElementPredicate):
+class MobEffectsPredicate(
+    RootModel[dict[str, MobEffectInstancePredicate]], ElementPredicate
+):
     root: dict[str, MobEffectInstancePredicate]
 
     def test(self, value: Any, ctx: Context) -> bool:
@@ -251,7 +266,9 @@ class PotionContentsPredicate(DataComponentPredicateBase):
     def matches_value(self, value: Any, ctx: Context) -> bool:
         potion = value if isinstance(value, str) else value.get("potion")
         if self.potions is not None:
-            if potion is None or not holder_set_contains(self.potions, potion, ctx, "potion"):
+            if potion is None or not holder_set_contains(
+                self.potions, potion, ctx, "potion"
+            ):
                 return False
         if self.effects is not None:
             effects = potion_effects(value, ctx.getter.opts.minecraft_version)
@@ -273,7 +290,9 @@ class JukeboxPlayablePredicate(DataComponentPredicateBase):
     def matches_value(self, value: Any, ctx: Context) -> bool:
         if isinstance(value, dict):
             value = value.get("song")
-        return self.song is None or holder_set_contains(self.song, value, ctx, "jukebox_song")
+        return self.song is None or holder_set_contains(
+            self.song, value, ctx, "jukebox_song"
+        )
 
 
 class TrimPredicate(DataComponentPredicateBase):
@@ -283,10 +302,14 @@ class TrimPredicate(DataComponentPredicateBase):
 
     def matches_value(self, value: Any, ctx: Context) -> bool:
         if self.material is not None:
-            if not holder_set_contains(self.material, value.get("material"), ctx, "trim_material"):
+            if not holder_set_contains(
+                self.material, value.get("material"), ctx, "trim_material"
+            ):
                 return False
         if self.pattern is not None:
-            if not holder_set_contains(self.pattern, value.get("pattern"), ctx, "trim_pattern"):
+            if not holder_set_contains(
+                self.pattern, value.get("pattern"), ctx, "trim_pattern"
+            ):
                 return False
         return True
 
@@ -307,12 +330,16 @@ class FireworkPredicate(ElementPredicate):
     def test(self, value: Any, ctx: Context) -> bool:
         if self.shape is not None and self.shape != value.get("shape"):
             return False
-        if self.has_twinkle is not None and self.has_twinkle != value.get("has_twinkle", False):
+        if self.has_twinkle is not None and self.has_twinkle != value.get(
+            "has_twinkle", False
+        ):
             return False
         return self.has_trail is None or self.has_trail == value.get("has_trail", False)
 
 
-class FireworkExplosionPredicate(RootModel[FireworkPredicate], DataComponentPredicateBase):
+class FireworkExplosionPredicate(
+    RootModel[FireworkPredicate], DataComponentPredicateBase
+):
     component: ClassVar[str] = "minecraft:firework_explosion"
     root: FireworkPredicate
 
@@ -390,14 +417,20 @@ class AttributeModifierPredicate(ElementPredicate):
     attribute: Optional[HolderSet] = None
     id: Optional[str] = None
     amount: Bounds = ANY
-    operation: Optional[Literal["add_value", "add_multiplied_base", "add_multiplied_total"]] = None
+    operation: Optional[
+        Literal["add_value", "add_multiplied_base", "add_multiplied_total"]
+    ] = None
     slot: Optional[str] = None
 
     def test(self, value: Any, ctx: Context) -> bool:
         if self.attribute is not None:
-            if not holder_set_contains(self.attribute, value.get("type"), ctx, "attribute"):
+            if not holder_set_contains(
+                self.attribute, value.get("type"), ctx, "attribute"
+            ):
                 return False
-        if self.id is not None and resolve_key(self.id) != resolve_key(value.get("id", "")):
+        if self.id is not None and resolve_key(self.id) != resolve_key(
+            value.get("id", "")
+        ):
             return False
         if not self.amount.matches(value.get("amount", 0)):
             return False
@@ -502,7 +535,9 @@ def to_nbt(value: Any) -> Optional[NbtTag | list[Any]]:
     return None
 
 
-def compare_nbt(expected: Optional[NbtTag | list[Any]], actual: Optional[NbtTag | list[Any]]) -> bool:
+def compare_nbt(
+    expected: Optional[NbtTag | list[Any]], actual: Optional[NbtTag | list[Any]]
+) -> bool:
     """NbtUtils.compareNbt(expected, actual, partialListMatches=true)"""
     if expected is None:
         return True
@@ -528,7 +563,9 @@ def compare_nbt(expected: Optional[NbtTag | list[Any]], actual: Optional[NbtTag 
     return expected == actual
 
 
-class CustomDataPredicate(RootModel[Union[dict[str, Any], str]], DataComponentPredicateBase):
+class CustomDataPredicate(
+    RootModel[Union[dict[str, Any], str]], DataComponentPredicateBase
+):
     component: ClassVar[str] = "minecraft:custom_data"
     root: Union[dict[str, Any], str]
 
@@ -538,7 +575,9 @@ class CustomDataPredicate(RootModel[Union[dict[str, Any], str]], DataComponentPr
         return self.matches_value(actual, ctx)
 
     def matches_value(self, value: Any, ctx: Context) -> bool:
-        expected = parse_nbt(self.root) if isinstance(self.root, str) else to_nbt(self.root)
+        expected = (
+            parse_nbt(self.root) if isinstance(self.root, str) else to_nbt(self.root)
+        )
         actual = parse_nbt(value) if isinstance(value, str) else to_nbt(value)
         return compare_nbt(expected, actual)
 
@@ -568,7 +607,9 @@ def component_predicate(predicate: str, value: Any) -> DataComponentPredicateBas
     cls = PREDICATES.get(resolve_key(predicate))
     if cls is None:
         if value not in ({}, None):
-            log.warning(f"Component {predicate} has no predicate type, only its presence is checked")
+            log.warning(
+                f"Component {predicate} has no predicate type, only its presence is checked"
+            )
         return AnyValuePredicate(id=predicate)
     return cls.model_validate(value)
 
@@ -581,5 +622,6 @@ class DataComponent(BaseModel):
     def is_valid(self, getter: PackGetter, item: Item) -> bool:
         ctx = Context(getter, item)
         return all(
-            component_predicate(key, value).matches(ctx) for key, value in self.predicates.items()
+            component_predicate(key, value).matches(ctx)
+            for key, value in self.predicates.items()
         )

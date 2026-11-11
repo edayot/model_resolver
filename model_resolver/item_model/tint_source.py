@@ -87,11 +87,19 @@ class TintSourceGrass(TintSourceBase):
     downfall: float = Field(ge=0, le=1)
 
     def resolve(self, getter: PackGetter, item: Item) -> tuple[int, int, int]:
-        return to_rgb(colormap_color(getter, "minecraft:colormap/grass", self.temperature, self.downfall))
+        return to_rgb(
+            colormap_color(
+                getter, "minecraft:colormap/grass", self.temperature, self.downfall
+            )
+        )
 
 
 def colormap_color(
-    getter: PackGetter, texture_key: str, temperature: float, downfall: float, default: int = 0xFF00FF
+    getter: PackGetter,
+    texture_key: str,
+    temperature: float,
+    downfall: float,
+    default: int = 0xFF00FF,
 ) -> int:
     """ColorMapColorUtil.get: the float values widen to double, the colormap is read as a
     256-wide pixel array and an index past its end gives the default."""
@@ -138,7 +146,9 @@ class TintSourcePotion(TintSourceBase):
         contents = item.components.get("minecraft:potion_contents")
         if contents is None:
             return to_rgb(self.default)
-        return to_rgb(potion_color(contents, self.default, getter.opts.minecraft_version))
+        return to_rgb(
+            potion_color(contents, self.default, getter.opts.minecraft_version)
+        )
 
 
 def potion_table(version: str) -> dict[str, Any]:
@@ -151,7 +161,9 @@ def potion_effects(contents: Any, version: str) -> list[dict[str, Any]]:
     if isinstance(contents, str):
         contents = {"potion": contents}
     potion = contents.get("potion")
-    effects = potion_table(version)["potions"].get(resolve_key(potion), []) if potion else []
+    effects = (
+        potion_table(version)["potions"].get(resolve_key(potion), []) if potion else []
+    )
     return [*effects, *contents.get("custom_effects", [])]
 
 
@@ -193,7 +205,9 @@ class TintSourceCustomModelData(TintSourceBase):
     default: Color = 0
 
     def resolve(self, getter: PackGetter, item: Item) -> tuple[int, int, int]:
-        colors = (item.components.get("minecraft:custom_model_data") or {}).get("colors", [])
+        colors = (item.components.get("minecraft:custom_model_data") or {}).get(
+            "colors", []
+        )
         index = self.index or 0
         if 0 <= index < len(colors):
             return to_rgb(colors[index])

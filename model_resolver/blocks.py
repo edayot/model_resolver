@@ -32,7 +32,9 @@ class BlockInfo:
     """In #blocks_fluid_flow: fluids don't flow down past it"""
 
 
-def derived_fluid(name: str, properties: dict[str, str]) -> Optional[tuple[str, int, bool]]:
+def derived_fluid(
+    name: str, properties: dict[str, str]
+) -> Optional[tuple[str, int, bool]]:
     """LiquidBlock.getFluidState for water and lava, and a source for waterlogged blocks."""
     if name in ("minecraft:water", "minecraft:lava"):
         level = int(properties.get("level", 0))
@@ -42,7 +44,9 @@ def derived_fluid(name: str, properties: dict[str, str]) -> Optional[tuple[str, 
     return None
 
 
-def _value(entry: dict[str, Any], key: str, properties: dict[str, str], default: Any) -> Any:
+def _value(
+    entry: dict[str, Any], key: str, properties: dict[str, str], default: Any
+) -> Any:
     value = entry.get(key, default)
     if not isinstance(value, dict):
         return value
@@ -50,7 +54,9 @@ def _value(entry: dict[str, Any], key: str, properties: dict[str, str], default:
     index = 0
     for name, values in entry["properties"].items():
         current = properties.get(name, values[0])
-        index = index * len(values) + (values.index(current) if current in values else 0)
+        index = index * len(values) + (
+            values.index(current) if current in values else 0
+        )
     return value["by_state"][index]
 
 

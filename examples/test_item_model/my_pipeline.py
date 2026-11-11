@@ -1,6 +1,9 @@
 from beet import Context
 from model_resolver import Item, Render
-from model_resolver.item_model.model import ItemModelRangeDispatchCompass, ItemModelRecursive
+from model_resolver.item_model.model import (
+    ItemModelRangeDispatchCompass,
+    ItemModelRecursive,
+)
 
 
 class MyImpl(ItemModelRangeDispatchCompass):
@@ -9,6 +12,8 @@ class MyImpl(ItemModelRangeDispatchCompass):
         if comp is not None:
             return comp
         return super().resolve_range_dispatch(getter, item)
+
+
 MyImpl.model_rebuild()
 
 
@@ -18,7 +23,9 @@ def beet_default(ctx: Context):
     item = Item(id="minecraft:player_head", components={"minecraft:profile": "AirDox_"})
     render.add_item_task(item, path_ctx="test:head", render_size=512)
 
-    render.add_item_task(Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512)
+    render.add_item_task(
+        Item(id="minecraft:chest"), path_ctx="test:chest", render_size=512
+    )
     render.add_item_task(
         Item(
             id="minecraft:chest",
@@ -257,7 +264,5 @@ def beet_default(ctx: Context):
     render.add_model_task(
         "test:item/donut_holer", path_ctx="test:render/donut_holer", render_size=512
     )
-    
 
     render.run()
-

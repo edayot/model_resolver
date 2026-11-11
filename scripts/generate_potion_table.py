@@ -45,7 +45,14 @@ def decompile(jar: Path, cfr: Path, workdir: Path) -> dict[str, str]:
             class_file = workdir / f"{name}.class"
             class_file.write_bytes(read_class(archive, f"{path}.class"))
             subprocess.run(
-                ["java", "-jar", str(cfr), str(class_file), "--outputdir", str(workdir)],
+                [
+                    "java",
+                    "-jar",
+                    str(cfr),
+                    str(class_file),
+                    "--outputdir",
+                    str(workdir),
+                ],
                 check=True,
                 capture_output=True,
             )
@@ -65,14 +72,21 @@ def parse(sources: dict[str, str]) -> dict:
         )
     }
     # public static final ResourceKey<Potion> HEALING = PotionIds.register("healing");
-    potion_ids = dict(re.findall(r'(\w+) = PotionIds\.register\("(\w+)"\)', sources["potion_ids"]))
+    potion_ids = dict(
+        re.findall(r'(\w+) = PotionIds\.register\("(\w+)"\)', sources["potion_ids"])
+    )
     potions: dict[str, list[dict]] = {}
     # Potions.register(PotionIds.HEALING, new Potion("healing", new MobEffectInstance(MobEffects.INSTANT_HEALTH, 1)));
     for const, body in re.findall(
-        r"Potions\.register\((?:\([\w<>]+\))?PotionIds\.(\w+), new Potion\((.*)\)\);", sources["potions"]
+        r"Potions\.register\((?:\([\w<>]+\))?PotionIds\.(\w+), new Potion\((.*)\)\);",
+        sources["potions"],
     ):
         potions[f"minecraft:{potion_ids[const]}"] = [
-            {"id": effects[effect][0], "duration": int(duration), "amplifier": int(amplifier or 0)}
+            {
+                "id": effects[effect][0],
+                "duration": int(duration),
+                "amplifier": int(amplifier or 0),
+            }
             for effect, duration, amplifier in re.findall(
                 r"new MobEffectInstance\(MobEffects\.(\w+), (-?\d+)(?:, (\d+))?", body
             )
@@ -99,7 +113,9 @@ def main():
     tables[args.version] = table
     OUTPUT.parent.mkdir(exist_ok=True)
     OUTPUT.write_text(json.dumps(tables, indent=2, sort_keys=True) + "\n")
-    print(f"{len(table['effects'])} effects, {len(table['potions'])} potions -> {OUTPUT}")
+    print(
+        f"{len(table['effects'])} effects, {len(table['potions'])} potions -> {OUTPUT}"
+    )
 
 
 if __name__ == "__main__":

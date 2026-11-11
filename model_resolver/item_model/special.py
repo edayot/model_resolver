@@ -113,7 +113,7 @@ class SpecialModelBed(SpecialModelBase):
     type: Literal["minecraft:bed", "bed"]
     texture: str
     part: Literal["head", "foot"]
-    
+
     def get_additional_translations(self) -> tuple[float, float, float] | None:
         return (0, -4, 0)
 
@@ -126,12 +126,32 @@ class SpecialModelBed(SpecialModelBase):
                     "to": [16, 16 + x, 16],
                     "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 11 + x, 5]},
                     "faces": {
-                        "north": {"uv": [5.5, 5.5, 9.5, 7], "rotation": 180, "texture": "#0"},
-                        "east": {"uv": [0, 7, 1.5, 11], "rotation": 270, "texture": "#0"},
-                        "west": {"uv": [5.5, 7, 7, 11], "rotation": 90, "texture": "#0"},
-                        "up": {"uv": [1.5, 7, 5.5, 11], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [11, 11, 7, 7], "rotation": 180, "texture": "#0"}
-                    }
+                        "north": {
+                            "uv": [5.5, 5.5, 9.5, 7],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "east": {
+                            "uv": [0, 7, 1.5, 11],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [5.5, 7, 7, 11],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [1.5, 7, 5.5, 11],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [11, 11, 7, 7],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [0, 7 + x, 0],
@@ -142,9 +162,17 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [14.75, 3.75, 15.5, 4.5], "texture": "#0"},
                         "south": {"uv": [14, 3.75, 14.75, 4.5], "texture": "#0"},
                         "west": {"uv": [13.25, 3.75, 14, 4.5], "texture": "#0"},
-                        "up": {"uv": [13.25, 3, 14, 3.75], "rotation": 90, "texture": "#0"},
-                        "down": {"uv": [14.75, 3, 14, 3.75], "rotation": 90, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [13.25, 3, 14, 3.75],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14.75, 3, 14, 3.75],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [13, 7 + x, 0],
@@ -156,12 +184,12 @@ class SpecialModelBed(SpecialModelBase):
                         "south": {"uv": [14.75, 0.75, 15.5, 1.5], "texture": "#0"},
                         "west": {"uv": [14, 0.75, 14.75, 1.5], "texture": "#0"},
                         "up": {"uv": [13.25, 0, 14, 0.75], "texture": "#0"},
-                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"}
-                    }
-                }
+                        "down": {"uv": [14.75, 0, 14, 0.75], "texture": "#0"},
+                    },
+                },
             ]
         elif self.part == "head":
-             return [
+            return [
                 {
                     "from": [0, 1, 7],
                     "to": [3, 4, 10],
@@ -171,21 +199,49 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [14, 5.25, 14.75, 6], "texture": "#0"},
                         "south": {"uv": [13.25, 5.25, 14, 6], "texture": "#0"},
                         "west": {"uv": [12.5, 5.25, 13.25, 6], "texture": "#0"},
-                        "up": {"uv": [13.25, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [14.75, 4.5, 14, 5.25], "rotation": 180, "texture": "#0"}
-                    }
+                        "up": {
+                            "uv": [13.25, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14.75, 4.5, 14, 5.25],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [0, 4, -6],
                     "to": [16, 10, 10],
                     "rotation": {"x": -90, "y": 0, "z": 180, "origin": [8, 4.75, 5.25]},
                     "faces": {
-                        "east": {"uv": [0, 1.5, 1.5, 5.5], "rotation": 270, "texture": "#0"},
-                        "south": {"uv": [1.5, 0, 5.5, 1.5], "rotation": 180, "texture": "#0"},
-                        "west": {"uv": [5.5, 1.5, 7, 5.5], "rotation": 90, "texture": "#0"},
-                        "up": {"uv": [1.5, 1.5, 5.5, 5.5], "rotation": 180, "texture": "#0"},
-                        "down": {"uv": [11, 5.5, 7, 1.5], "rotation": 180, "texture": "#0"}
-                    }
+                        "east": {
+                            "uv": [0, 1.5, 1.5, 5.5],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "south": {
+                            "uv": [1.5, 0, 5.5, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "west": {
+                            "uv": [5.5, 1.5, 7, 5.5],
+                            "rotation": 90,
+                            "texture": "#0",
+                        },
+                        "up": {
+                            "uv": [1.5, 1.5, 5.5, 5.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [11, 5.5, 7, 1.5],
+                            "rotation": 180,
+                            "texture": "#0",
+                        },
+                    },
                 },
                 {
                     "from": [13, 1, 7],
@@ -196,10 +252,18 @@ class SpecialModelBed(SpecialModelBase):
                         "east": {"uv": [13.25, 2.25, 14, 3], "texture": "#0"},
                         "south": {"uv": [12.5, 2.25, 13.25, 3], "texture": "#0"},
                         "west": {"uv": [14.75, 2.25, 15.5, 3], "texture": "#0"},
-                        "up": {"uv": [13.25, 1.5, 14, 2.25], "rotation": 270, "texture": "#0"},
-                        "down": {"uv": [14, 1.5, 14.75, 2.25], "rotation": 270, "texture": "#0"}
-                    }
-                }
+                        "up": {
+                            "uv": [13.25, 1.5, 14, 2.25],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                        "down": {
+                            "uv": [14, 1.5, 14.75, 2.25],
+                            "rotation": 270,
+                            "texture": "#0",
+                        },
+                    },
+                },
             ]
         raise ValueError(f"Invalid bed part {self.part}")
 
@@ -220,7 +284,12 @@ def entity_elements(
     part_textures: Optional[dict[str, str]] = None,
 ) -> list[dict[str, Any]]:
     """The elements of an entity model layer (LayerDefinitions), in entity model space."""
-    return to_elements(entity_layers(getter.opts.minecraft_version)[layer], texture, poses, part_textures)
+    return to_elements(
+        entity_layers(getter.opts.minecraft_version)[layer],
+        texture,
+        poses,
+        part_textures,
+    )
 
 
 class SpecialModelLayerBase(SpecialModelBase):
@@ -257,14 +326,28 @@ class SpecialModelLayerBase(SpecialModelBase):
     def get_color(self, color: str) -> TintSourceConstant:
         if color not in self.COLOR_STRING_TO_ARGB:
             raise ValueError(f"Invalid color {color} for {self.entity_type}")
-        return TintSourceConstant(type="constant", value=self.COLOR_STRING_TO_ARGB[color])
+        return TintSourceConstant(
+            type="constant", value=self.COLOR_STRING_TO_ARGB[color]
+        )
 
-    def get_patterns(self, getter: PackGetter, item: Item, base_color: str) -> tuple[MultiTexture, ...]:
+    def get_patterns(
+        self, getter: PackGetter, item: Item, base_color: str
+    ) -> tuple[MultiTexture, ...]:
         """The base sprite, then the pattern base in the base color and every pattern."""
-        res: list[MultiTexture] = [(self.base_texture, None), (self.pattern_base, self.get_color(base_color))]
+        res: list[MultiTexture] = [
+            (self.base_texture, None),
+            (self.pattern_base, self.get_color(base_color)),
+        ]
         for pattern in item.components.get("minecraft:banner_patterns", [])[:16]:
-            namespace, path = self.get_asset_id(getter, pattern["pattern"]).split(":", 1)
-            res.append((f"{namespace}:entity/{self.entity_type}/{path}", self.get_color(pattern["color"])))
+            namespace, path = self.get_asset_id(getter, pattern["pattern"]).split(
+                ":", 1
+            )
+            res.append(
+                (
+                    f"{namespace}:entity/{self.entity_type}/{path}",
+                    self.get_color(pattern["color"]),
+                )
+            )
         return tuple(res)
 
     @staticmethod
@@ -296,9 +379,17 @@ class SpecialModelBanner(SpecialModelLayerBase):
         phase = 0.0
         flag_angle = (-0.0125 + 0.01 * math.cos(math.pi * 2 * phase)) * math.pi
         return {
-            "textures": {"base": self.base_texture, "flag": self.get_patterns(getter, item, self.color)},
+            "textures": {
+                "base": self.base_texture,
+                "flag": self.get_patterns(getter, item, self.color),
+            },
             "elements": entity_elements(getter, f"{prefix}banner", "#base")
-            + entity_elements(getter, f"{prefix}banner_flag", "#flag", poses={"flag": {"xRot": flag_angle}}),
+            + entity_elements(
+                getter,
+                f"{prefix}banner_flag",
+                "#flag",
+                poses={"flag": {"xRot": flag_angle}},
+            ),
         }
 
 
@@ -308,16 +399,23 @@ class SpecialModelShield(SpecialModelLayerBase):
     type: Literal["minecraft:shield", "shield"]
 
     base_texture: ClassVar[str] = "minecraft:entity/shield/shield_base"
-    base_texture_nopattern: ClassVar[str] = "minecraft:entity/shield/shield_base_nopattern"
+    base_texture_nopattern: ClassVar[str] = (
+        "minecraft:entity/shield/shield_base_nopattern"
+    )
     pattern_base: ClassVar[str] = "minecraft:entity/shield/base"
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         base_color = item.components.get("minecraft:base_color")
         if item.components.get("minecraft:banner_patterns") or base_color is not None:
-            texture: TextureSource = self.get_patterns(getter, item, base_color or "white")
+            texture: TextureSource = self.get_patterns(
+                getter, item, base_color or "white"
+            )
         else:
             texture = self.base_texture_nopattern
-        return {"textures": {"0": texture}, "elements": entity_elements(getter, "shield")}
+        return {
+            "textures": {"0": texture},
+            "elements": entity_elements(getter, "shield"),
+        }
 
     def glint(self) -> Optional[GlintStyle]:
         return GlintStyle(ENTITY_GLINT_SCALE, "minecraft:shield_patterns")
@@ -330,7 +428,10 @@ class SpecialModelConduit(SpecialModelBase):
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = "minecraft:entity/conduit/base"
-        return {"textures": {"0": texture, "particle": texture}, "elements": entity_elements(getter, "conduit_shell")}
+        return {
+            "textures": {"0": texture, "particle": texture},
+            "elements": entity_elements(getter, "conduit_shell"),
+        }
 
 
 class SpecialModelChest(SpecialModelBase):
@@ -354,7 +455,9 @@ class SpecialModelChest(SpecialModelBase):
         return {
             "textures": {"0": texture, "particle": texture},
             "elements": entity_elements(
-                getter, self.LAYERS[self.chest_type], poses={"lid": {"xRot": angle}, "lock": {"xRot": angle}}
+                getter,
+                self.LAYERS[self.chest_type],
+                poses={"lid": {"xRot": angle}, "lock": {"xRot": angle}},
             ),
         }
 
@@ -397,7 +500,17 @@ def offline_player_uuid(name: str) -> UUID:
 DEFAULT_SKINS = [
     f"minecraft:entity/player/{model}/{name}"
     for model in ("slim", "wide")
-    for name in ("alex", "ari", "efe", "kai", "makena", "noor", "steve", "sunny", "zuri")
+    for name in (
+        "alex",
+        "ari",
+        "efe",
+        "kai",
+        "makena",
+        "noor",
+        "steve",
+        "sunny",
+        "zuri",
+    )
 ]
 
 
@@ -417,7 +530,12 @@ class SpecialModelHeadBase(SpecialModelBase):
     """SkullBlockRenderer.submitSkull: a head model, with SkullModelBase.State's animation."""
 
     @staticmethod
-    def head_model(getter: PackGetter, layer: str, texture: str | Image.Image, animation: float = 0.0) -> dict[str, Any]:
+    def head_model(
+        getter: PackGetter,
+        layer: str,
+        texture: str | Image.Image,
+        animation: float = 0.0,
+    ) -> dict[str, Any]:
         # setupAnim: the head isn't turned (yRot, xRot 0), the jaw and ears follow the animation
         step = animation * math.pi * 0.2
         poses: dict[str, dict[str, float]] = {"head": {"xRot": 0.0, "yRot": 0.0}}
@@ -437,7 +555,9 @@ class SpecialModelPlayerHead(SpecialModelHeadBase):
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         # PlayerHeadSpecialRenderer: no animation
-        return self.head_model(getter, "humanoid_head", self.get_player_texture(getter, item))
+        return self.head_model(
+            getter, "humanoid_head", self.get_player_texture(getter, item)
+        )
 
     def get_player_texture(self, getter: PackGetter, item: Item) -> str | Image.Image:
         profile_data = item.components.get("minecraft:profile")
@@ -453,17 +573,23 @@ class SpecialModelPlayerHead(SpecialModelHeadBase):
         try:
             skin = self.download_skin(getter, profile)
         except Exception as e:
-            log.warning(f"Could not load the skin of {profile_data}, using a default skin: {e}")
+            log.warning(
+                f"Could not load the skin of {profile_data}, using a default skin: {e}"
+            )
             skin = None
         return skin if skin is not None else default_skin(profile.uuid())
 
-    def download_skin(self, getter: PackGetter, profile: ProfileComponent) -> Optional[Image.Image]:
+    def download_skin(
+        self, getter: PackGetter, profile: ProfileComponent
+    ) -> Optional[Image.Image]:
         cache = getter._ctx.cache["model_resolver_player_skin"]
         if not profile.properties and (profile.id or profile.name):
             if profile.id:
                 uuid = profile.uuid()
             else:
-                url = "https://api.mojang.com/users/profiles/minecraft/" + str(profile.name)
+                url = "https://api.mojang.com/users/profiles/minecraft/" + str(
+                    profile.name
+                )
                 with open(cache.download(url), "r") as f:
                     data = json.load(f)
                 if not "id" in data:
@@ -473,7 +599,9 @@ class SpecialModelPlayerHead(SpecialModelHeadBase):
             with open(cache.download(url), "r") as f:
                 data = json.load(f)
             profile = ProfileComponent.model_validate(data)
-        textures = [prop for prop in profile.properties or [] if prop.name == "textures"]
+        textures = [
+            prop for prop in profile.properties or [] if prop.name == "textures"
+        ]
         if not textures:
             return None
         data = json.loads(base64.b64decode(textures[0].value))
@@ -515,7 +643,9 @@ class SpecialModelHead(SpecialModelHeadBase):
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         layer, texture = self.HEADS[self.kind]
-        return self.head_model(getter, layer, self.texture_override or texture, self.animation)
+        return self.head_model(
+            getter, layer, self.texture_override or texture, self.animation
+        )
 
 
 class SpecialModelShulkerBox(SpecialModelBase):
@@ -529,7 +659,12 @@ class SpecialModelShulkerBox(SpecialModelBase):
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         namespace, path = resolve_key(self.texture).split(":")
         texture = f"{namespace}:entity/shulker/{path}"
-        lid = {"x": 0.0, "y": 24.0 - self.openness * 0.5 * 16.0, "z": 0.0, "yRot": math.radians(270.0 * self.openness)}
+        lid = {
+            "x": 0.0,
+            "y": 24.0 - self.openness * 0.5 * 16.0,
+            "z": 0.0,
+            "yRot": math.radians(270.0 * self.openness),
+        }
         return {
             "textures": {"0": texture, "particle": texture},
             "elements": entity_elements(getter, "shulker_box", poses={"lid": lid}),
@@ -541,7 +676,10 @@ class SpecialModelTrident(SpecialModelBase):
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = "minecraft:entity/trident/trident"
-        return {"textures": {"0": texture, "particle": texture}, "elements": entity_elements(getter, "trident")}
+        return {
+            "textures": {"0": texture, "particle": texture},
+            "elements": entity_elements(getter, "trident"),
+        }
 
     def glint(self) -> Optional[GlintStyle]:
         # RenderTypes.entitySolidGlint on the trident's own texture
@@ -588,7 +726,11 @@ class SpecialModelDecoratedPot(SpecialModelBase):
                 **{side: self.get_texture(pot_decorations, side) for side in sides},
             },
             "elements": entity_elements(getter, "decorated_pot_base", "#base")
-            + entity_elements(getter, "decorated_pot_sides", part_textures={side: f"#{side}" for side in sides}),
+            + entity_elements(
+                getter,
+                "decorated_pot_sides",
+                part_textures={side: f"#{side}" for side in sides},
+            ),
         }
 
 
@@ -628,7 +770,6 @@ class SpecialModelStandingSign(SpecialModelSignBase):
     type: Literal["minecraft:standing_sign", "standing_sign"]
     attachment: Literal["ground", "wall"] = "ground"
 
-
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         assert self.attachment == "ground", "Only ground standing signs are supported"
         return {
@@ -667,10 +808,12 @@ class SpecialModelStandingSign(SpecialModelSignBase):
 
 class SpecialModelHangingSign(SpecialModelSignBase):
     type: Literal["minecraft:hanging_sign", "hanging_sign"]
-    attachment: Literal["wall", "ceiling", "ceiling_middle"] = "ceiling_middle" 
+    attachment: Literal["wall", "ceiling", "ceiling_middle"] = "ceiling_middle"
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
-        assert self.attachment == "ceiling_middle", "Only ceiling_middle hanging signs are supported"
+        assert (
+            self.attachment == "ceiling_middle"
+        ), "Only ceiling_middle hanging signs are supported"
         res = {
             "textures": {
                 "0": self.used_texture,
@@ -702,13 +845,18 @@ class SpecialModelHangingSign(SpecialModelSignBase):
         }
         return res
 
+
 class SpecialModelBell(SpecialModelBase):
     type: Literal["minecraft:bell", "bell"]
 
     def get_model(self, getter: PackGetter, item: Item) -> dict[str, Any]:
         texture = "minecraft:entity/bell/bell_body"
         layer = entity_layers(getter.opts.minecraft_version)["bell"]
-        return {"textures": {"0": texture, "particle": texture}, "elements": to_elements(layer)}
+        return {
+            "textures": {"0": texture, "particle": texture},
+            "elements": to_elements(layer),
+        }
+
 
 class SpecialModelBook(SpecialModelBase):
     type: Literal["minecraft:book", "book"]
@@ -752,7 +900,13 @@ class SpecialModelEndCube(SpecialModelBase):
             elements = [{"from": [0, 12, 0], "to": [16, 12, 16], "faces": {"up": face}}]
         else:
             faces = ("down", "up", "north", "south", "west", "east")
-            elements = [{"from": [0, 0, 0], "to": [16, 16, 16], "faces": {f: face for f in faces}}]
+            elements = [
+                {
+                    "from": [0, 0, 0],
+                    "to": [16, 16, 16],
+                    "faces": {f: face for f in faces},
+                }
+            ]
         return {"textures": {"0": texture, "particle": texture}, "elements": elements}
 
 

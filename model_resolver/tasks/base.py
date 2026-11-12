@@ -1,7 +1,6 @@
 import io
 import os
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
-from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
 from beet import Texture

@@ -1,5 +1,4 @@
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
-from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
 
 from dataclasses import dataclass, field

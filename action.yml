@@ -15,7 +15,6 @@ runs:
         sudo apt-get update -qq -y
         export DEBIAN_FRONTEND=noninteractive
         sudo apt-get -y install \
-          freeglut3-dev \
           libgl1-mesa-dev \
           libxcursor-dev \
           libpulse-dev \
@@ -60,8 +59,7 @@ runs:
 
     - name: Execute Commands (macOS)
       if: runner.os == 'macOS'
-      # PyOpenGL uses Apple's GLUT.framework (Cocoa, not X11): the runner's window
-      # server and Apple software renderer are enough, no XQuartz/Xvfb/freeglut.
+      # the context is created with CGL, without any window: nothing to install
       run: |
         echo "set -e" > /tmp/commands.sh
         echo "${{ inputs.commands }}" >> /tmp/commands.sh

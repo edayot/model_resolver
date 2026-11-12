@@ -32,7 +32,7 @@ jobs:
           path: dist/
 ```
 
-The action works on Linux (Mesa + `xvfb-run`), Windows (`setup-mesa-dist-win`) and macOS (XQuartz).
+The action works on Linux (Mesa + `xvfb-run`), Windows (`setup-mesa-dist-win`) and macOS (nothing to install).
 Pin a release tag instead of `@master` for reproducible builds. If you use
 `preferred_minecraft_generated: java`, add `actions/setup-java` first.
 
@@ -44,6 +44,12 @@ build under a virtual display with software rendering:
 ```bash
 export LIBGL_ALWAYS_SOFTWARE=1
 xvfb-run -s "-screen 0 2560x1440x24 +extension GLX +extension RENDER" uv run beet
+```
+
+Or skip the virtual display and render through EGL, which needs no display server:
+
+```bash
+PYOPENGL_PLATFORM=egl uv run beet
 ```
 
 !!! tip

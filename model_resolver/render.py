@@ -1,9 +1,7 @@
 from OpenGL.GL import *  # pyright: ignore[reportWildcardImportFromLibrary]
-from OpenGL.GLUT import *  # pyright: ignore[reportWildcardImportFromLibrary]
-from OpenGL.GLUT import HAVE_FREEGLUT
 from OpenGL.GLU import *  # pyright: ignore[reportWildcardImportFromLibrary]
+from model_resolver.gl_context import offscreen_context
 from model_resolver.minecraft_model import DisplayOptionModel, MinecraftModel
-from model_resolver.my_glut_init import glutInit
 
 import math
 import re
@@ -396,44 +394,22 @@ class Render:
 
     def run(self):
         self.resolve_dynamic_textures()
-        glutInit()
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)  # type: ignore
-        glutInitWindowSize(512, 512)
-        glutInitWindowPosition(100, 100)
-        glutCreateWindow(b"Model Resolver window")
-        glutHideWindow()
-        if HAVE_FREEGLUT:
-            glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS)
-        glClearColor(0.0, 0.0, 0.0, 0.0)
+        with offscreen_context():
+            glClearColor(0.0, 0.0, 0.0, 0.0)
 
-        new_tasks = AppendList[Task]()
-        for task in self.tasks:
-            new_tasks.extend(task.resolve())
-        self.tasks = new_tasks
+            new_tasks = AppendList[Task]()
+            for task in self.tasks:
+                new_tasks.extend(task.resolve())
+            self.tasks = new_tasks
 
-        glutDisplayFunc(self.display)
-        glutIdleFunc(self.display)
-        glutReshapeFunc(self.reshape)
-
-        try:
-            if HAVE_FREEGLUT:
-                glutMainLoop()
-            else:
-                # Apple's GLUT.framework (what PyOpenGL loads on macOS) has no
-                # glutLeaveMainLoop, so glutMainLoop would never return. Rendering
-                # goes through an FBO anyway, so drive the loop ourselves.
-                self.reshape(512, 512)
+            # rendering goes through an FBO, the context's own drawable is never used
+            self.reshape(512, 512)
+            try:
                 while self.tasks_index < len(self.tasks):
                     self.display()
-        finally:
-            self.ctx.inject(GlTextures).clear()
-
-    def leave_main_loop(self):
-        # freeglut destroys the GL context when glutMainLoop returns, so free the
-        # textures while it is still current (Windows' opengl32 errors without one)
-        self.ctx.inject(GlTextures).clear()
-        if HAVE_FREEGLUT:
-            glutLeaveMainLoop()
+            finally:
+                # free the textures while the context is still current
+                self.ctx.inject(GlTextures).clear()
 
     def reshape(self, width: int, height: int):
         glViewport(0, 0, width, height)
@@ -443,20 +419,10 @@ class Render:
         glMatrixMode(GL_MODELVIEW)
 
     def display(self):
+        log.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
+        self.tasks_index += self.real_display()
         if self.tasks_index >= len(self.tasks):
-            self.leave_main_loop()
-            return
-        try:
-            log.debug(f"Rendering task ({self.tasks_index}/{len(self.tasks)})...")
-            x = self.real_display()
-        except:
-            self.leave_main_loop()
-            raise
-        self.tasks_index += x
-        if self.tasks_index >= len(self.tasks):
-            self.leave_main_loop()
             log.debug(f"Rendering task ended")
-            return
 
     def real_display(self):
         if not self.current_task.ensure_params:

@@ -21,11 +21,11 @@ and select the **C++ build tools** workload.
 
 ### Ubuntu / Linux
 
-Generally nothing is needed. If you get an OpenGL or GLUT error, install:
+Generally nothing is needed. If you get an OpenGL error, install:
 
 ```bash
 sudo apt-get -y install \
-    freeglut3-dev libgl1-mesa-dev libxcursor-dev libpulse-dev \
+    libgl1-mesa-dev libxcursor-dev libpulse-dev \
     libxinerama-dev libxrandr-dev libxv-dev mesa-utils libgl1 \
     libglx-mesa0 mesa-common-dev libglapi-mesa libgbm1 \
     libgl1-mesa-dri libsdl1.2-dev libfreetype6-dev xvfb x11-utils

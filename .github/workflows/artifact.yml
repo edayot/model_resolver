@@ -45,11 +45,11 @@ jobs:
             uv run beet
       - name: Upload dist folder
         run: tar -czvf dist-ubuntu.tar.gz dist/
-      - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-ubuntu
-          path: dist-ubuntu.tar.gz
+      # - name: Upload compressed dist folder
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dist-ubuntu
+      #     path: dist-ubuntu.tar.gz
 
   windows-tests:
     runs-on: windows-latest
@@ -85,11 +85,11 @@ jobs:
             uv run beet
       - name: Upload dist folder
         run: Compress-Archive -Path dist\* -DestinationPath dist-windows.zip
-      - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-windows
-          path: dist-windows.zip
+      # - name: Upload compressed dist folder
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dist-windows
+      #     path: dist-windows.zip
 
   macos-tests:
     runs-on: macos-latest
@@ -124,8 +124,8 @@ jobs:
             uv run beet
       - name: Upload dist folder
         run: tar -czvf dist-macos.tar.gz dist/
-      - name: Upload compressed dist folder
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-macos
-          path: dist-macos.tar.gz
+      # - name: Upload compressed dist folder
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dist-macos
+      #     path: dist-macos.tar.gz
